@@ -34,8 +34,8 @@ export class ScriptParam {
 }
 
 export enum ScriptParamType {
-    tagid = 'script.paramtype-tagid',
-    value = 'script.paramtype-value',
+    tagid = 'tagid',
+    value = 'value',
     chart = 'chart'
 }
 

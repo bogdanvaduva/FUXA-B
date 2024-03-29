@@ -649,28 +649,6 @@ export class ProjectService {
     }
     //#endregion
 
-    initScheduledScripts() {
-        /* init all schedules from scripts with mode client */
-        if (this.projectData.scripts) {
-            this.projectData.scripts.forEach((script: Script) => {
-                if (script.mode == ScriptMode.CLIENT && script.scheduling && script.scheduling.interval > 0) {
-                    this.intervals.push(setInterval(
-                        () => {
-                            this.scriptService.runScript(script).subscribe(() => { });
-                        }, script.scheduling.interval * 1000));
-                }
-            });
-        }
-    }
-
-    clearScheduledScripts() {
-        /* clear all intervals from scripts with client mode */
-        this.intervals.forEach(interval => {clearInterval(interval);});
-        this.intervals = [];
-    }
-
-
-
     //#region Scripts resource
     /**
      * get scripts
