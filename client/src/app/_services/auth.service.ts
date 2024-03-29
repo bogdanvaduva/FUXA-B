@@ -71,6 +71,10 @@ export class AuthService {
 		this.saveUserToken(this.currentUser);
 	}
 
+	isLoggedIn(): boolean {
+		return (this.currentUser == null ? false: true);
+	}
+
 	// to check by page refresh
 	private saveUserToken(user: UserProfile) {
 		localStorage.setItem('currentUser', JSON.stringify(user));

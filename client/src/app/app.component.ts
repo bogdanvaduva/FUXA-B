@@ -7,7 +7,7 @@ import { Subscription, fromEvent, interval, merge, switchMap, tap } from 'rxjs';
 import { environment } from '../environments/environment';
 
 import { ProjectService } from './_services/project.service';
-//import { AuthService } from './_services/auth.service';
+import { AuthService } from './_services/auth.service';
 import { SettingsService } from './_services/settings.service';
 import { UserGroups } from './_models/user';
 import { AppService } from './_services/app.service';
@@ -34,7 +34,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 		private projectService: ProjectService,
 		private settingsService: SettingsService,
 		private translateService: TranslateService,
-		//private authService: AuthService,
+		private authService: AuthService,
 		private heartbeatService: HeartbeatService,
 		location: Location
 	) {
@@ -125,7 +125,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 	}
 
     isLoggedIn() {
-        return true;//(this.authService.getUser() ? true : false);
+        return this.authService.isLoggedIn();
     }
 
 	getClass() {
