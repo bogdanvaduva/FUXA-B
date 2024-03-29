@@ -1,16 +1,19 @@
-<!DOCTYPE html><html><head>
-    <base href="/">
+<!doctype html>
+<html>
+
+<head>
+    <base href="/"/>
     <title>FUXA</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- 1° Load styles -->
-    <link rel="stylesheet" href="assets/lib/svgeditor/jquery-plugin.min.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="assets/lib/svgeditor/jquery-plugin.min.css"></noscript>
+    <link rel="stylesheet" href="assets/lib/svgeditor/jquery-plugin.min.css">
 
-    <link rel="stylesheet" href="assets/lib/svgeditor/extensions/ext-html_button.min.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="assets/lib/svgeditor/extensions/ext-html_button.min.css"></noscript>
-    <style>body{background:#d0d0d0}body,div,html{-webkit-user-select:text;-khtml-user-select:text;-moz-user-select:text;-o-user-select:text;user-select:text;-webkit-user-drag:text}</style><link rel="stylesheet" href="assets/lib/svgeditor/svg-editor.min.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="assets/lib/svgeditor/svg-editor.min.css"></noscript>
-    <link rel="stylesheet" href="assets/lib/ext-styles.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="assets/lib/ext-styles.css"></noscript>
-    <link rel="stylesheet" href="assets/lib/nouislider/nouislider.min.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="assets/lib/nouislider/nouislider.min.css"></noscript>
+    <link rel="stylesheet" href="assets/lib/svgeditor/extensions/ext-html_button.min.css">
+    <link rel="stylesheet" href="assets/lib/svgeditor/svg-editor.min.css">
+    <link rel="stylesheet" href="assets/lib/ext-styles.css">
+    <link rel="stylesheet" href="assets/lib/nouislider/nouislider.min.css">
 
     <!-- 2° Load libraries -->
     <script src="assets/lib/svgeditor/jquery.min.js"></script>
@@ -29,8 +32,93 @@
 
     <script src="assets/lib/svg/svg.min.js"></script>
     <script src="assets/lib/svg/raphael.min.js"></script>
+    <script src="assets/lib/html5-qrcode/html5-qrcode.min.js"></script>
+    <script>
+        var html5QrCode = null;
+    
+        function initializeHtml5QrCode(id) {
+            try {
+                document.getElementById("repeater_html5_qrcode_start").setAttribute("onclick", "startQrCode()");
+                document.getElementById("repeater_html5_qrcode_stop").setAttribute("onclick", "stopQrCode()");
+                document.getElementById("repeater_input_search").setAttribute("onclick", "searchRepeater()");
+                document.getElementById("repeater_input_search").setAttribute("data", id);
+                html5QrCode = new Html5Qrcode(/* element id */ "reader");
+                const fileinput = document.getElementById('repeater_html5_qrcode_input_file');
+                if (fileinput) {
+                    fileinput.addEventListener('change', e => {
+                        if (e.target['files'].length == 0) {
+                            // No file selected, ignore 
+                            return;
+                        }
+    
+                        const imageFile = e.target['files'][0];
+                        // Scan QR Code
+                        html5QrCode.scanFile(imageFile, true)
+                        .then(decodedText => {
+                            // success, use decodedText
+                            console.log(decodedText);
+                        })
+                        .catch(err => {
+                            // failure, handle it.
+                            console.log(`Error scanning file. Reason: ${err}`)
+                        });
+                    });
+                }
+            } catch (e) {}
+        }
+    
+        function startQrCode() {
+            try {
+                // If you want to prefer back camera
+                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback, qrCodeErrorCallback);
+            } catch(e) {}
+        }
+    
+        function stopQrCode() {
+            try {
+                html5QrCode.stop().then((ignore) => {
+                    // QR Code scanning is stopped.
+                    }).catch((err) => {
+                    // Stop failed, handle it.
+                    });
+            } catch(e) {}
+        }
+    
+        function qrCodeSuccessCallback(decodedText, decodedResult) {
+            /* handle success */
+            document.getElementById("repeater_html5_qrcode_input").value = decodedText;
+        }
+    
+        function qrCodeErrorCallback(error) {
+            /* handle success */
+            console.log(error);
+        }
+    
+        function onChangeInput() {
+        }
+    
+        function searchRepeater() {
+            var flgClear = false;
+            if (document.getElementById("repeater_html5_qrcode_input").value === "") {
+                flgClear = true;
+            }
+            var nodes = document.getElementById(document.getElementById("repeater_input_search").getAttribute("data")).getElementsByTagName("svg");
+            for(let i = 0; i < nodes.length; i++) {
+                if (!flgClear) {
+                    if (!nodes[i].getAttribute("data").includes(document.getElementById("repeater_html5_qrcode_input").value)) {
+                        nodes[i].style.display = 'none';
+                    } else {
+                        nodes[i].style.display = 'flex';
+                    }
+                } else {
+                    nodes[i].style.display = 'flex';
+                }
+            }
 
-<style>@font-face{font-family:Roboto-Regular;src:local("Roboto Regular"),local("Roboto-Regular"),url(roboto-regular-webfont.f58066a2d9061006.woff) format("woff"),url(roboto-regular-webfont.ae47f6f1292d196f.woff2) format("woff2"),url(roboto-regular-webfont.2b0501b72f5a94d5.ttf) format("truetype"),url(roboto-regular-webfont.2ce0ba9a06424965.svg) format("svg")}html{height:100%;position:relative;background-color:#fff;font-family:Segoe UI Symbol,Roboto-Regular,Helvetica Neue,sans-serif;font-weight:300}body{height:100%;margin:0;font-family:Segoe UI Symbol,Roboto-Regular,Helvetica Neue,sans-serif;font-weight:300;background-color:#fff}*{text-decoration:none;scrollbar-width:auto}@-moz-document url-prefix(){*{scrollbar-width:thin}}*:focus{outline:none}app-root{display:block;height:100%}.logo{display:block;text-indent:-9999px;width:30px;height:30px;background:url(logo.0e8e64e69250a450.svg);background-size:30px 30px}</style><link rel="stylesheet" href="styles.d23c59dfe7e0ca85.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="styles.d23c59dfe7e0ca85.css"></noscript></head>
+        }
+    </script>
+<link rel="stylesheet" href="styles.css"></head>
 <!-- 3. Display the application -->
 
 <body>
@@ -38,13 +126,15 @@
         <div style="position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);">
             <div class="logo" style="display:block;width:60px;height:60px;background-size:60px 60px;margin-left: 45px;"></div>
             <div style="display: block; padding-left:10px">
-                <div style="display:block;font-size: 18px; font-weight: 600; text-align: center;">FUXA Loading...</div>
+                <div style="display:block;font-size: 18px; font-weight: 600; text-align: center;">FUXA-B. Loading...</div>
                 <div style="display: block;font-size: 10px;padding-top: 3px; text-align: center;">
                     powered by <span><b>frango</b>team</span>
                 </div>
+                <div style="display: block;font-size: 10px;padding-top: 3px; text-align: center;">&amp;</div>
+                <div style="display: block;font-size: 14px;padding-top: 3px; text-align: center;">B.</div>
             </div>
         </div>
     </app-root>
-<script src="runtime.8ef63094e52a66ba.js" type="module"></script><script src="polyfills.2696a6f9dc75535e.js" type="module"></script><script src="scripts.1c3385254ff4c93c.js" defer></script><script src="main.51d81f75b1815388.js" type="module"></script>
+<script src="runtime.js" type="module"></script><script src="polyfills.js" type="module"></script><script src="scripts.js" defer></script><script src="vendor.js" type="module"></script><script src="main.js" type="module"></script></body>
 
-</body></html>
+</html>

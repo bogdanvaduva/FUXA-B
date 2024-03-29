@@ -448,6 +448,8 @@
     "editor.controls-graph-pie-settings": "Tortengrafik-Einstellungen",
     "editor.controls-iframe": "Iframe",
     "editor.controls-iframe-settings": "Iframe-Einstellungen",
+    "editor.controls-repeater": "Repeater",
+    "editor.controls-repeater-settings": "Repeater settings",
     "editor.controls-table": "Tabelle",
     "editor.header-item-settings": "Kopfzeilen-Element Einstellungen",
 
@@ -1245,6 +1247,7 @@
     "dlg.app-settings-daqstore-organization": "Organisation",
     "dlg.app-settings-daqstore-retention": "Aufbewahrung",
     "dlg.app-settings-daqstore-database": "Datenbankname",
+    "dlg.app-settings-daqstore-schema": "Schema name",
     "dlg.app-settings-daqstore-username": "Benutzername",
     "dlg.app-settings-daqstore-password": "Passwort",
     "store.retention-none": "Deaktiviert",

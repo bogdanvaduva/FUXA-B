@@ -86,6 +86,8 @@ import { DaterangeDialogComponent } from './gui-helpers/daterange-dialog/dateran
 import { BitmaskComponent } from './gui-helpers/bitmask/bitmask.component';
 import { RangeNumberComponent } from './gui-helpers/range-number/range-number.component';
 import { LibImagesComponent } from './resources/lib-images/lib-images.component';
+import { WebcamPlayerComponent } from './gui-helpers/webcam-player/webcam-player.component';
+import { WebcamPlayerDialogComponent } from './gui-helpers/webcam-player/webcam-player-dialog/webcam-player-dialog.component';
 
 import { DialogDraggableDirective } from './_directives/dialog-draggable.directive';
 import { ModalPositionCache } from './_directives/modal-position.cache';
@@ -325,7 +327,9 @@ export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
         PanelPropertyComponent,
         RepeaterComponent,
         RepeaterPropertyComponent,
-        DialogTagRepeater
+        DialogTagRepeater,
+        WebcamPlayerComponent,
+        WebcamPlayerDialogComponent
     ],
     imports: [
         BrowserModule,
