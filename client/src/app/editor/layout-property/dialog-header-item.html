@@ -1,6 +1,6 @@
 <div class="header-item-dialog">
     <h1 mat-dialog-title class="force-lbk pointer-move" mat-dialog-draggable>{{'dlg.headeritem-title' | translate}}</h1>
-    <mat-icon (click)="onNoClick()" class="dialog-close-btn" cdkFocusInitial>clear</mat-icon>
+    <mat-icon (click)="onNoClick()" class="dialog-close-btn">clear</mat-icon>
     <div mat-dialog-content>
         <div class="my-form-field block mb10">
             <span>{{'dlg.headeritem-icon' | translate}}</span>
@@ -52,6 +52,6 @@
     </div>
     <div mat-dialog-actions class="dialog-action">
         <button mat-raised-button (click)="onNoClick()">{{'dlg.cancel' | translate}}</button>
-        <button mat-raised-button color="primary" (click)="onOkClick()" cdkFocusInitial>{{'dlg.ok' | translate}}</button>
+        <button mat-raised-button color="primary" (click)="onOkClick()">{{'dlg.ok' | translate}}</button>
     </div>    
 </div>

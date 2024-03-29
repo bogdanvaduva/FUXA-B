@@ -85,7 +85,7 @@
         <ng-container matColumnDef="logger">
             <mat-header-cell *matHeaderCellDef mat-sort-header> </mat-header-cell>
             <mat-cell *matCellDef="let element">
-                <div *ngIf="element.daq && element.daq.enabled">
+                <div *ngIf="element.daq">
                     <ng-container *ngIf="element.daq.restored">
                         <mat-icon>settings_backup_restore</mat-icon>
                     </ng-container>
