@@ -1,6 +1,6 @@
 
 import { Injectable, Output, EventEmitter } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, Subject, firstValueFrom } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { ProjectData, ProjectDataCmdType, UploadFile } from '../_models/project';
@@ -910,6 +910,29 @@ export class ProjectService {
         return this.storage.getDaqValues(query);
     }
     //#endregion
+
+    async getTagsValues(tagsIds: string[]): Promise<any[]> {
+        let values = await firstValueFrom(this.storage.getTagsValues(tagsIds));
+        return values;
+    }
+
+    async runSysFunctionSync(functionName: string, params: any): Promise<any> {
+        let values = await firstValueFrom(this.storage.runSysFunction(functionName, params));
+        return values;
+    }
+    
+    getTagIdFromName(tagName: string, deviceName?: string): string {
+        let devices = <Device[]>Object.values(this.projectData.devices);
+        for (let i = 0; i < devices.length; i++) {
+            if (!deviceName || devices[i].name === deviceName) {
+                let result = <Tag>Object.values(devices[i].tags).find((tag: Tag) => tag.name === tagName);
+                if (result) {
+                    return result.id;
+                }
+            }
+        }
+        return null;
+    }
 
     /**
      * Set Project data and save resource to backend

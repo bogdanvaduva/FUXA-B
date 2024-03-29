@@ -50,8 +50,16 @@ export class LayoutSettings {
     theme = '';
     /** Show login by start */
     loginonstart?: boolean = false;
+    /** Overlay color for login modal */
+    loginoverlaycolor?: LoginOverlayColorType = LoginOverlayColorType.none;
     /** Show connection error toast */
     show_connection_error? = true;
+}
+
+export enum LoginOverlayColorType {
+    none = 'none',
+    black = 'black',
+    white = 'white',
 }
 
 export class NavigationSettings {
@@ -145,6 +153,7 @@ export enum InputModeType {
     false = 'item.inputmode-disabled',
     true = 'item.inputmode-enabled',
     keyboard = 'item.inputmode-keyboard',
+    keyboardFullScreen = 'item.inputmode-keyboard-full-screen',
 }
 
 export enum HeaderBarModeType {
@@ -279,7 +288,8 @@ export enum GaugeActionsType {
     anticlockwise = 'shapes.action-anticlockwise',
     downup = 'shapes.action-downup',
     rotate = 'shapes.action-rotate',
-    move = 'shapes.action-move'
+    move = 'shapes.action-move',
+    monitor = 'shapes.action-monitor',
 }
 
 export class GaugeAction {
@@ -351,6 +361,7 @@ export enum GaugeEventActionType {
     onSetInput = 'shapes.event-onsetinput',
     onclose = 'shapes.event-onclose',
     onRunScript = 'shapes.event-onrunscript',
+    onMonitor = 'shapes.event-onmonitor',
 }
 
 export enum GaugeEventSetValueType {
@@ -389,8 +400,14 @@ export interface GaugeIframeProperty {
 export interface GaugePanelProperty {
     viewName: string;
     variableId: string;
+    scaleMode: PanelPropertyScaleModeType;
 }
 
+export enum PanelPropertyScaleModeType {
+    none = 'none',
+    contain = 'contain',
+    stretch = 'stretch'
+}
 export interface GaugeTableProperty {
     id: string;
     type: TableType;

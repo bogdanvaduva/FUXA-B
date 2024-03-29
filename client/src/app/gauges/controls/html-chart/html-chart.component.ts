@@ -16,7 +16,6 @@ export class HtmlChartComponent extends GaugeBaseComponent {
     static TypeTag = 'svg-ext-html_chart';
     static LabelTag = 'HtmlChart';
     static prefixD = 'D-HXC_';
-    yProperty : any;
 
     constructor(private resolver: ComponentFactoryResolver) {
         super();
@@ -41,6 +40,7 @@ export class HtmlChartComponent extends GaugeBaseComponent {
     static initElement(gab: GaugeSettings, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef, isview: boolean, chartRange: any, yProperty?: any) {
         let ele = document.getElementById(gab.id);
         if (ele) {
+            ele?.setAttribute('data-name', gab.name);
             let htmlChart = Utils.searchTreeStartWith(ele, this.prefixD);
             if (htmlChart) {
                 const factory = resolver.resolveComponentFactory(ChartUplotComponent);
@@ -53,7 +53,8 @@ export class HtmlChartComponent extends GaugeBaseComponent {
 
                 componentRef.instance.rangeType = chartRange;
                 componentRef.instance.id = gab.id;
-                componentRef.instance.type = gab.property?.type;
+                componentRef.instance.property = gab.property;
+                componentRef.instance.chartName = gab.name;
 
                 componentRef.changeDetectorRef.detectChanges();
                 htmlChart.appendChild(componentRef.location.nativeElement);

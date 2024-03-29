@@ -78,11 +78,11 @@ export class FlexHeadComponent implements OnInit, OnDestroy {
     }
 
     setVariable(event: IPropertyVariable) {
-        this.property.variableId = (event.variableId ? event.variableId : JSON.stringify(event).replace("\"","").replace("\"",""));
+        this.property.variableId = event.variableId;
         this.property.variableValue = event.variableValue;
         this.property.bitmask = event.bitmask;
 
-        if (this.flexInput && event.variableRaw) {
+        if (this.flexInput) {
             this.flexInput.changeTag(event.variableRaw);
         }
     }

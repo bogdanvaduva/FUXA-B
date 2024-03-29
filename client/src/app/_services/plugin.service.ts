@@ -8,7 +8,9 @@ import { environment } from '../../environments/environment';
 import { ToastrService } from 'ngx-toastr';
 import { TranslateService } from '@ngx-translate/core';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class PluginService {
 
     @Output() onPluginsChanged: EventEmitter<any> = new EventEmitter();

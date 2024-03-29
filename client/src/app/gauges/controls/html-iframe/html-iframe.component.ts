@@ -32,7 +32,7 @@ export class HtmlIframeComponent extends GaugeBaseComponent {
 
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable) {
         try {
-            if (ga.property.variableId && sig.value && svgele?.node?.children?.length >= 1) {
+            if (sig.value && svgele?.node?.children?.length >= 1) {
                 const parentIframe = Utils.searchTreeStartWith(svgele.node, this.prefixD);
                 const iframe = parentIframe.querySelector('iframe');
                 const src = iframe.getAttribute('src');
@@ -48,8 +48,9 @@ export class HtmlIframeComponent extends GaugeBaseComponent {
     static initElement(gaugeSettings: GaugeSettings, isview: boolean) {
         let ele = document.getElementById(gaugeSettings.id);
         if (ele) {
+            ele?.setAttribute('data-name', gaugeSettings.name);
             let svgIframeContainer = Utils.searchTreeStartWith(ele, this.prefixD);
-            if (svgIframeContainer && gaugeSettings.property) {
+            if (svgIframeContainer) {
                 svgIframeContainer.innerHTML = '';
                 let iframe = document.createElement('iframe');
                 

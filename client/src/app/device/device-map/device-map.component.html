@@ -24,6 +24,9 @@
             <!-- <mat-icon (click)="onEditDevice(server)" class="device-icon device-edit" >edit</mat-icon> -->
             <button *ngIf="!readonly" mat-icon-button (click)="onListDevice(server)" class="device-icon device-list mat-button-sm" [style.right.px]="2" matTooltip="{{'device.property-tags' | translate}}">
                 <mat-icon>link</mat-icon>
+            </button>    
+            <button *ngIf="!readonly" mat-icon-button (click)="onEditDevice(server)" class="device-edit mat-button-sm" matTooltip="{{'device.property-edit' | translate}}">
+                <mat-icon style="font-size: 17px">edit</mat-icon>
             </button>         
         </div>
 

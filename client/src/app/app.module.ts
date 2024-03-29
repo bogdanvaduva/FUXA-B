@@ -179,6 +179,8 @@ import { FlexDeviceTagComponent } from './gauges/gauge-property/flex-device-tag/
 import { PanelComponent } from './gauges/controls/panel/panel.component';
 import { PanelPropertyComponent } from './gauges/controls/panel/panel-property/panel-property.component';
 import { UserEditComponent } from './users/user-edit/user-edit.component';
+import { FuxaViewDialogComponent } from './fuxa-view/fuxa-view-dialog/fuxa-view-dialog.component';
+import { DeviceTagSelectionComponent } from './device/device-tag-selection/device-tag-selection.component';
 
 export function createTranslateLoader(http: HttpClient) {
     return new TranslateHttpLoader(http, './assets/i18n/', '.json');
@@ -200,6 +202,7 @@ export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
         AppComponent,
         LabComponent,
         DeviceComponent,
+        DeviceTagSelectionComponent,
         DeviceTagDialog,
         DeviceAlarmDialog,
         TagPropertyComponent,
@@ -218,6 +221,7 @@ export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
         DialogTagName,
         DeviceMapComponent,
         FuxaViewComponent,
+        FuxaViewDialogComponent,
         DialogDocProperty,
         DialogDocName,
         DialogNewDoc,

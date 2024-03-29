@@ -5,6 +5,7 @@ import { GaugeDialogType } from '../../gauge-property/gauge-property.component';
 import { Utils } from '../../../_helpers/utils';
 import { FuxaViewComponent } from '../../../fuxa-view/fuxa-view.component';
 import { GaugesManager } from '../../gauges.component';
+import { ProjectService } from '../../../_services/project.service';
 
 @Component({
     selector: 'app-panel',
@@ -19,7 +20,7 @@ export class PanelComponent extends GaugeBaseComponent {
     static actionsType = { hide: GaugeActionsType.hide, show: GaugeActionsType.show };
     static hmi: Hmi;
 
-    constructor() {
+    constructor(private projectService: ProjectService) {
         super();
     }
 
@@ -40,7 +41,10 @@ export class PanelComponent extends GaugeBaseComponent {
             let cv = (ga? GaugeSettings.transformObjectValue(ga.property,sig.value): sig.value);
             const view = PanelComponent.hmi.views.find(x => x.name === cv);
             if (view) {
-                gauge?.loadHmi(view);
+                gauge?.loadHmi(view, true);
+                if (ga?.property?.scaleMode) {
+                    Utils.resizeViewExt('.view-container', ga?.id, ga?.property?.scaleMode);
+                }
             }
         } catch (err) {
             console.error(err);
@@ -52,12 +56,14 @@ export class PanelComponent extends GaugeBaseComponent {
                        viewContainerRef: ViewContainerRef,
                        gaugeManager: GaugesManager,
                        hmi: Hmi,
-                       isview?: boolean): FuxaViewComponent {
-        if (!PanelComponent.hmi) {
+                       isview?: boolean,
+                       parent?: FuxaViewComponent): FuxaViewComponent {
+        if (hmi) {
             PanelComponent.hmi = hmi;
         }
         let ele = document.getElementById(gaugeSettings.id);
         if (ele) {
+            ele?.setAttribute('data-name', gaugeSettings.name);
             let svgPanelContainer = Utils.searchTreeStartWith(ele, this.prefixD);
             if (svgPanelContainer) {
                 const factory = resolver.resolveComponentFactory(FuxaViewComponent);
@@ -70,13 +76,14 @@ export class PanelComponent extends GaugeBaseComponent {
                 svgPanelContainer.appendChild(loaderComponentElement);
 
                 componentRef.instance['myComRef'] = componentRef;
+                componentRef.instance.parent = parent;
                 if (!isview) {
                     let span = document.createElement('span');
                     span.innerHTML = 'Panel';
                     svgPanelContainer.appendChild(span);
                     return null;
                 }
-                PanelComponent.processValue(null,
+                PanelComponent.processValue(gaugeSettings,
                                             null,
                                             <Variable> {
                                                 value: gaugeSettings.property.viewName
