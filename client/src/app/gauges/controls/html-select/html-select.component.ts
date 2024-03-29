@@ -65,7 +65,8 @@ export class HtmlSelectComponent extends GaugeBaseComponent {
         try {
             let select = Utils.searchTreeStartWith(svgele.node, this.prefix);
             if (select) {
-                let val = parseFloat(sig.value);
+                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
+                let val = parseFloat(cv);
                 if (Number.isNaN(val)) {
                     // maybe boolean
                     val = Number(sig.value);
@@ -98,7 +99,6 @@ export class HtmlSelectComponent extends GaugeBaseComponent {
     static initElement(ga: GaugeSettings, isview: boolean = false) {
         let ele = document.getElementById(ga.id);
         if (ele) {
-            ele?.setAttribute('data-name', ga.name);
             let select = Utils.searchTreeStartWith(ele, this.prefix);
             if (select) {
                 if (ga.property) {

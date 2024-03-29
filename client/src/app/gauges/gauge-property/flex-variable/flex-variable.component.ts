@@ -3,10 +3,10 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { Tag, DevicesUtils, Device } from '../../../_models/device';
 import { Utils } from '../../../_helpers/utils';
+import { DeviceTagDialog } from '../../../device/device.component';
 import { BitmaskComponent } from '../../../gui-helpers/bitmask/bitmask.component';
 import { Observable, map, startWith } from 'rxjs';
 import { UntypedFormControl } from '@angular/forms';
-import { DeviceTagSelectionComponent, DeviceTagSelectionData } from '../../../device/device-tag-selection/device-tag-selection.component';
 
 interface Variable {
     id: string;
@@ -107,6 +107,10 @@ export class FlexVariableComponent implements OnInit {
             const tag = this.devices[i].tags.find(tag => tag.id === tagId);
             if (tag) {
                 return tag;
+            } else {
+                if (tagId) {
+                    return <DeviceTagOption>{id: tagId, name: tagId, device: ''};
+                }
             }
         }
         return null;
@@ -173,13 +177,18 @@ export class FlexVariableComponent implements OnInit {
         this.valueChange.emit(this.value);
     }
 
+    onDeviceTagBlur(event: any) {
+        this.value.variableId = event.currentTarget.value;
+        this.value.variableRaw = null;
+        this.value.variableValue = null;
+        this.onchange.emit(event.currentTarget.value);   // Legacy
+        this.valueChange.emit(event.currentTarget.value);
+    }
+
     onBindTag() {
-        let dialogRef = this.dialog.open(DeviceTagSelectionComponent, {
-            disableClose: true,
+        let dialogRef = this.dialog.open(DeviceTagDialog, {
             position: { top: '60px' },
-            data: <DeviceTagSelectionData> {
-                variableId: this.variableId
-            }
+            data: { variableId: this.variableId, devices: this.data.devices }
         });
 
         dialogRef.afterClosed().subscribe((result) => {

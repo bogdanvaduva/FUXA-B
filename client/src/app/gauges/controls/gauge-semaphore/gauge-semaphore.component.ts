@@ -49,7 +49,8 @@ export class GaugeSemaphoreComponent extends GaugeBaseComponent {
             if (svgele.node && svgele.node.children && svgele.node.children.length <= 1) {
                 let g = svgele.node.children[0];
                 let clr = '';
-                let val = parseFloat(sig.value);
+                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property, sig.value) : sig.value);
+                let val = parseFloat(cv);
                 if (Number.isNaN(val)) {
                     // maybe boolean
                     val = Number(sig.value);

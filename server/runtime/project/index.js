@@ -194,6 +194,10 @@ function setProjectData(cmd, value) {
                 section.table = prjstorage.TableType.GENERAL;
                 section.name = cmd;
                 setGraphs(value);
+            } else if (cmd === ProjectDataCmdType.Repeaters) {
+                section.table = prjstorage.TableType.GENERAL;
+                section.name = cmd;
+                setCharts(value);
             } else if (cmd === ProjectDataCmdType.SetText) {
                 section.table = prjstorage.TableType.TEXTS;
                 section.name = value.name;
@@ -923,6 +927,7 @@ const ProjectDataCmdType = {
     HmiLayout: 'layout',
     Charts: 'charts',
     Graphs: 'graphs',
+    Repeaters: 'repeaters',
     SetText: 'set-text',
     SetText: 'set-text',
     DelText: 'del-text',

@@ -34,7 +34,8 @@ export class HtmlBagComponent extends GaugeBaseComponent {
 
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus, gauge?: NgxGaugeComponent) {
         try {
-            gauge.setValue(sig.value);
+            let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
+            gauge.setValue(cv);
         } catch (err) {
             console.error(err);
         }
@@ -43,7 +44,6 @@ export class HtmlBagComponent extends GaugeBaseComponent {
     static initElement(gab: GaugeSettings, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef, isview: boolean) {
         let ele = document.getElementById(gab.id);
         if (ele) {
-            ele?.setAttribute('data-name', gab.name);
             let htmlBag = Utils.searchTreeStartWith(ele, this.prefixD);
             if (htmlBag) {
                 const factory = resolver.resolveComponentFactory(NgxGaugeComponent);

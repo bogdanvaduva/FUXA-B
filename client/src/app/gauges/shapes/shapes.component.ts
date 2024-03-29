@@ -55,7 +55,8 @@ export class ShapesComponent extends GaugeBaseComponent {
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus) {
         try {
             if (svgele.node) {
-                let value = parseFloat(sig.value);
+                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
+                let value = parseFloat(cv);
                 if (Number.isNaN(value)) {
                     // maybe boolean
                     value = Number(sig.value);
@@ -74,10 +75,10 @@ export class ShapesComponent extends GaugeBaseComponent {
                         }
                         // check if general shape (line/path/fpath/text) to set the stroke
                         if (propertyColor.fill) {
-                            GaugeBaseComponent.walkTreeNodeToSetAttribute(svgele.node, 'fill', propertyColor.fill);
+                            svgele.node.setAttribute('fill', propertyColor.fill);
                         }
                         if (propertyColor.stroke) {
-                            GaugeBaseComponent.walkTreeNodeToSetAttribute(svgele.node, 'stroke', propertyColor.stroke);
+                            svgele.node.setAttribute('stroke', propertyColor.stroke);
                         }
 
                     }
@@ -125,6 +126,7 @@ export class ShapesComponent extends GaugeBaseComponent {
     }
 
     static runMyAction(element, type, gaugeStatus: GaugeStatus) {
+        console.log('asdf');
         if (gaugeStatus.actionRef && gaugeStatus.actionRef.type === type) {
             return;
         }

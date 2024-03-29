@@ -60,7 +60,8 @@ export class ProcEngComponent extends GaugeBaseComponent {
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus) {
         try {
             if (svgele.node) {
-                let value = parseFloat(sig.value);
+                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
+                let value = parseFloat(cv);
                 if (Number.isNaN(value)) {
                     // maybe boolean
                     value = Number(sig.value);
@@ -74,14 +75,10 @@ export class ProcEngComponent extends GaugeBaseComponent {
                         for (let idx = 0; idx < ga.property.ranges.length; idx++) {
                             if (ga.property.ranges[idx].min <= propValue && ga.property.ranges[idx].max >= propValue) {
                                 propertyColor.fill = ga.property.ranges[idx].color;
-                                propertyColor.stroke = ga.property.ranges[idx].stroke;
                             }
                         }
                         if (propertyColor.fill) {
-                            GaugeBaseComponent.walkTreeNodeToSetAttribute(svgele.node, 'fill', propertyColor.fill);
-                        }
-                        if (propertyColor.stroke) {
-                            GaugeBaseComponent.walkTreeNodeToSetAttribute(svgele.node, 'stroke', propertyColor.stroke);
+                            svgele.node.setAttribute('fill', propertyColor.fill);
                         }
                     }
                     // check actions

@@ -88,6 +88,10 @@ export class Tag {
             enabled: 'Daq enabled storage',
             interval: 'min storage interval (without change value)'
         },
+        scale: {
+            mode: 'Daq scale mode',
+            functionName: 'Daq scale function name'
+        },        
         format: 'Number of digits to appear after the decimal point'
     };
 }
@@ -367,6 +371,7 @@ export class DevicesUtils {
         tagsHeader += `daq.enabled${DevicesUtils.columnDelimiter}`;
         tagsHeaderDescription += `${DevicesUtils.lineComment}daq.interval${DevicesUtils.columnDelimiter}: ${Tag.descriptor.daq.interval}${DevicesUtils.lineDelimiter}`;
         tagsHeader += `daq.interval${DevicesUtils.columnDelimiter}`;
+        tagsHeaderDescription += `${DevicesUtils.lineComment}scale.mode${DevicesUtils.columnDelimiter}: ${Tag.descriptor.scale.mode}${DevicesUtils.lineDelimiter}`;
 
         for (let i = 0; i < devices.length; i++) {
             if (devices[i].tags) {
@@ -468,7 +473,11 @@ export class DevicesUtils {
         let result = `${DevicesUtils.lineTag}${DevicesUtils.columnDelimiter}${deviceId}${DevicesUtils.columnDelimiter}`;
         tkeys.forEach(tk => {
             let text = tag[tk] || '';
-            result += `${text.toString().replace(new RegExp(DevicesUtils.columnDelimiter, 'g'), DevicesUtils.columnMaske)}${DevicesUtils.columnDelimiter}`;
+            if (typeof text === 'object' && text !== null) {
+                result += `${JSON.stringify(text).replace(new RegExp(DevicesUtils.columnDelimiter, 'g'), DevicesUtils.columnMaske)}${DevicesUtils.columnDelimiter}`;
+            } else {
+                result += `${text.toString().replace(new RegExp(DevicesUtils.columnDelimiter, 'g'), DevicesUtils.columnMaske)}${DevicesUtils.columnDelimiter}`;
+            }
         });
         let options = (tag.options) ? JSON.stringify(tag.options) : '';
         result += `${options.replace(new RegExp(DevicesUtils.columnDelimiter, 'g'), DevicesUtils.columnMaske)}${DevicesUtils.columnDelimiter}`;
@@ -491,15 +500,18 @@ export class DevicesUtils {
         tag.address = items[7].replace(new RegExp(DevicesUtils.columnMaske, 'g'), DevicesUtils.columnDelimiter);
         tag.divisor = parseInt(items[8]) || 1;
         tag.init = items[9];
-        tag.format = items[10] ? parseInt(items[10]) : null;
-        tag.options = items[11].replace(new RegExp(DevicesUtils.columnMaske, 'g'), DevicesUtils.columnDelimiter);
-        if (tag.options && Utils.isJson(tag.options)) {
-            tag.options = JSON.parse(tag.options);
+        if (items[10] && Utils.isJson(items[10].replace(/~/g,",").replace(/""/g,"\"").replace("\"{","{").replace("}\"","}"))) {
+            tag.scale = <TagScale>JSON.parse(items[10].replace(/~/g,",").replace(/""/g,"\"").replace("\"{","{").replace("}\"","}"));
+        }
+        tag.format = items[11] ? parseInt(items[11]) : null;
+        tag.options = items[12].replace(new RegExp(DevicesUtils.columnMaske, 'g'), DevicesUtils.columnDelimiter);
+        if (tag.options && Utils.isJson(tag.options.replace(/\"\\\"/g,"\"").replace(/\\\"/g,"\"").replace(/\"{/g,"{").replace(/}\"\"/g,"}"))) {
+            tag.options = JSON.parse(tag.options.replace(/\"\\\"/g,"\"").replace(/\\\"/g,"\"").replace(/\"{/g,"{").replace(/}\"\"/g,"}"));
         }
         tag.daq = <TagDaq> {
-            enabled:  Utils.Boolify(items[12]) ? true : false,
+            enabled:  Utils.Boolify(items[13]) ? true : false,
             changed: true,
-            interval: parseInt(items[13]) || 60
+            interval: parseInt(items[14]) || 60
         };
         return { tag, deviceId };
     }
@@ -536,6 +548,11 @@ export class TagScale {
     scaledLow: number;
     scaledHigh: number;
     dateTimeFormat: string;
+    functionName: string;
+
+    toString = function() {
+        return JSON.stringify(this);
+    }
 }
 
 export enum TagScaleModeType {
@@ -543,6 +560,7 @@ export enum TagScaleModeType {
     linear = 'device.tag-scale-mode-linear',
     convertDateTime = 'device.tag-convert-datetime',
     convertTickTime = 'device.tag-convert-ticktime',
+    functionName = 'device.tag-convert-function',
 }
 
 export enum TagSystemType {

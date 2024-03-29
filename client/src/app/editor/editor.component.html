@@ -31,6 +31,9 @@
         <div *ngSwitchCase="gaugeDialogType.Panel">
             <app-panel-property [data]="gaugeDialog.data" [reload]="reloadGaugeDialog" (onPropChanged)="onGaugeDialogChanged($event)"></app-panel-property>
         </div>
+        <div *ngSwitchCase="gaugeDialogType.Repeater">
+            <app-repeater-property [data]="gaugeDialog.data" [reload]="reloadGaugeDialog" (onPropChanged)="onGaugeDialogChanged($event)"></app-repeater-property>
+        </div>
     </div>
 </mat-drawer>
 <div id="svg_editor_container">
@@ -65,7 +68,7 @@
                             <mat-icon *ngIf="item.type === cardViewType" matTooltip="{{'editor.view-cards' | translate}}" class="leftbar-item-type">
                                 grid_view
                             </mat-icon>
-                            <span class="view-item-text" matTooltip="{{item.name}}">{{item.name}}</span>
+                            <span>{{item.name}}</span>
                             <mat-icon aria-label="More" [matMenuTriggerFor]="menuview">more_vert</mat-icon>
                             <mat-menu #menuview="matMenu" class="leftbar-item-menu">
                                 <button mat-menu-item (click)="onDeleteView(item)">{{'editor.view-delete' | translate}}</button>
@@ -202,7 +205,11 @@
                             <div class="svg-tool-button" matTooltip="{{'editor.controls-panel' | translate}}" [ngClass]="{'svg-tool-active': isModeActive('own_ctrl-panel')}"
                                 (click)="setMode('own_ctrl-panel')">
                                 <span class="material-icon-tool material-icons" style="font-size: 25px;">web_asset</span>
-                            </div>                            
+                            </div>
+                            <div class="svg-tool-button" matTooltip="{{'editor.controls-repeater' | translate}}" [ngClass]="{'svg-tool-active': isModeActive('own_ctrl-repeat')}"
+                                (click)="setMode('own_ctrl-repeat')">
+                                <span class="material-icon-tool material-icons" style="font-size: 25px;">repeat_on</span>
+                            </div>                                                       
                         </div>
                     </mat-expansion-panel>
                     <!-- SHAPES -->

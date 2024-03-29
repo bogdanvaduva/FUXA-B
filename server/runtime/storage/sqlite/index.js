@@ -22,7 +22,7 @@ function DaqNode(_settings, _log, _id, _currentStorate) {
     var settings = _settings;               // Application settings
     var logger = _log;                      // Application logger
     var id = _id;                           // Device id
-    const currentStorage = _currentStorate  // Database to set the last value (current)
+    const currentStorage = _currentStorate; // Database to set the last value (current)
     var initready = false;                  // Initilized flag 
     var mapworking = false;                 // Data mapping working flag
     var dataworking = false;                // Save data working flag

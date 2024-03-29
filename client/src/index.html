@@ -32,7 +32,92 @@
 
     <script src="assets/lib/svg/svg.min.js"></script>
     <script src="assets/lib/svg/raphael.min.js"></script>
+    <script src="assets/lib/html5-qrcode/html5-qrcode.min.js"></script>
+    <script>
+        var html5QrCode = null;
+    
+        function initializeHtml5QrCode(id) {
+            try {
+                document.getElementById("repeater_html5_qrcode_start").setAttribute("onclick", "startQrCode()");
+                document.getElementById("repeater_html5_qrcode_stop").setAttribute("onclick", "stopQrCode()");
+                document.getElementById("repeater_input_search").setAttribute("onclick", "searchRepeater()");
+                document.getElementById("repeater_input_search").setAttribute("data", id);
+                html5QrCode = new Html5Qrcode(/* element id */ "reader");
+                const fileinput = document.getElementById('repeater_html5_qrcode_input_file');
+                if (fileinput) {
+                    fileinput.addEventListener('change', e => {
+                        if (e.target['files'].length == 0) {
+                            // No file selected, ignore 
+                            return;
+                        }
+    
+                        const imageFile = e.target['files'][0];
+                        // Scan QR Code
+                        html5QrCode.scanFile(imageFile, true)
+                        .then(decodedText => {
+                            // success, use decodedText
+                            console.log(decodedText);
+                        })
+                        .catch(err => {
+                            // failure, handle it.
+                            console.log(`Error scanning file. Reason: ${err}`)
+                        });
+                    });
+                }
+            } catch (e) {}
+        }
+    
+        function startQrCode() {
+            try {
+                // If you want to prefer back camera
+                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback, qrCodeErrorCallback);
+            } catch(e) {}
+        }
+    
+        function stopQrCode() {
+            try {
+                html5QrCode.stop().then((ignore) => {
+                    // QR Code scanning is stopped.
+                    }).catch((err) => {
+                    // Stop failed, handle it.
+                    });
+            } catch(e) {}
+        }
+    
+        function qrCodeSuccessCallback(decodedText, decodedResult) {
+            /* handle success */
+            document.getElementById("repeater_html5_qrcode_input").value = decodedText;
+        }
+    
+        function qrCodeErrorCallback(error) {
+            /* handle success */
+            console.log(error);
+        }
+    
+        function onChangeInput() {
+        }
+    
+        function searchRepeater() {
+            var flgClear = false;
+            if (document.getElementById("repeater_html5_qrcode_input").value === "") {
+                flgClear = true;
+            }
+            var nodes = document.getElementById(document.getElementById("repeater_input_search").getAttribute("data")).getElementsByTagName("svg");
+            for(let i = 0; i < nodes.length; i++) {
+                if (!flgClear) {
+                    if (!nodes[i].getAttribute("data").includes(document.getElementById("repeater_html5_qrcode_input").value)) {
+                        nodes[i].style.display = 'none';
+                    } else {
+                        nodes[i].style.display = 'flex';
+                    }
+                } else {
+                    nodes[i].style.display = 'flex';
+                }
+            }
 
+        }
+    </script>
 </head>
 <!-- 3. Display the application -->
 
@@ -41,10 +126,12 @@
         <div style="position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);">
             <div class="logo" style="display:block;width:60px;height:60px;background-size:60px 60px;margin-left: 45px;"></div>
             <div style="display: block; padding-left:10px">
-                <div style="display:block;font-size: 18px; font-weight: 600; text-align: center;">FUXA Loading...</div>
+                <div style="display:block;font-size: 18px; font-weight: 600; text-align: center;">FUXA-B. Loading...</div>
                 <div style="display: block;font-size: 10px;padding-top: 3px; text-align: center;">
                     powered by <span><b>frango</b>team</span>
                 </div>
+                <div style="display: block;font-size: 10px;padding-top: 3px; text-align: center;">&amp;</div>
+                <div style="display: block;font-size: 14px;padding-top: 3px; text-align: center;">B.</div>
             </div>
         </div>
     </app-root>

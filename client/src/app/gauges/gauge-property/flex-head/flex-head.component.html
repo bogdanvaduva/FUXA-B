@@ -1,8 +1,23 @@
 <div class="container">
     <div class="head" style="padding-top: 10px;">
         <flex-variable [data]="data" (onchange)="setVariable($event)" [variableId]="property.variableId" [variableValue]="property.variableValue" [bitmask]="property.bitmask"
-         [withStaticValue]="withStaticValue" [withBitmask]="withBitmask">
+         [withStaticValue]="withStaticValue" [withBitmask]="withBitmask" [allowManualEdit]="true" >
         </flex-variable>
+        <div class="container">
+            <div class="my-form-field">
+                <span>{{'gauges.property-variable-isobject' | translate}}</span>
+                <div class="my-form-field-variable-isobject">
+                    <input [(ngModel)]="property.variableValueIsObject" type="checkbox">
+                </div>
+            </div>
+            <div class="my-form-field">&nbsp;</div>
+            <div class="my-form-field">
+                <span>{{'gauges.property-variable-object-property' | translate}}</span>
+                <div class="my-form-field-variable-isobject">
+                    <input [(ngModel)]="property.variableValueObjectProperty">
+                </div>
+            </div>      
+        </div>
     </div>
     <flex-input #flexinput *ngIf="withProperty" [data]="data" [property]="property" [ranges]="property.ranges" [default]="defaultValue" [propertyType]="withProperty" style="padding-bottom: 5px">
     </flex-input>

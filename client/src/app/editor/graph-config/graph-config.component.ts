@@ -10,7 +10,7 @@ import { Device, DevicesUtils, Tag } from '../../_models/device';
 import { Graph, GraphSource, GraphType, GraphBarProperty, GraphBarXType, GraphBarDateFunctionType, GraphBarFunction, GraphBarDateFunction } from '../../_models/graph';
 import { EditNameComponent } from '../../gui-helpers/edit-name/edit-name.component';
 import { ConfirmDialogComponent } from '../../gui-helpers/confirm-dialog/confirm-dialog.component';
-import { DeviceTagSelectionComponent, DeviceTagSelectionData } from '../../device/device-tag-selection/device-tag-selection.component';
+import { DeviceTagDialog } from '../../device/device.component';
 
 @Component({
     selector: 'app-graph-config',
@@ -100,13 +100,9 @@ export class GraphConfigComponent implements OnInit {
     }
 
     onAddGraphSource(graph: Graph) {
-        let dialogRef = this.dialog.open(DeviceTagSelectionComponent, {
-            disableClose: true,
+        let dialogRef = this.dialog.open(DeviceTagDialog, {
             position: { top: '60px' },
-            data: <DeviceTagSelectionData> {
-                variableId: null,
-                multiSelection: false
-            }
+            data: { variableId: null, devices: this.data.devices, multiSelection: false }
         });
 
         dialogRef.afterClosed().subscribe((result) => {

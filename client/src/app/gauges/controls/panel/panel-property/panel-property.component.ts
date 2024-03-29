@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { GaugePanelProperty, PanelPropertyScaleModeType } from '../../../../_models/hmi';
+import { GaugePanelProperty } from '../../../../_models/hmi';
 
 @Component({
     selector: 'app-panel-property',
@@ -14,7 +14,6 @@ export class PanelPropertyComponent implements OnInit {
         this._reload();
     }
     property: GaugePanelProperty;
-    scaleMode = PanelPropertyScaleModeType;
 
     constructor() { }
 
@@ -33,7 +32,7 @@ export class PanelPropertyComponent implements OnInit {
 
     private _reload() {
         if (!this.data.settings.property) {
-            this.data.settings.property = <GaugePanelProperty>{ viewName: null, variableId: null, scaleMode: null };
+            this.data.settings.property = <GaugePanelProperty>{ viewName: null, variableId: null };
         }
         this.property = this.data.settings.property;
     }

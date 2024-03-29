@@ -25,7 +25,6 @@ export class HtmlImageComponent extends GaugeBaseComponent {
     static initElement(gaugeSettings: GaugeSettings, isview: boolean) {
         let ele = document.getElementById(gaugeSettings.id);
         if (ele) {
-            ele?.setAttribute('data-name', gaugeSettings.name);
             let svgImageContainer = Utils.searchTreeStartWith(ele, this.prefixD);
             if (svgImageContainer) {
                 svgImageContainer.innerHTML = '';
@@ -68,7 +67,8 @@ export class HtmlImageComponent extends GaugeBaseComponent {
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus) {
         try {
             if (svgele.node) {
-                let value = parseFloat(sig.value);
+                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
+                let value = parseFloat(cv);
                 if (Number.isNaN(value)) {
                     // maybe boolean
                     value = Number(sig.value);

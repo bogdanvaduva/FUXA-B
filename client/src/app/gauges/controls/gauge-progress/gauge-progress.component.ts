@@ -44,7 +44,8 @@ export class GaugeProgressComponent extends GaugeBaseComponent {
             if (svgele.node && svgele.node.children && svgele.node.children.length === 3 && ga.property && ga.property.ranges.length > 0) {
                 let gap: GaugeRangeProperty = ga.property.ranges[0];
                 let g = svgele.node.children[0];
-                let val = parseFloat(sig.value);
+                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
+                let val = parseFloat(cv);
                 let rectBase = Utils.searchTreeStartWith(svgele.node, this.prefixA);
                 let heightBase = parseFloat(rectBase.getAttribute('height'));
                 let yBase = parseFloat(rectBase.getAttribute('y'));
@@ -78,7 +79,6 @@ export class GaugeProgressComponent extends GaugeBaseComponent {
     static initElement(ga: GaugeSettings, isview: boolean = false) {
         let ele = document.getElementById(ga.id);
         if (ele) {
-            ele?.setAttribute('data-name', ga.name);
             if (!ga.property) {
                 ga.property = new GaugeProperty();
                 let ip: GaugeRangeProperty = new GaugeRangeProperty();

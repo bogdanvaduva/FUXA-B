@@ -50,7 +50,8 @@ export class SliderComponent {
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus, slider?: NgxNouisliderComponent) {
         try {
             if (slider) {
-                let val = parseFloat(sig.value);
+                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
+                let val = parseFloat(cv);
                 if (Number.isNaN(val)) {
                     // maybe boolean
                     val = Number(sig.value);
@@ -67,7 +68,6 @@ export class SliderComponent {
     static initElement(gab: GaugeSettings, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef, options?: any) {
         let ele = document.getElementById(gab.id);
         if (ele) {
-            ele?.setAttribute('data-name', gab.name);
             let htmlSlider = Utils.searchTreeStartWith(ele, this.prefix);
             if (htmlSlider) {
                 const factory = resolver.resolveComponentFactory(NgxNouisliderComponent);

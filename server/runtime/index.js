@@ -294,13 +294,6 @@ function init(_io, _api, _settings, _log, eventsMain) {
                 logger.error(`${Events.IoEventTypes.DEVICE_TAGS_UNSUBSCRIBE}: ${err}`);
             }
         });
-        socket.on(Events.IoEventTypes.DEVICE_ENABLE, (message) => {
-            try {
-                devices.enableDevice(message.deviceName, message.enable);
-            } catch (err) {
-                logger.error(`${Events.IoEventTypes.DEVICE_ENABLE}: ${err}`);
-            }
-        });
     });
 }
 

@@ -16,16 +16,16 @@ function Influx(_settings, _log, _currentStorate) {
 
     var settings = _settings;               // Application settings
     var logger = _log;                      // Application logger
-    var currentStorage = _currentStorate    // Database to set the last value (current)
+    var currentStorage = _currentStorate;   // Database to set the last value (current)
     var status = InfluxDBStatusEnum.CLOSE;
 
 
     var influxError = { error: null, timestamp: 0 };
     var influxdbVersion = VERSION_20;
     var client = null;
-    var clientOptions = null
-    var writeApi = null
-    var queryApi = null
+    var clientOptions = null;
+    var writeApi = null;
+    var queryApi = null;
 
     this.init = function () {
 
@@ -39,14 +39,10 @@ function Influx(_settings, _log, _currentStorate) {
                 // rejectUnauthorized: n.rejectUnauthorized,
                 token
             }
-            try {
-                client = new InfluxDB(clientOptions);
-                writeApi = client.getWriteApi(settings.daqstore.organization, settings.daqstore.bucket, 's');
-                queryApi = client.getQueryApi(settings.daqstore.organization);
-                status = InfluxDBStatusEnum.OPEN;    
-            } catch (error) {
-                logger.error('influxdb-init failed! ' + error.message); 
-            }
+            client = new InfluxDB(clientOptions);
+            writeApi = client.getWriteApi(settings.daqstore.organization, settings.daqstore.bucket, 's');
+            queryApi = client.getQueryApi(settings.daqstore.organization);
+            status = InfluxDBStatusEnum.OPEN;
         } else if (influxdbVersion === VERSION_18_FLUX) {
             try {
                 const parsedUrl = new URL(settings.daqstore.url);

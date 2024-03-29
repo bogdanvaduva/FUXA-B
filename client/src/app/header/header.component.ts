@@ -42,12 +42,12 @@ export class HeaderComponent implements AfterViewInit, OnDestroy {
                 private projectService: ProjectService){
 
         this.router.events.subscribe(()=> {
-            this.editorMode = (this.router.url.indexOf('editor') >= 0 ||  this.router.url.indexOf('device') >= 0 ||
+            this.editorMode = (this.router.url.indexOf('editor') >= 0 || (this.router.url.indexOf('device') >= 0 && this.router.url.indexOf('&device') < 0) ||
                                 this.router.url.indexOf('users') >= 0 || this.router.url.indexOf('text') >= 0 ||
                                 this.router.url.indexOf('messages') >= 0 || this.router.url.indexOf('events') >= 0 ||
                                 this.router.url.indexOf('notifications') >= 0 || this.router.url.indexOf('scripts') >= 0 ||
                                 this.router.url.indexOf('reports') >= 0) ? true : false;
-            this.savededitor = (this.router.url.indexOf('device') >= 0 || this.router.url.indexOf('users') >= 0 ||
+            this.savededitor = ((this.router.url.indexOf('device') >= 0 && this.router.url.indexOf('&device') < 0) || this.router.url.indexOf('users') >= 0 ||
                                 this.router.url.indexOf('text') >= 0 || this.router.url.indexOf('messages') >= 0 ||
                                 this.router.url.indexOf('events') >= 0 || this.router.url.indexOf('notifications') >= 0 ||
                                 this.router.url.indexOf('scripts') >= 0 || this.router.url.indexOf('reports') >= 0) ? true : false;

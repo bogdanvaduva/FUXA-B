@@ -120,7 +120,6 @@ export class NgxTouchKeyboardDirective implements OnDestroy {
       new ComponentPortal(NgxTouchKeyboardComponent)
     );
     this._panelRef.instance.debug = this.ngxTouchKeyboardDebug;
-    this._panelRef.instance.fullScreen = this.ngxTouchKeyboardFullScreen;
     this._panelRef.instance.setLocale(this._locale);
     this._panelRef.instance.setActiveInput(this._elementRef.nativeElement);
     this.isOpen = true;

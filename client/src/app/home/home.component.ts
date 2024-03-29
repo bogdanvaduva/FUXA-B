@@ -14,7 +14,7 @@ import { HmiService, ScriptSetView } from '../_services/hmi.service';
 import { ProjectService } from '../_services/project.service';
 import { AuthService } from '../_services/auth.service';
 import { GaugesManager } from '../gauges/gauges.component';
-import { Hmi, View, ViewType, NaviModeType, NotificationModeType, ZoomModeType, HeaderSettings, LinkType, HeaderItem, Variable, GaugeStatus, GaugeSettings, GaugeEventType, LoginOverlayColorType } from '../_models/hmi';
+import { Hmi, View, ViewType, NaviModeType, NotificationModeType, ZoomModeType, HeaderSettings, LinkType, HeaderItem, Variable, GaugeStatus, GaugeSettings, GaugeEventType } from '../_models/hmi';
 import { LoginComponent } from '../login/login.component';
 import { AlarmViewComponent } from '../alarms/alarm-view/alarm-view.component';
 import { Utils } from '../_helpers/utils';
@@ -28,9 +28,6 @@ import { debounceTime, filter, last, map, takeUntil } from 'rxjs/operators';
 import { HtmlButtonComponent } from '../gauges/controls/html-button/html-button.component';
 import { User } from '../_models/user';
 import { UserInfo } from '../users/user-edit/user-edit.component';
-import { Intervals } from '../_helpers/intervals';
-import { Script, ScriptMode } from '../_models/script';
-import { ScriptService } from '../_services/script.service';
 // declare var panzoom: any;
 
 @Component({
@@ -68,7 +65,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     serverErrorBanner$: Observable<boolean>;
     cardViewType = Utils.getEnumKey(ViewType, ViewType.cards);
     gridOptions = <GridsterConfig>new GridOptions();
-    intervalsScript = new Intervals();
     private headerItemsMap = new Map<string, HeaderItem[]>();
     private subscriptionLoad: Subscription;
     private subscriptionAlarmsStatus: Subscription;
@@ -82,7 +78,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         private router: Router,
         private route: ActivatedRoute,
         private hmiService: HmiService,
-        private scriptService: ScriptService,
         private authService: AuthService,
         public gaugesManager: GaugesManager) {
         this.gridOptions.draggable = { enabled: false };
@@ -91,10 +86,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     ngOnInit() {
         try {
-            this.subscriptionLoad = this.projectService.onLoadHmi.subscribe(() => {
-                if (this.projectService.getHmi()) {
+            this.subscriptionLoad = this.projectService.onLoadHmi.subscribe(load => {
+                let hmi = this.projectService.getHmi();
+                if (hmi) {
                     this.loadHmi();
-                    this.initScheduledScripts();
                 }
             }, error => {
                 console.error(`Error loadHMI: ${error}`);
@@ -156,23 +151,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             }
             this.destroy$.next();
             this.destroy$.complete();
-            this.intervalsScript.clearIntervals();
         } catch (e) {
         }
-    }
-
-    private initScheduledScripts() {
-        this.intervalsScript.clearIntervals();
-        this.projectService.getScripts()?.forEach((script: Script) => {
-            if (script.mode == ScriptMode.CLIENT && script.scheduling?.interval > 0) {
-                this.intervalsScript.addInterval(
-                    script.scheduling.interval * 1000,
-                    this.scriptService.evalScript,
-                    script,
-                    this.scriptService
-                );
-            }
-        });
     }
 
     onGoToPage(viewId: string, force: boolean = false) {
@@ -266,16 +246,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
                 }
             });
         } else {
-            let dialogConfig = {
-                data: {},
-                disableClose: true,
-                autoFocus: false,
-                ...(this.hmi.layout.loginoverlaycolor && this.hmi.layout.loginoverlaycolor !== LoginOverlayColorType.none) && {
-                    backdropClass: this.hmi.layout.loginoverlaycolor === LoginOverlayColorType.black ? 'backdrop-black' : 'backdrop-white'
-                }
-            };
-
-            let dialogRef = this.dialog.open(LoginComponent, dialogConfig);
+            let dialogRef = this.dialog.open(LoginComponent, {
+                data: {}
+            });
             dialogRef.afterClosed().subscribe(result => {
                 const userInfo = new UserInfo(this.authService.getUser()?.info);
                 if (userInfo.start) {

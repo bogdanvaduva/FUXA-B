@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const SqliteDB = require("./sqlite");
 const InfluxDB = require("./influxdb");
-const TDengine  =require("./tdengine");
+const PostgreSQL = require("./postgresql");
 const CurrentStorage = require("./sqlite/currentstorage");
 // var DaqNode = require('./daqnode');
 var calculator = require('./calculator');
@@ -25,6 +25,7 @@ function init(_settings, _log) {
     settings = _settings;
     logger = _log;
     logger.info("daqstorage: init successful!", true);
+    logger.info("daqstorage: settings - " + JSON.stringify(settings), true);
     currentStorateDB = CurrentStorage.create(_settings, _log);
 }
 
@@ -40,14 +41,17 @@ function reset() {
 function addDaqNode(_id, fncgetprop) {
     var id = _id;
     const dbType = _getDbType();
-    if (dbType === DaqStoreTypeEnum.influxDB || dbType === DaqStoreTypeEnum.influxDB18 || dbType === DaqStoreTypeEnum.TDengine) {
+    if (dbType === DaqStoreTypeEnum.influxDB || dbType === DaqStoreTypeEnum.influxDB18) {
+        id = dbType;
+    }
+    if (dbType === DaqStoreTypeEnum.postgresql) {
         id = dbType;
     }
     if (!daqDB[id]) {
         if (id === DaqStoreTypeEnum.influxDB || id === DaqStoreTypeEnum.influxDB18) {
             daqDB[id] = InfluxDB.create(settings, logger, currentStorateDB);
-        } else if(id === DaqStoreTypeEnum.TDengine){
-            daqDB[id] = TDengine.create(settings, logger, currentStorateDB);
+        } else if (id === DaqStoreTypeEnum.postgresql) {
+            daqDB[id] = PostgreSQL.create(settings, logger, currentStorateDB);
         } else {
             daqDB[id] = SqliteDB.create(settings, logger, id, currentStorateDB);
         }
@@ -157,7 +161,7 @@ function _getDaqNode(tagid) {
 }
 
 function _getDbType() {
-    if (settings.daqstore && settings.daqstore.type) {
+    if (settings.daqstore && settings.daqstore) {
         return settings.daqstore.type;
     }
     return DaqStoreTypeEnum.SQlite;
@@ -167,7 +171,7 @@ var DaqStoreTypeEnum = {
     SQlite: 'SQlite',
     influxDB: 'influxDB',
     influxDB18: 'influxDB18',
-    TDengine: 'TDengine',
+    postgresql: 'postgresql'
 }
 
 function _getValue(value) {

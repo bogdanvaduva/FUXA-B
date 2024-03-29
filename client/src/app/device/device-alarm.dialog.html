@@ -1,0 +1,309 @@
+<div style="position: relative;">
+    <h1 mat-dialog-title style="display:inline-block;cursor:move;" mat-dialog-draggable>{{'alarm.property-title' | translate}}</h1>
+    <mat-icon (click)="onNoClick()" style="float:right;margin-right:-10px;margin-top:-10px;color:gray;cursor:pointer;">clear</mat-icon>
+    <div mat-dialog-content *ngIf="data.editmode < 0">
+        {{'msg.alarm-remove' | translate}} '{{data.alarm.name}}' ?
+    </div>
+    <div mat-dialog-content>
+        <div style="display: block;width: 660px; padding-bottom: 20px;">
+            <div class="container">
+                <div class="my-form-field">
+                    <span>{{'gauges.property-variable-isobject' | translate}}</span>
+                    <div class="my-form-field-variable-isobject">
+                        <input [(ngModel)]="data.variableValueIsObject" type="checkbox">
+                    </div>
+                </div>
+                <div class="my-form-field">&nbsp;</div>
+                <div class="my-form-field">
+                    <span>{{'gauges.property-variable-object-property' | translate}}</span>
+                    <div class="my-form-field-variable-isobject">
+                        <input [(ngModel)]="data.variableValueObjectProperty">
+                    </div>
+                </div>      
+            </div>
+        </div>
+        <mat-autocomplete #textAuto="matAutocomplete">
+            <mat-option *ngFor="let option of existtexts" [value]="option">{{option}}</mat-option>
+        </mat-autocomplete>
+        <mat-autocomplete #groupAuto="matAutocomplete">
+            <mat-option *ngFor="let option of existgroups" [value]="option">{{option}}</mat-option>
+        </mat-autocomplete>
+        <mat-tab-group style="width: 100%;min-height: 300px;">
+            <mat-tab label="{{'alarm.property-highhigh' | translate}}">
+                <div style="overflow: hidden; padding-top: 25px;">
+                    <div style="display: block;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;margin-left: 20px;">
+                            <span>{{'alarm.property-enabled' | translate}}</span>
+                            <mat-slide-toggle color="primary" [(ngModel)]="data.alarm.highhigh.enabled"></mat-slide-toggle>
+                        </div>
+                        <div class="my-form-field" style="margin-bottom: 10px; float:right">
+                            <span>{{'alarm.property-ackmode' | translate}}</span>
+                            <mat-select [(value)]="data.alarm.highhigh.ackmode" style="width: 323px">
+                                <mat-option *ngFor="let ev of ackMode | enumToArray" [value]="ev.key">
+                                    {{ ev.value }}
+                                </mat-option>
+                            </mat-select>
+                        </div>
+                    </div>
+                    <div style="display: inline-table;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;padding-right: 13px;">
+                            <span>{{'alarm.property-checkdelay' | translate}}</span>
+                            <input numberOnly [(ngModel)]="data.alarm.highhigh.checkdelay" style="width: 145px" type="number" min="1">
+                        </div>
+                        <div style="display: inline-block; margin-left: 45px; margin-right: 50px;">
+                            <range-number [range]="data.alarm.highhigh"></range-number>
+                        </div>
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;">
+                            <span>{{'alarm.property-timedelay' | translate}}</span>
+                            <input numberOnly [(ngModel)]="data.alarm.highhigh.timedelay" style="width: 158px" type="number">
+                        </div>
+                    </div>
+                    <div style="display: block;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;padding-right: 13px;">
+                            <span>{{'alarm.property-text' | translate}}</span>
+                            <input [(ngModel)]="data.alarm.highhigh.text" [matAutocomplete]="textAuto" style="width: 400px" type="text">
+                        </div>
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;">
+                            <span>{{'alarm.property-group' | translate}}</span>
+                            <input [(ngModel)]="data.alarm.highhigh.group" [matAutocomplete]="groupAuto" style="width: 233px" type="text">
+                        </div>
+                    </div>
+                    <div style="display: block; height: 35px;margin-top: 15px;" [style.background]="data.alarm.highhigh.bkcolor" [style.color]="data.alarm.highhigh.color">
+                        <div class="alarm-sample" style="display: inline-block;padding-right: 13px;width: 403px;line-height: 35px;padding-left: 5px;">
+                            <span>{{data.alarm.highhigh.text}}</span>
+                        </div>
+                        <div class="alarm-sample" style="display: inline-block;width: 240px;line-height: 35px">
+                            <span>{{data.alarm.highhigh.group}}</span>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+            <mat-tab label="{{'alarm.property-high' | translate}}">
+                <div style="overflow: hidden; padding-top: 25px;">
+                    <div style="display: block;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;margin-left: 20px;">
+                            <span>{{'alarm.property-enabled' | translate}}</span>
+                            <mat-slide-toggle color="primary" [(ngModel)]="data.alarm.high.enabled"></mat-slide-toggle>
+                        </div>
+                        <div class="my-form-field" style="margin-bottom: 10px; float:right">
+                            <span>{{'alarm.property-ackmode' | translate}}</span>
+                            <mat-select [(value)]="data.alarm.high.ackmode" style="width: 323px">
+                                <mat-option *ngFor="let ev of ackMode | enumToArray" [value]="ev.key">
+                                    {{ ev.value }}
+                                </mat-option>
+                            </mat-select>
+                        </div>
+                    </div>
+                    <div style="display: inline-table;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;padding-right: 13px;">
+                            <span>{{'alarm.property-checkdelay' | translate}}</span>
+                            <input numberOnly [(ngModel)]="data.alarm.high.checkdelay" style="width: 145px" type="number" min="1">
+                        </div>
+                        <div style="display: inline-block; margin-left: 45px; margin-right: 50px;">
+                            <range-number [range]="data.alarm.high"></range-number>
+                        </div>                        
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;">
+                            <span>{{'alarm.property-timedelay' | translate}}</span>
+                            <input numberOnly [(ngModel)]="data.alarm.high.timedelay" style="width: 158px" type="number">
+                        </div>
+                    </div>
+                    <div style="display: block;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;padding-right: 13px;">
+                            <span>{{'alarm.property-text' | translate}}</span>
+                            <input [(ngModel)]="data.alarm.high.text" [matAutocomplete]="textAuto" style="width: 400px" type="text">
+                        </div>
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;">
+                            <span>{{'alarm.property-group' | translate}}</span>
+                            <input [(ngModel)]="data.alarm.high.group" [matAutocomplete]="groupAuto" style="width: 233px" type="text">
+                        </div>
+                    </div>
+                    <div style="display: block; height: 35px;margin-top: 15px;" [style.background]="data.alarm.high.bkcolor" [style.color]="data.alarm.high.color">
+                        <div class="alarm-sample" style="display: inline-block;padding-right: 13px;width: 403px;line-height: 35px;padding-left: 5px;">
+                            <span>{{data.alarm.high.text}}</span>
+                        </div>
+                        <div class="alarm-sample" style="display: inline-block;width: 240px;line-height: 35px">
+                            <span>{{data.alarm.high.group}}</span>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+            <mat-tab label="{{'alarm.property-low' | translate}}">
+                <div style="overflow: hidden; padding-top: 25px;">
+                    <div style="display: block;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;margin-left: 20px;">
+                            <span>{{'alarm.property-enabled' | translate}}</span>
+                            <mat-slide-toggle color="primary" [(ngModel)]="data.alarm.low.enabled"></mat-slide-toggle>
+                        </div>
+                        <div class="my-form-field" style="margin-bottom: 10px; float:right">
+                            <span>{{'alarm.property-ackmode' | translate}}</span>
+                            <mat-select [(value)]="data.alarm.low.ackmode" style="width: 323px">
+                                <mat-option *ngFor="let ev of ackMode | enumToArray" [value]="ev.key">
+                                    {{ ev.value }}
+                                </mat-option>
+                            </mat-select>
+                        </div>
+                    </div>
+                    <div style="display: inline-table;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;padding-right: 13px;">
+                            <span>{{'alarm.property-checkdelay' | translate}}</span>
+                            <input numberOnly [(ngModel)]="data.alarm.low.checkdelay" style="width: 145px" type="number" min="1">
+                        </div>
+                        <div style="display: inline-block; margin-left: 45px; margin-right: 50px;">
+                            <range-number [range]="data.alarm.low"></range-number>
+                        </div>                                  
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;">
+                            <span>{{'alarm.property-timedelay' | translate}}</span>
+                            <input numberOnly [(ngModel)]="data.alarm.low.timedelay" style="width: 158px" type="number">
+                        </div>
+                    </div>
+                    <div style="display: block;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;padding-right: 13px;">
+                            <span>{{'alarm.property-text' | translate}}</span>
+                            <input [(ngModel)]="data.alarm.low.text" [matAutocomplete]="textAuto" style="width: 400px" type="text">
+                        </div>
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;">
+                            <span>{{'alarm.property-group' | translate}}</span>
+                            <input [(ngModel)]="data.alarm.low.group" [matAutocomplete]="groupAuto" style="width: 233px" type="text">
+                        </div>
+                    </div>
+                    <div style="display: block; height: 35px;margin-top: 15px;" [style.background]="data.alarm.low.bkcolor" [style.color]="data.alarm.low.color">
+                        <div class="alarm-sample" style="display: inline-block;padding-right: 13px;width: 403px;line-height: 35px;padding-left: 5px;">
+                            <span>{{data.alarm.low.text}}</span>
+                        </div>
+                        <div class="alarm-sample" style="display: inline-block;width: 240px;line-height: 35px">
+                            <span>{{data.alarm.low.group}}</span>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+            <mat-tab label="{{'alarm.property-info' | translate}}">
+                <div style="overflow: hidden; padding-top: 25px;">
+                    <div style="display: block;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;margin-left: 20px;">
+                            <span>{{'alarm.property-enabled' | translate}}</span>
+                            <mat-slide-toggle color="primary" [(ngModel)]="data.alarm.info.enabled"></mat-slide-toggle>
+                        </div>
+                        <div class="my-form-field" style="margin-bottom: 10px; float:right">
+                            <span>{{'alarm.property-ackmode' | translate}}</span>
+                            <mat-select [(value)]="data.alarm.info.ackmode" style="width: 323px">
+                                <mat-option *ngFor="let ev of ackMode | enumToArray" [value]="ev.key">
+                                    {{ ev.value }}
+                                </mat-option>
+                            </mat-select>
+                        </div>
+                    </div>
+                    <div style="display: inline-table;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;padding-right: 13px;">
+                            <span>{{'alarm.property-checkdelay' | translate}}</span>
+                            <input numberOnly [(ngModel)]="data.alarm.info.checkdelay" style="width: 145px" type="number" min="1">
+                        </div>
+                        <div style="display: inline-block; margin-left: 45px; margin-right: 50px;">
+                            <range-number [range]="data.alarm.info"></range-number>
+                        </div>
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;">
+                            <span>{{'alarm.property-timedelay' | translate}}</span>
+                            <input numberOnly [(ngModel)]="data.alarm.info.timedelay" style="width: 158px" type="number">
+                        </div>
+                    </div>
+                    <div style="display: block;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;padding-right: 13px;">
+                            <span>{{'alarm.property-text' | translate}}</span>
+                            <input [(ngModel)]="data.alarm.info.text" [matAutocomplete]="textAuto" style="width: 400px" type="text">
+                        </div>
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;">
+                            <span>{{'alarm.property-group' | translate}}</span>
+                            <input [(ngModel)]="data.alarm.info.group" [matAutocomplete]="groupAuto" style="width: 233px" type="text">
+                        </div>
+                    </div>
+                    <div style="display: block; height: 35px;margin-top: 15px;" [style.background]="data.alarm.info.bkcolor" [style.color]="data.alarm.info.color">
+                        <div class="alarm-sample" style="display: inline-block;padding-right: 13px;width: 403px;line-height: 35px;padding-left: 5px;">
+                            <span>{{data.alarm.info.text}}</span>
+                        </div>
+                        <div class="alarm-sample" style="display: inline-block;width: 240px;line-height: 35px">
+                            <span>{{data.alarm.info.group}}</span>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+            <mat-tab label="{{'alarm.property-action' | translate}}">
+                <div style="overflow: hidden; padding-top: 25px;">
+                    <div style="display: block;">
+                        <div class="my-form-field" style="display: inline-block;margin-bottom: 10px;margin-left: 20px;">
+                            <span>{{'alarm.property-enabled' | translate}}</span>
+                            <mat-slide-toggle color="primary" [(ngModel)]="data.alarm.actions.enabled"></mat-slide-toggle>
+                        </div>
+                        <div class="my-form-field" style="margin-bottom: 10px; float:right">
+                            <button mat-icon-button (click)="onAddAction()">
+                                <mat-icon>add_circle_outline</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="max-height: 150px; overflow: auto; width:100%">
+                        <div *ngFor="let item of data.alarm.actions.values; index as i" class="action-item">
+                            <div style="display: inline-table;;margin-bottom: 10px;">
+                                <div class="my-form-field" style="display: inline-block;padding-right: 13px;">
+                                    <span>{{'alarm.property-checkdelay' | translate}}</span>
+                                    <input numberOnly [(ngModel)]="item.checkdelay" style="width: 145px" type="number" min="1">
+                                </div>
+                                <div style="display: inline-block; margin-left: 45px; margin-right: 50px;">
+                                    <range-number [range]="item"></range-number>
+                                </div>                                
+                                <div class="my-form-field" style="display: inline-block;">
+                                    <span>{{'alarm.property-timedelay' | translate}}</span>
+                                    <input numberOnly [(ngModel)]="item.timedelay" style="width: 145px" type="number">
+                                </div>
+                            </div>
+                                <div style="display: block; padding-bottom: 5px;">
+                                    <div class="my-form-field" style="width: 300px;">
+                                        <span>{{'alarm.property-action-type' | translate}}</span>
+                                        <mat-select [(value)]="item.type">
+                                            <mat-option *ngFor="let ev of actionsType | enumToArray" [value]="ev.key">
+                                                {{ ev.value }}
+                                            </mat-option>
+                                        </mat-select>
+                                    </div>
+                                    <div style="display: inline-block" *ngIf="item.type === actionSetValue">
+                                        <div class="my-form-field" style="padding-left: 20px;">
+                                            <span>{{'alarm.property-action-value' | translate}}</span>
+                                            <input [(ngModel)]="item.actparam" type="text" style="width: 260px">
+                                        </div>
+                                    </div>
+                                    <div style="display: inline-block" *ngIf="item.type === actionPopup || item.type === actionSetView">
+                                        <div class="my-form-field" style="padding-left: 20px; width: 260px;">
+                                            <span>{{'alarm.property-action-destination' | translate}}</span>
+                                            <mat-select [(value)]="item.actparam">
+                                                <mat-option *ngFor="let v of data.views; index as i" [value]="v.id">{{v.name}}</mat-option>
+                                            </mat-select>
+                                        </div>
+                                    </div>
+                                    <div style="float:right">
+                                        <button mat-icon-button (click)="onAlarmAction(i)">
+                                            <mat-icon>clear</mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div style="display: block" *ngIf="item.type === actionSetValue">
+                                    <div style="display: block;padding-left: 25px;">
+                                        <flex-variable style="display: block" [data]="data" (onchange)="setActionVariable(item, $event)" [variableId]="item.variableId"
+                                            [withStaticValue]="false"></flex-variable>
+                                    </div>
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
+        <div style="height: 20px; margin-bottom: 20px;">
+            <div class="message-error" *ngIf="errorExist">
+                <span>{{'msg.alarmproperty-error-exist' | translate}}</span>
+            </div>
+            <div class="message-error" *ngIf="errorMissingValue">
+                <span>{{'msg.alarmproperty-missing-value' | translate}}</span>
+            </div>
+        </div>
+    </div>
+    <div mat-dialog-actions class="dialog-action">
+        <button mat-raised-button (click)="onNoClick()">{{'dlg.cancel' | translate}}</button>
+        <button mat-raised-button color="primary" (click)="onOkClick()" cdkFocusInitial>{{'dlg.ok' | translate}}</button>
+    </div>
+</div>

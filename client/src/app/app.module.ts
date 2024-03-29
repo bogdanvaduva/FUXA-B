@@ -32,6 +32,7 @@ import { AppSettingsComponent } from './editor/app-settings/app-settings.compone
 import { SetupComponent } from './editor/setup/setup.component';
 import { ChartConfigComponent, DialogChartLine } from './editor/chart-config/chart-config.component';
 import { GraphConfigComponent, DialogGraphSource } from './editor/graph-config/graph-config.component';
+import { RepeaterConfigComponent, DialogRepeaterDataLine } from './editor/repeater-config/repeater-config.component';
 import { CardConfigComponent } from './editor/card-config/card-config.component';
 import { AlarmViewComponent } from './alarms/alarm-view/alarm-view.component';
 import { AlarmListComponent } from './alarms/alarm-list/alarm-list.component';
@@ -44,7 +45,7 @@ import { ScriptSchedulingComponent } from './scripts/script-scheduling/script-sc
 import { ScriptPermissionComponent } from './scripts/script-permission/script-permission.component';
 import { TextListComponent, DialogItemText } from './text-list/text-list.component';
 import { LabComponent } from './lab/lab.component';
-import { DeviceComponent } from './device/device.component';
+import { DeviceComponent, DeviceTagDialog, DeviceAlarmDialog } from './device/device.component';
 import { DevicePropertyComponent } from './device/device-property/device-property.component';
 import { TagPropertyComponent } from './device/tag-property/tag-property.component';
 import { TagOptionsComponent } from './device/tag-options/tag-options.component';
@@ -146,6 +147,8 @@ import { GraphPropertyComponent } from './gauges/controls/html-graph/graph-prope
 import { GraphBaseComponent } from './gauges/controls/html-graph/graph-base/graph-base.component';
 import { NgChartsModule } from 'ng2-charts';
 import { IframePropertyComponent } from './gauges/controls/html-iframe/iframe-property/iframe-property.component';
+import { RepeaterComponent } from './gauges/controls/repeater/repeater.component';
+import { RepeaterPropertyComponent, DialogTagRepeater } from './gauges/controls/repeater/repeater-property/repeater-property.component';
 import { TablePropertyComponent } from './gauges/controls/html-table/table-property/table-property.component';
 import { TableCustomizerComponent, DialogTableCell } from './gauges/controls/html-table/table-customizer/table-customizer.component';
 import { DataTableComponent } from './gauges/controls/html-table/data-table/data-table.component';
@@ -174,10 +177,6 @@ import { FlexDeviceTagComponent } from './gauges/gauge-property/flex-device-tag/
 import { PanelComponent } from './gauges/controls/panel/panel.component';
 import { PanelPropertyComponent } from './gauges/controls/panel/panel-property/panel-property.component';
 import { UserEditComponent } from './users/user-edit/user-edit.component';
-import { FuxaViewDialogComponent } from './fuxa-view/fuxa-view-dialog/fuxa-view-dialog.component';
-import { DeviceTagSelectionComponent } from './device/device-tag-selection/device-tag-selection.component';
-import { WebcamPlayerComponent } from './gui-helpers/webcam-player/webcam-player.component';
-import { WebcamPlayerDialogComponent } from './gui-helpers/webcam-player/webcam-player-dialog/webcam-player-dialog.component';
 
 export function createTranslateLoader(http: HttpClient) {
     return new TranslateHttpLoader(http, './assets/i18n/', '.json');
@@ -199,7 +198,8 @@ export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
         AppComponent,
         LabComponent,
         DeviceComponent,
-        DeviceTagSelectionComponent,
+        DeviceTagDialog,
+        DeviceAlarmDialog,
         TagPropertyComponent,
         TagOptionsComponent,
         TopicPropertyComponent,
@@ -216,7 +216,6 @@ export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
         DialogTagName,
         DeviceMapComponent,
         FuxaViewComponent,
-        FuxaViewDialogComponent,
         DialogDocProperty,
         DialogDocName,
         DialogNewDoc,
@@ -275,6 +274,8 @@ export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
         NgxSwitchComponent,
         ChartConfigComponent,
         GraphConfigComponent,
+        RepeaterConfigComponent,
+        DialogRepeaterDataLine,
         CardConfigComponent,
         AlarmListComponent,
         AlarmViewComponent,
@@ -322,8 +323,9 @@ export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
         ReportItemChartComponent,
         PanelComponent,
         PanelPropertyComponent,
-        WebcamPlayerComponent,
-        WebcamPlayerDialogComponent
+        RepeaterComponent,
+        RepeaterPropertyComponent,
+        DialogTagRepeater
     ],
     imports: [
         BrowserModule,

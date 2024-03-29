@@ -19,6 +19,8 @@
       </mat-menu>
     <mat-divider class="menu-separator"></mat-divider>
     <button mat-menu-item (click)="onImport()" style="font-size: 14px;">{{'devices.import' | translate}}</button>
+    <mat-divider class="menu-separator"></mat-divider>
+    <button mat-menu-item (click)="onCreateAlarms()" style="font-size: 14px;" [disabled]="!showMode.startsWith(tagsViewMode)">{{'devices.create-alarms' | translate}}</button>
 </mat-menu>
 <button mat-icon-button (click)="onReload()" class="fab-reload" [ngClass]="{'fab-reload-active': reloadActive}">
     <mat-icon>autorenew</mat-icon>

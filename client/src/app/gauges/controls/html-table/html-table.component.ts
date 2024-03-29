@@ -32,7 +32,8 @@ export class HtmlTableComponent {
 
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus, gauge?: DataTableComponent) {
         try {
-            gauge.addValue(sig.id, (sig.timestamp || new Date().getTime()) / 1000, sig.value);
+            let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
+            gauge.addValue(sig.id, (sig.timestamp || new Date().getTime()) / 1000, cv);
         } catch (err) {
             console.error(err);
         }
@@ -41,7 +42,6 @@ export class HtmlTableComponent {
     static initElement(gab: GaugeSettings, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef, isview: boolean): DataTableComponent {
         let ele = document.getElementById(gab.id);
         if (ele) {
-            ele?.setAttribute('data-name', gab.name);
             let htmlTable = Utils.searchTreeStartWith(ele, this.prefixD);
             if (htmlTable) {
                 let factory = resolver.resolveComponentFactory(DataTableComponent);

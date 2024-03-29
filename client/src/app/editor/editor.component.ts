@@ -24,6 +24,7 @@ import * as FileSaver from 'file-saver';
 import { BagPropertyComponent } from '../gauges/controls/html-bag/bag-property/bag-property.component';
 import { PipePropertyComponent } from '../gauges/controls/pipe/pipe-property/pipe-property.component';
 import { SliderPropertyComponent } from '../gauges/controls/slider/slider-property/slider-property.component';
+import { RepeaterPropertyComponent } from '../gauges/controls/repeater/repeater-property/repeater-property.component';
 import { HtmlInputComponent } from '../gauges/controls/html-input/html-input.component';
 import { HtmlButtonComponent } from '../gauges/controls/html-button/html-button.component';
 import { HtmlSelectComponent } from '../gauges/controls/html-select/html-select.component';
@@ -38,6 +39,7 @@ import { CardsViewComponent } from '../cards-view/cards-view.component';
 import { IElementPreview } from './svg-selector/svg-selector.component';
 import { TagIdRef, TagsIdsConfigComponent, TagsIdsData } from './tags-ids-config/tags-ids-config.component';
 import { UploadFile } from '../_models/project';
+import { HmiService } from '../_services/hmi.service';
 
 declare var Gauge: any;
 
@@ -377,7 +379,13 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
             if (this.currentView.items[ele.id]) {
                 return this.currentView.items[ele.id];
             }
-            let gs = this.gaugesManager.createSettings(ele.id, ele.type);
+            let ele0 = null;
+            if (ele.length > 0) {
+                ele0 = ele[0];
+            } else {
+                ele0 = ele;
+            }
+            let gs = this.gaugesManager.createSettings(ele0.id, ele0.type);
             if (initParams) {
                 gs.property = new GaugeProperty();
                 gs.property.address = initParams;
@@ -1351,6 +1359,24 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                     names: names
                 }
             });
+        }else if (dlgType === GaugeDialogType.Repeater) {
+            // dialogRef = this.dialog.open(RepeaterPropertyComponent, {
+            //     position: { top: '60px' },
+            //     data: {
+            //         settings: tempsettings, devices: Object.values(this.projectService.getDevices()),
+            //         withEvents: eventsSupported, withActions: actionsSupported, withBitmask: bitmaskSupported,
+            //         names: names
+            //     }
+            // });
+            this.gaugeDialog.type = dlgType;
+            this.gaugeDialog.data = {
+                settings: tempsettings, views: hmi.views, repeaters:this.projectService.getRepeaters(), dlgType: dlgType, names: names
+            };
+            if (!this.sidePanel.opened) {
+                this.sidePanel.toggle();
+            }
+            this.reloadGaugeDialog = !this.reloadGaugeDialog;
+            return;
         } else if (dlgType === GaugeDialogType.Table || dlgType === GaugeDialogType.Panel) {
             this.gaugeDialog.type = dlgType;
             this.gaugeDialog.data = {

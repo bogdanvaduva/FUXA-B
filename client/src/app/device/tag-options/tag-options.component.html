@@ -18,7 +18,7 @@
         </div>
         <div class="my-form-field block">
             <span>{{'device.tag-daq-interval' | translate}}</span>
-            <input numberOnly formControlName="interval" min="0" type="number" style="width:300px">
+            <input numberOnly formControlName="interval" min="1" type="number" style="width:300px">
         </div>
         <div class="my-form-field block mt10">
             <span>{{'device.tag-format' | translate}}</span>
@@ -65,6 +65,12 @@
                         <span>{{'device.tag-scaled-high' | translate}}</span>
                         <input formControlName="scaledHigh" type="number" style="width:140px">
                     </div>
+                </div>
+            </ng-container>
+            <ng-container *ngSwitchCase="'functionName'">
+                <div class="my-form-field block mt10">
+                    <span>{{'device.tag-convert-function' | translate}}</span>
+                    <input formControlName="functionName" style="width:300px">
                 </div>
             </ng-container>
         </ng-container>

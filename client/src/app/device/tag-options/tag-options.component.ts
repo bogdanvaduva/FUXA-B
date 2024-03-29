@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, Inject, OnInit } from '@angular/cor
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { FuxaServer, TagDaq, TagScale, TagScaleModeType } from '../../_models/device';
-import { Utils } from '../../_helpers/utils';
 
 @Component({
     selector: 'app-tag-options',
@@ -23,7 +22,7 @@ export class TagOptionsComponent implements OnInit {
 
     ngOnInit() {
         this.formGroup = this.fb.group({
-            interval: [{value: 60, disabled: true}, [Validators.required, Validators.min(0)]],
+            interval: [{value: 60, disabled: true}, [Validators.required, Validators.min(1)]],
             changed: [{value: false, disabled: true}],
             enabled: [false],
             restored: [false],
@@ -33,7 +32,8 @@ export class TagOptionsComponent implements OnInit {
             rawHigh: null,
             scaledLow: null,
             scaledHigh: null,
-            dateTimeFormat: null
+            dateTimeFormat: null,
+            functionName: null
         });
 
         this.formGroup.controls.enabled.valueChanges.subscribe(enabled => {
@@ -59,6 +59,7 @@ export class TagOptionsComponent implements OnInit {
             let scaledLow = { value: null, valid: true };
             let scaledHigh = { value: null, valid: true };
             let dateTimeFormat = { value: null, valid: true };
+            let functionName = { value: null, valid: true };
             for (let i = 0; i < this.data.tags.length; i++) {
                 if (!this.data.tags[i].daq) {
                     continue;
@@ -79,7 +80,7 @@ export class TagOptionsComponent implements OnInit {
                 } else if (restored.value !== daq.restored) {
                     restored.valid = false;
                 }
-                if (Utils.isNullOrUndefined(interval.value)) {
+                if (!interval.value) {
                     interval.value = daq.interval;
                 } else if (interval.value !== daq.interval) {
                     interval.valid = false;
@@ -96,10 +97,10 @@ export class TagOptionsComponent implements OnInit {
                     scaledLow.value = this.data.tags[i].scale?.scaledLow;
                     scaledHigh.value = this.data.tags[i].scale?.scaledHigh;
                     dateTimeFormat.value = this.data.tags[i].scale?.dateTimeFormat;
+                    functionName.value = this.data.tags[i].scale?.functionName;
                 } else if (scaleMode.value !== this.data.tags[i].scale?.mode) {
                     scaleMode.valid = false;
                 }
-
             }
             let values = {};
             if (enabled.valid && enabled.value !== null) {
@@ -111,7 +112,7 @@ export class TagOptionsComponent implements OnInit {
             if (restored.valid && restored.value !== null) {
                 values = {...values, restored: restored.value};
             }
-            if (interval.valid && !Utils.isNullOrUndefined(interval.value)) {
+            if (interval.valid && interval.value) {
                 values = {...values, interval: interval.value};
             }
             if (format.valid && format.value) {
@@ -124,7 +125,8 @@ export class TagOptionsComponent implements OnInit {
                     rawHigh: rawHigh.value,
                     scaledLow: scaledLow.value,
                     scaledHigh: scaledHigh.value,
-                    dateTimeFormat: dateTimeFormat.value
+                    dateTimeFormat: dateTimeFormat.value,
+                    functionName: functionName.value
                 };
             }
             this.formGroup.patchValue(values);
@@ -177,7 +179,8 @@ export class TagOptionsComponent implements OnInit {
                 rawHigh: this.formGroup.value.rawHigh,
                 scaledLow: this.formGroup.value.scaledLow,
                 scaledHigh: this.formGroup.value.scaledHigh,
-                dateTimeFormat: this.formGroup.value.dateTimeFormat
+                dateTimeFormat: this.formGroup.value.dateTimeFormat,
+                functionName: this.formGroup.value.functionName
             } : null,
         });
     }

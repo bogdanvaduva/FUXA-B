@@ -139,7 +139,6 @@ export class DeviceListComponent implements OnInit, AfterViewInit {
         let msg = '';
         this.translateService.get('msg.tags-remove-all').subscribe((txt: string) => { msg = txt; });
         let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-            disableClose: true,
             data: { msg: msg },
             position: { top: '60px' }
         });
@@ -204,7 +203,6 @@ export class DeviceListComponent implements OnInit, AfterViewInit {
 
     addOpcTags(tag: Tag) {
         let dialogRef = this.dialog.open(TagPropertyComponent, {
-            disableClose: true,
             panelClass: 'dialog-property',
             data: { device: this.deviceSelected, tag: tag, devices: this.devices },
             position: { top: '60px' }
@@ -284,7 +282,6 @@ export class DeviceListComponent implements OnInit, AfterViewInit {
         let oldtag = tag.id;
         let temptag: Tag = JSON.parse(JSON.stringify(tag));
         let dialogRef = this.dialog.open(TagPropertyComponent, {
-            disableClose: true,
             panelClass: 'dialog-property',
             data: { device: this.deviceSelected, tag: temptag, devices: this.devices },
             position: { top: '60px' }
@@ -324,7 +321,6 @@ export class DeviceListComponent implements OnInit, AfterViewInit {
 
     editTagOptions(tags: Tag[]) {
         let dialogRef = this.dialog.open(TagOptionsComponent, {
-            disableClose: true,
             data: { device: this.deviceSelected, tags: tags },
             position: { top: '60px' }
         });
@@ -383,7 +379,6 @@ export class DeviceListComponent implements OnInit, AfterViewInit {
             // edit only name (subscription)
             let existNames = Object.values(this.deviceSelected.tags).filter((t: Tag) => { if (t.id !== topic.id) {return t;} }).map((t: Tag) => t.name);
             let dialogRef = this.dialog.open(DialogTagName, {
-                disableClose: true,
                 position: { top: '60px' },
                 data: { name: topic.name, exist: existNames }
             });
@@ -398,7 +393,6 @@ export class DeviceListComponent implements OnInit, AfterViewInit {
         } else {
             // edit new topic or publish
             let dialogRef = this.dialog.open(TopicPropertyComponent, {
-                disableClose: true,
                 panelClass: 'dialog-property',
                 data: { device: this.deviceSelected, devices: Object.values(this.devices), topic: topic },
                 position: { top: '60px' }

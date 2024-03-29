@@ -48,6 +48,7 @@ export class HtmlButtonComponent extends GaugeBaseComponent {
     }
 
     static initElement(gab: GaugeSettings) {
+        console.log(gab);
         let ele = document.getElementById(gab.id);
         if (ele && gab.property) {
             let htmlButton = Utils.searchTreeStartWith(ele, this.prefixB);
@@ -87,7 +88,8 @@ export class HtmlButtonComponent extends GaugeBaseComponent {
                     button.textContent = sig.value;
                     return;
                 }
-                let val = parseFloat(sig.value);
+                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value): sig.value);
+                let val = parseFloat(cv);
                 if (Number.isNaN(val)) {
                     // maybe boolean
                     val = Number(sig.value);

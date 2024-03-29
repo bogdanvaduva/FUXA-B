@@ -57,7 +57,8 @@ export class HtmlSwitchComponent {
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus, switcher?: NgxSwitchComponent) {
         try {
             if (switcher) {
-                let value = parseFloat(sig.value);
+                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value): sig.value);
+                let value = parseFloat(cv);
                 if (Number.isNaN(value)) {
                     // maybe boolean
                     value = Number(sig.value);
@@ -80,7 +81,6 @@ export class HtmlSwitchComponent {
     static initElement(ga: GaugeSettings, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef, options?: any) {
         let ele = document.getElementById(ga.id);
         if (ele) {
-            ele?.setAttribute('data-name', ga.name);
             let htmlSwitch = Utils.searchTreeStartWith(ele, this.prefix);
             if (htmlSwitch) {
                 const factory = resolver.resolveComponentFactory(NgxSwitchComponent);

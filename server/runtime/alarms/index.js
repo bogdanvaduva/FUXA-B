@@ -329,7 +329,34 @@ function AlarmsManager(_runtime) {
         if (alarm.tagproperty.bitmask) {
             return (value & alarm.tagproperty.bitmask) ? 1 : 0;
         }
+        if (alarm.tagproperty.variableValueIsObject) {
+            if (alarm.tagproperty.variableValueObjectProperty) {
+                value = _transformObjectValue(alarm.tagproperty, value); 
+            }
+        }
         return Number(value);
+    }
+
+    var _transformObjectValue = function(property, value) {
+        let cv = value;
+        if (property.variableValueIsObject) {
+            if (property.variableValueObjectProperty) {
+                try {
+                    if (typeof cv === 'object' && cv !== null) {
+                        cv = (cv ? cv[property.variableValueObjectProperty] : '');
+                    } else {
+                        let obj = JSON.parse(cv);
+                        if (obj) {
+                            cv = obj[property.variableValueObjectProperty];
+                            cv = (cv ? cv : value);
+                        }
+                    }
+                } catch (err) {
+                    //console.log(err);
+                }
+            }
+        }
+        return cv;            
     }
 
     /**
@@ -590,14 +617,15 @@ function Alarm(name, type, subprop, tagprop) {
                 return false;
             case AlarmStatusEnum.ACK:
                 // remove if deactivate
-                if (!onrange) {
+//                if (!onrange) {
 					if (this.offtime == 0) {
 						this.offtime = time;
 					}
                     this.status = AlarmStatusEnum.ON;
+                    this.toRemove();
                     return true;
-                }
-                return false;
+//                }
+//                return false;
         }
     }
 

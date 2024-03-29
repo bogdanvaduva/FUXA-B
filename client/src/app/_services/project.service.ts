@@ -1,15 +1,16 @@
 
 import { Injectable, Output, EventEmitter } from '@angular/core';
-import { Observable, Subject, firstValueFrom } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { ProjectData, ProjectDataCmdType, UploadFile } from '../_models/project';
 import { View, LayoutSettings, DaqQuery } from '../_models/hmi';
 import { Chart } from '../_models/chart';
 import { Graph } from '../_models/graph';
+import { RepeaterData } from '../_models/repeater';
 import { Alarm, AlarmQuery } from '../_models/alarm';
 import { Notification } from '../_models/notification';
-import { Script } from '../_models/script';
+import { Script, ScriptMode } from '../_models/script';
 import { Text } from '../_models/text';
 import { Device, DeviceType, DeviceNetProperty, DEVICE_PREFIX, DevicesUtils, Tag, FuxaServer, TagSystemType, TAG_PREFIX, ServerTagType } from '../_models/device';
 import { ToastrService } from 'ngx-toastr';
@@ -23,6 +24,7 @@ import { Utils } from '../_helpers/utils';
 
 import * as FileSaver from 'file-saver';
 import { Report } from '../_models/report';
+import { ScriptService } from './script.service';
 
 @Injectable()
 export class ProjectService {
@@ -35,6 +37,7 @@ export class ProjectService {
 
     public serverSettings: ServerSettings;
     private storage: ResourceStorageService;
+    public intervals: any [] = [];
 
     private projectOld = '';
     private ready = false;
@@ -42,6 +45,7 @@ export class ProjectService {
     constructor(private resewbApiService: ResWebApiService,
         private resDemoService: ResDemoService,
         private resClientService: ResClientService,
+        private scriptService: ScriptService,
         private appService: AppService,
         private translateService: TranslateService,
         private toastr: ToastrService) {
@@ -131,15 +135,13 @@ export class ProjectService {
     /**
      * Save Project
      */
-    save(skipNotification = false): Subject<boolean> {
+    save(skipNotification = false): boolean {
         // check project change don't work some svg object change the order and this to check isn't easy...boooo
-        const subject = new Subject<boolean>();
         this.storage.setServerProject(this.projectData).subscribe(result => {
             this.load();
             if (!skipNotification) {
                 this.notifySuccessMessage('msg.project-save-success');
             }
-            subject.next(true);
         }, err => {
             console.error(err);
             var msg = '';
@@ -149,9 +151,8 @@ export class ProjectService {
                 closeButton: true,
                 disableTimeOut: true
             });
-            subject.next(false);
         });
-        return subject;
+        return true;
     }
 
     saveAs() {
@@ -428,6 +429,36 @@ export class ProjectService {
     }
     //#endregion
 
+    //#region Charts resource
+    /**
+     * get charts resource
+     */
+    getRepeaters() {
+        return (this.projectData) ? (this.projectData.repeaters) ? this.projectData.repeaters : [] : null;
+    }
+
+    getRepeater(id: string) {
+        for (let i = 0; i < this.projectData.repeaters.length; i++) {
+            if (this.projectData.repeaters[i].id === id) {
+                return this.projectData.repeaters[i];
+            }
+        }
+    }
+
+    /**
+     * save the repeaters to project
+     * @param repeaters
+     */
+    setRepeaters(repeaters: RepeaterData[]) {
+        this.projectData.repeaters = repeaters;
+        this.storage.setServerProjectData(ProjectDataCmdType.Repeaters, repeaters, this.projectData).subscribe(result => {
+        }, err => {
+            console.error(err);
+            this.notifySaveError(err);
+        });
+    }
+    //#endregion
+
     //#region Graph resource
     /**
      * get graphs list
@@ -616,6 +647,28 @@ export class ProjectService {
         });
     }
     //#endregion
+
+    initScheduledScripts() {
+        /* init all schedules from scripts with mode client */
+        if (this.projectData.scripts) {
+            this.projectData.scripts.forEach((script: Script) => {
+                if (script.mode == ScriptMode.CLIENT && script.scheduling && script.scheduling.interval > 0) {
+                    this.intervals.push(setInterval(
+                        () => {
+                            this.scriptService.runScript(script).subscribe(() => { });
+                        }, script.scheduling.interval * 1000));
+                }
+            });
+        }
+    }
+
+    clearScheduledScripts() {
+        /* clear all intervals from scripts with client mode */
+        this.intervals.forEach(interval => {clearInterval(interval);});
+        this.intervals = [];
+    }
+
+
 
     //#region Scripts resource
     /**
@@ -858,16 +911,6 @@ export class ProjectService {
     }
     //#endregion
 
-    async getTagsValues(tagsIds: string[]): Promise<any[]> {
-        let values = await firstValueFrom(this.storage.getTagsValues(tagsIds));
-        return values;
-    }
-
-    async runSysFunctionSync(functionName: string, params: any): Promise<any> {
-        let values = await firstValueFrom(this.storage.runSysFunction(functionName, params));
-        return values;
-    }
-
     /**
      * Set Project data and save resource to backend
      * Used from open and upload JSON Project file
@@ -952,19 +995,6 @@ export class ProjectService {
         for (let i = 0; i < devices.length; i++) {
             if (devices[i].tags[tagId]) {
                 return devices[i].tags[tagId];
-            }
-        }
-        return null;
-    }
-
-    getTagIdFromName(tagName: string, deviceName?: string): string {
-        let devices = <Device[]>Object.values(this.projectData.devices);
-        for (let i = 0; i < devices.length; i++) {
-            if (!deviceName || devices[i].name === deviceName) {
-                let result = <Tag>Object.values(devices[i].tags).find((tag: Tag) => tag.name === tagName);
-                if (result) {
-                    return result.id;
-                }
             }
         }
         return null;

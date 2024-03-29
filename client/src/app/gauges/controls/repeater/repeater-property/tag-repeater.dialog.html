@@ -1,0 +1,56 @@
+<mat-table #table [dataSource]="repeaterDataSource" matSort>
+    <!-- Tag Column -->
+    <ng-container matColumnDef="tag">
+        <mat-header-cell *matHeaderCellDef mat-sort-header> {{'device.topic-type-tag' | translate}} </mat-header-cell>
+        <mat-cell *matCellDef="let element"> {{element.id}} - {{tags[element.id]}}</mat-cell>
+    </ng-container>
+
+    <!-- Repeater Data Matching Id Column -->
+    <ng-container matColumnDef="repeaterDataId">
+        <mat-header-cell *matHeaderCellDef mat-sort-header> </mat-header-cell>
+        <mat-cell *matCellDef="let element"><div style="width: 100%; text-align: right;">{{element.repeaterDataId}}</div></mat-cell>
+    </ng-container>
+
+    <!-- Repeater Data Columns -->
+    <ng-container matColumnDef="input">
+        <mat-header-cell *matHeaderCellDef mat-sort-header> {{'repeater.property-repeaterdata-element' | translate}} </mat-header-cell>
+        <mat-cell *matCellDef="let element">
+            <input [(ngModel)]="search[element.id]" type="text">
+        </mat-cell>
+    </ng-container>
+    <ng-container matColumnDef="repeaterdDataSearch">
+        <mat-header-cell *matHeaderCellDef mat-sort-header> {{'repeater.property-repeaterdata-element' | translate}} </mat-header-cell>
+        <mat-cell *matCellDef="let element">
+            <input matInput disabled placeholder="{{'repeater.property-repeaterdata-element' | translate}}" [value]="getSearchResult(element.id)" />
+        </mat-cell>
+    </ng-container>
+
+    <!-- Button search Column -->
+    <ng-container matColumnDef="search">
+        <mat-header-cell *matHeaderCellDef mat-sort-header> {{'repeater.property-tags-repeaterdata-search' | translate}} </mat-header-cell>
+        <mat-cell *matCellDef="let element">
+            <button *ngIf="!readonly" mat-icon-button (click)="onSearch(element)" class="remove" matTooltip="{{'repeater.property-tags-repeaterdata-search' | translate}}">
+                <mat-icon>search</mat-icon>
+            </button>
+        </mat-cell>
+    </ng-container>
+
+    <!-- Button apply/clear Column -->
+    <ng-container matColumnDef="clear">
+        <mat-header-cell *matHeaderCellDef>
+            {{'repeater.property-tags-repeaterdata-clear' | translate}}
+        </mat-header-cell>
+        <mat-cell *matCellDef="let element">
+            <button *ngIf="!readonly" mat-icon-button (click)="$event.stopPropagation();onClear(element)" class="remove" matTooltip="{{'repeater.property-tags-repeaterdata-clear' | translate}}">
+                <mat-icon>clear</mat-icon>
+            </button>
+        </mat-cell>
+    </ng-container>
+
+    <mat-header-row *matHeaderRowDef="displayedColumns" [ngStyle]="{'min-width.px': tableWidth}"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: displayedColumns;" class="my-mat-row" [ngStyle]="{'min-width.px': tableWidth}"></mat-row>
+</mat-table>
+<div mat-dialog-actions class="dialog-action">
+    <button mat-raised-button (click)="onNoClick()">{{'dlg.cancel' | translate}}</button>
+    <button mat-raised-button color="primary" (click)="onOkClick()" cdkFocusInitial>{{'dlg.ok' | translate}}</button>
+</div>

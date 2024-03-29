@@ -273,6 +273,56 @@ app.use('/view', express.static(settings.httpStatic));
 app.use('/' + settings.httpUploadFileStatic, express.static(settings.uploadFileDir));
 app.use('/_images', express.static(settings.imagesFileDir));
 
+// I've added a proxy request to a specific server in order to have a list of 100+ points
+app.use('/gis', function (clientRequest, clientResponse) {
+    const targetUrl = 'https://gis.vitalmm.ro';
+
+    const parsedHost = targetUrl.split('/').splice(2).splice(0, 1).join('/');
+    let parsedPort;
+    let parsedSSL;
+    if (targetUrl.startsWith('https://')) {
+        parsedPort = 443;
+        parsedSSL = https;
+    } else if (targetUrl.startsWith('http://')) {
+        parsedPort = 80;
+        parsedSSL = http;
+    }
+    const options = {
+        hostname: parsedHost,
+        port: parsedPort,
+        path: '/gis'+ clientRequest.url,
+        method: clientRequest.method,
+        headers: {
+            'User-Agent': clientRequest.headers['user-agent']
+        }
+    };
+
+    const serverRequest = parsedSSL.request(options, function (serverResponse) {
+        let body = '';
+        if (String(serverResponse.headers['content-type']).indexOf('text/html') !== -1) {
+            serverResponse.on('data', function (chunk) {
+                body += chunk;
+            });
+
+            serverResponse.on('end', function () {
+                // Make changes to HTML files when they're done being read.
+                // body = body.replace(`example`, `Cat!`);
+
+                clientResponse.writeHead(serverResponse.statusCode, serverResponse.headers);
+                clientResponse.end(body);
+            });
+        } else {
+            serverResponse.pipe(clientResponse, {
+                end: true,
+                });
+            clientResponse.contentType(serverResponse.headers['content-type']);
+        }
+    });
+
+    serverRequest.end();
+});
+/////////////////////////////////////////////////////////////////////////////////////////////
+
 var accessLogStream = fs.createWriteStream(settings.logDir + '/api.log', {flags: 'a'});
 app.use(morgan('combined', { 
     stream: accessLogStream,
@@ -348,12 +398,10 @@ function startFuxa() {
         }
     }).catch(function (err) {
         logger.error('server.failed-to-start');
-        if (err) {
-            if (err.stack) {
-                logger.error(err.stack);
-            } else {
-                logger.error(err);
-            }
+        if (err.stack) {
+            logger.error(err.stack);
+        } else {
+            logger.error(err);
         }
     });
 }

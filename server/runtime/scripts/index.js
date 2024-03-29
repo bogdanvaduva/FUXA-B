@@ -67,16 +67,17 @@ function ScriptsManager(_runtime) {
      * @returns 
      */
     this.runScript = function (script) {
+
         return new Promise(async function (resolve, reject) {
             try {
-                var result;
                 if (script.test) {
-                    result = scriptModule.runTestScript(script);
+                    scriptModule.runTestScript(script);
                 } else {
                     logger.info(`Run script ${script.name}`);
-                    result = scriptModule.runScript(script);
+                    scriptModule.runScript(script);
                 }
-                resolve(result || `Script OK: ${script.name}`);
+                // this.runtime.project.getScripts();
+                resolve(`Script OK: ${script.name}`);
             } catch (err) {
                 reject(err);
             }
@@ -94,15 +95,6 @@ function ScriptsManager(_runtime) {
             logger.error(err);
         }
         return false;
-    }
-
-    this.sysFunctionExist = (functionName) => {
-        const sysFncs = _getSystemFunctions();
-        return !!sysFncs[functionName];
-    }
-
-    this.runSysFunction = (functionName, params) => {
-        return scriptModule.runSysFunction(functionName, params);
     }
 
     /**
@@ -211,6 +203,43 @@ function ScriptsManager(_runtime) {
                 reject(err);
             });
         });
+        // return new Promise(function (resolve, reject) {
+        //     schedulingMap = {};
+        //     try {
+        //         nodeSchedule.gracefulShutdown();
+        //     } catch (e) {
+        //         logger.error(e);
+        //     }
+        //     runtime.project.getScripts().then((scripts) => {
+        //         if (scripts) {
+        //             var lr = scriptModule.loadScripts(scripts);
+        //             Object.values(scripts).forEach((script) => {
+        //                 if (script.scheduling) {
+        //                     const scriptSchedule = new ScriptSchedule(script);
+        //                     if (script.scheduling.interval && script.mode != 'CLIENT') {
+        //                         schedulingMap[script.name] = scriptSchedule;
+        //                     } else if (script.scheduling.mode === ScriptSchedulingMode.scheduling) {
+        //                         try {
+        //                             scriptSchedule.getScheduleRules().forEach((scheduleRule) => {
+        //                                 logger.info(`Load script-schedule ${script.name} - ${JSON.stringify(scheduleRule)}`);
+        //                                 nodeSchedule.scheduleJob(scheduleRule, function() {
+        //                                     scriptModule.runScriptWithoutParameter(script);
+        //                                 });
+        //                             });
+        //                         } catch (er) {
+        //                             logger.error(er);
+        //                         }
+        //                     }
+        //                 }
+        //             });
+        //             resolve(lr.messages);
+        //         } else {
+        //             resolve();
+        //         }
+        //     }).catch(function (err) {
+        //         reject(err);
+        //     });
+        // });
     }
 
     var _getSystemFunctions = function () {
@@ -220,8 +249,6 @@ function ScriptsManager(_runtime) {
         sysFncs['$getTagId'] = runtime.devices.getTagId;
         sysFncs['$setView'] = _setCommandView;
         sysFncs['$enableDevice'] = runtime.devices.enableDevice;
-        sysFncs['$getTagDaqSettings'] = runtime.devices.getTagDaqSettings;
-        sysFncs['$setTagDaqSettings'] = runtime.devices.setTagDaqSettings;
         return sysFncs;
     }
 

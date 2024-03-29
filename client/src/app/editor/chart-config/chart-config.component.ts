@@ -10,8 +10,8 @@ import { Utils } from '../../_helpers/utils';
 import { Device, DevicesUtils, Tag } from '../../_models/device';
 import { Chart, ChartLine } from '../../_models/chart';
 import { ConfirmDialogComponent } from '../../gui-helpers/confirm-dialog/confirm-dialog.component';
+import { DeviceTagDialog } from '../../device/device.component';
 import { EditNameComponent } from '../../gui-helpers/edit-name/edit-name.component';
-import { DeviceTagSelectionComponent, DeviceTagSelectionData } from '../../device/device-tag-selection/device-tag-selection.component';
 
 @Component({
   selector: 'app-chart-config',
@@ -35,7 +35,8 @@ export class ChartConfigComponent implements OnInit {
         public dialog: MatDialog,
         public dialogRef: MatDialogRef<ChartConfigComponent>,
         private translateService: TranslateService,
-        private projectService: ProjectService) {
+        private projectService: ProjectService
+        ) {
             this.loadData();
     }
 
@@ -116,13 +117,9 @@ export class ChartConfigComponent implements OnInit {
     }
 
     onAddChartLine(chart: Chart) {
-        let dialogRef = this.dialog.open(DeviceTagSelectionComponent, {
-            disableClose: true,
+        let dialogRef = this.dialog.open(DeviceTagDialog, {
             position: { top: '60px' },
-            data: <DeviceTagSelectionData> {
-                variableId: null,
-                multiSelection: true
-            }
+            data: { variableId: null, variableValue: null, devices: this.data.devices, multiSelection: true }
         });
 
         dialogRef.afterClosed().subscribe((result) => {
@@ -134,14 +131,20 @@ export class ChartConfigComponent implements OnInit {
                     tagsId.push(result.variableId);
                 }
                 tagsId.forEach(id => {
-                    let device = DevicesUtils.getDeviceFromTagId(this.data.devices, id);
-                    let tag = DevicesUtils.getTagFromTagId([device], id);
-                    if (tag) {
-                        let exist = chart.lines.find(line => line.id === tag.id);
-                        if (!exist) {
-                            const myCopiedObject: ChartLine = {id: tag.id, name: this.getTagLabel(tag), device: device.name, color: this.getNextColor(),
-                                label: this.getTagLabel(tag), yaxis: 1 };
-                            chart.lines.push(myCopiedObject);
+                    if (id === "tagName") {
+                        const myCopiedObject: ChartLine = {id: result.variableId, name: result.variableValue, device: result.variableId + '|' + result.variableValue, color: this.getNextColor(),
+                            label: result.variableId + '|' + result.variableValue, yaxis: 1 };
+                        chart.lines.push(myCopiedObject);
+                    } else {
+                        let device = DevicesUtils.getDeviceFromTagId(this.data.devices, id);
+                        let tag = DevicesUtils.getTagFromTagId([device], id);
+                        if (tag) {
+                            let exist = chart.lines.find(line => line.id === tag.id);
+                            if (!exist) {
+                                const myCopiedObject: ChartLine = {id: tag.id, name: this.getTagLabel(tag), device: device.name, color: this.getNextColor(),
+                                    label: this.getTagLabel(tag), yaxis: 1 };
+                                chart.lines.push(myCopiedObject);
+                            }
                         }
                     }
                 });

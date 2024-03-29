@@ -8,7 +8,7 @@ const deviceUtils = require('../device-utils');
 const path = require('path');
 const fs = require('fs');
 
-function MQTTclient(_data, _logger, _events) {
+function MQTTclient(_data, _logger, _events, _runtime) {
     var data = _data;                   // Current data
     var logger = _logger;               // Logger var working = false;
     var working = false;                // Working flag to manage overloading polling and connection
@@ -25,7 +25,9 @@ function MQTTclient(_data, _logger, _events) {
     var topicsMap = {};                 // Map the topic subscribed, to check by on.message
     var memoryTagToPublish = new Map(); // Map tag to publish, content in topics as 'tag'
     var refTagToTopics = {};            // Map of Tag to Topic (with ref to other device tag)
-    
+
+    deviceUtils.init(_runtime);
+
     const certificatesDir = _data.certificatesDir;
 
     /**
@@ -44,6 +46,7 @@ function MQTTclient(_data, _logger, _events) {
                         logger.info(`'${data.name}' try to connect ${data.property.address}`, true);
                         options = getConnectionOptions(data.property)
                         options.connectTimeout = 10 * 1000;
+                        //options.protocolVersion = 4;
                         if (getProperty) {
                             var result = await getProperty({ query: 'security', name: data.id });
                             if (result && result.value && result.value !== 'null') {
@@ -344,24 +347,6 @@ function MQTTclient(_data, _logger, _events) {
     }
 
     /**
-     * Return the Daq settings of Tag
-     * @returns 
-     */
-    this.getTagDaqSettings = (tagId) => {
-        return data.tags[tagId] ? data.tags[tagId].daq : null;
-    }
-
-    /**
-     * Set Daq settings of Tag
-     * @returns 
-     */
-    this.setTagDaqSettings = (tagId, settings) => {
-        if (data.tags[tagId]) {
-            utils.mergeObjectsValues(data.tags[tagId].daq, settings);
-        }
-    }
-
-    /**
      * Create a subscription to receive Topics value
      */
     var _createSubscription = function () {
@@ -612,7 +597,7 @@ module.exports = {
     init: function (settings) {
         // deviceCloseTimeout = settings.deviceCloseTimeout || 15000;
     },
-    create: function (data, logger, events) {
-        return new MQTTclient(data, logger, events);
+    create: function (data, logger, events, runtime) {
+        return new MQTTclient(data, logger, events, runtime);
     }
 }

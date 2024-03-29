@@ -55,6 +55,7 @@ export class PipeComponent {
         try {
             if (svgele.node) {
                 let clr = '';
+                let cv = (ga? GaugeSettings.transformObjectValue(ga.property, sig.value) : sig.value);
                 let value = parseFloat(sig.value);
                 if (Number.isNaN(value)) {
                     // maybe boolean

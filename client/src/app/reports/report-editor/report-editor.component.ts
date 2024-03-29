@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, Inject, OnInit } from '@angular/core';
-import { AbstractControl, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 import { Report, ReportDateRangeType, ReportIntervalType, ReportItem, ReportItemAlarms, ReportItemChart, ReportItemTable, ReportItemText, ReportItemType, ReportSchedulingType } from '../../_models/report';
@@ -14,7 +14,6 @@ import { ReportItemChartComponent } from './report-item-chart/report-item-chart.
 import { ResourcesService } from '../../_services/resources.service';
 import { forkJoin, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { ProjectService } from '../../_services/project.service';
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Component({
@@ -39,23 +38,14 @@ export class ReportEditorComponent implements OnInit, AfterViewInit {
     constructor(public dialogRef: MatDialogRef<ReportEditorComponent>,
         public dialog: MatDialog,
         private fb: UntypedFormBuilder,
-        private projectService: ProjectService,
         private translateService: TranslateService,
         private resourcesService: ResourcesService,
-        @Inject(MAT_DIALOG_DATA) public data: ReportEditorData) {
+        @Inject(MAT_DIALOG_DATA) public data: any) {
 
-        const existingReportNames = this.projectService.getReports()?.filter(report => report.id !== data.report.id)?.map(report => report.name);
         this.report = data.report;
         this.myForm = this.fb.group({
             id: [this.report.id, Validators.required],
-            name: [this.report.name, [Validators.required,
-                (control: AbstractControl) => {
-                    if (existingReportNames?.indexOf(control.value) !== -1) {
-                        return { invalidName: true };
-                    }
-                    return null;
-                }
-            ]],
+            name: [this.report.name, Validators.required],
             receiver: [this.report.receiver],
             scheduling: [this.report.scheduling],
             marginLeft: [this.report.docproperty.pageMargins[0]],
@@ -352,9 +342,4 @@ interface DateTimeRange {
 interface ImageItem {
     id: string;
     content: string;
-}
-
-export interface ReportEditorData {
-    report: Report;
-    editmode: number;
 }

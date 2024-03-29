@@ -32,7 +32,7 @@ export class HtmlIframeComponent extends GaugeBaseComponent {
 
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable) {
         try {
-            if (sig.value && svgele?.node?.children?.length >= 1) {
+            if (ga.property.variableId && sig.value && svgele?.node?.children?.length >= 1) {
                 const parentIframe = Utils.searchTreeStartWith(svgele.node, this.prefixD);
                 const iframe = parentIframe.querySelector('iframe');
                 const src = iframe.getAttribute('src');
@@ -48,11 +48,11 @@ export class HtmlIframeComponent extends GaugeBaseComponent {
     static initElement(gaugeSettings: GaugeSettings, isview: boolean) {
         let ele = document.getElementById(gaugeSettings.id);
         if (ele) {
-            ele?.setAttribute('data-name', gaugeSettings.name);
             let svgIframeContainer = Utils.searchTreeStartWith(ele, this.prefixD);
-            if (svgIframeContainer) {
+            if (svgIframeContainer && gaugeSettings.property) {
                 svgIframeContainer.innerHTML = '';
                 let iframe = document.createElement('iframe');
+                
                 iframe.setAttribute('name', gaugeSettings.name);
                 iframe.style['width'] = '100%';
                 iframe.style['height'] = '100%';
@@ -66,7 +66,12 @@ export class HtmlIframeComponent extends GaugeBaseComponent {
                 iframe.setAttribute('title', 'iframe');
                 if (gaugeSettings.property && gaugeSettings.property.address && isview) {
                     if (Utils.isValidUrl(gaugeSettings.property.address)) {
-                        iframe.setAttribute('src', gaugeSettings.property.address);
+                        var url = new URL(gaugeSettings.property.address);
+                        Object.entries(gaugeSettings.property['windowParams']).forEach(entry =>{
+                            let [key, value] = entry;
+                            url.searchParams.append(key, value.toString());
+                        });
+                        iframe.setAttribute('src', url.toString());
                     } else {
                         console.error('IFRAME URL not valid');
                     }
