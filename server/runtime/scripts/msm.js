@@ -76,6 +76,20 @@ function MyScriptsModule(_events, _logger) {
         }
     }
 
+    this.runScriptWithReturn = function (_script) {
+        if (scriptsModule) {
+            var paramsValue = _script.parameters.map(p => p.value);
+            if (!_script.name) {
+                _script = Object.values(scriptsMap).find(s => s.id === _script.id);
+            }
+            try {
+                return scriptsModule[_script.name](...paramsValue);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    }
+    
     this.runSysFunction = function (functionName, params) {
         return global[functionName](...params);
     }

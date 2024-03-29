@@ -27,7 +27,11 @@ export class PanelPropertyComponent implements OnInit {
     }
 
     onTagChanged(variableId: string) {
-        this.data.settings.property.variableId = variableId;
+        if (typeof variableId === 'object') {
+            this.data.settings.property.variableId = "tagName";
+        } else {
+            this.data.settings.property.variableId = variableId;
+        }
         this.onPropChanged.emit(this.data.settings);
     }
 

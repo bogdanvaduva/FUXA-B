@@ -32,7 +32,7 @@ export class HtmlIframeComponent extends GaugeBaseComponent {
 
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable) {
         try {
-            if (sig.value && svgele?.node?.children?.length >= 1) {
+            if (ga.property.variableId && sig.value && svgele?.node?.children?.length >= 1) {
                 const parentIframe = Utils.searchTreeStartWith(svgele.node, this.prefixD);
                 const iframe = parentIframe.querySelector('iframe');
                 const src = iframe.getAttribute('src');

@@ -394,7 +394,11 @@
     "panel.property-data": "Data",
     "panel.property-view-name": "View name",
     "panel.property-name": "Name",
-
+    "panel.property-scalemode": "Scale mode",
+    "panel.property-scalemode-none": "None",
+    "panel.property-scalemode-contain": "Contain",
+    "panel.property-scalemode-stretch": "Stretch",
+    
     "table.property-title": "Data Table settings",
     "table.property-data": "Data",
     "table.property-date-last-range": "Date range",
@@ -693,6 +697,7 @@
     "shapes.event-setvalue-set": "set",
     "shapes.event-setvalue-add": "increase",
     "shapes.event-setvalue-remove": "decrease",
+    "shapes.event-onmonitor": "Monitor",
 
     "pipe.property-props": "Property",
     "pipe.property-border-width": "Border width",

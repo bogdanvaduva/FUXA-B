@@ -108,11 +108,11 @@ export class FlexVariableComponent implements OnInit {
             const tag = this.devices[i].tags.find(tag => tag.id === tagId);
             if (tag) {
                 return tag;
-            } //else {
-            //     if (tagId) {
-            //         return <DeviceTagOption>{id: tagId, name: tagId, device: ''};
-            //     }
-            // }
+            } else {
+                if (tagId) {
+                    return <DeviceTagOption>{id: tagId, name: tagId, device: ''};
+                }
+            }
         }
         return null;
     }

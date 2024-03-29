@@ -199,7 +199,8 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
             }
         }
         this.changeDetector.detectChanges();
-        this.loadWatch(this.view);
+        if (this.view)
+            this.loadWatch(this.view);
         // // @ts-ignore
         // window.dispatchEvent(new window.Event('resize'));
     }
