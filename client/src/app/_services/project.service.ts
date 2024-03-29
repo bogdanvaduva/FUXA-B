@@ -10,7 +10,7 @@ import { Graph } from '../_models/graph';
 import { RepeaterData } from '../_models/repeater';
 import { Alarm, AlarmQuery } from '../_models/alarm';
 import { Notification } from '../_models/notification';
-import { Script, ScriptMode } from '../_models/script';
+import { Script } from '../_models/script';
 import { Text } from '../_models/text';
 import { Device, DeviceType, DeviceNetProperty, DEVICE_PREFIX, DevicesUtils, Tag, FuxaServer, TagSystemType, TAG_PREFIX, ServerTagType } from '../_models/device';
 import { ToastrService } from 'ngx-toastr';
@@ -24,7 +24,6 @@ import { Utils } from '../_helpers/utils';
 
 import * as FileSaver from 'file-saver';
 import { Report } from '../_models/report';
-import { ScriptService } from './script.service';
 
 @Injectable()
 export class ProjectService {
@@ -45,7 +44,6 @@ export class ProjectService {
     constructor(private resewbApiService: ResWebApiService,
         private resDemoService: ResDemoService,
         private resClientService: ResClientService,
-        private scriptService: ScriptService,
         private appService: AppService,
         private translateService: TranslateService,
         private toastr: ToastrService) {
@@ -135,13 +133,15 @@ export class ProjectService {
     /**
      * Save Project
      */
-    save(skipNotification = false): boolean {
+    save(skipNotification = false): Subject<boolean> {
         // check project change don't work some svg object change the order and this to check isn't easy...boooo
+        const subject = new Subject<boolean>();
         this.storage.setServerProject(this.projectData).subscribe(result => {
             this.load();
             if (!skipNotification) {
                 this.notifySuccessMessage('msg.project-save-success');
             }
+            subject.next(true);
         }, err => {
             console.error(err);
             var msg = '';
@@ -151,8 +151,9 @@ export class ProjectService {
                 closeButton: true,
                 disableTimeOut: true
             });
+            subject.next(false);
         });
-        return true;
+        return subject;
     }
 
     saveAs() {
@@ -921,19 +922,6 @@ export class ProjectService {
         return values;
     }
     
-    getTagIdFromName(tagName: string, deviceName?: string): string {
-        let devices = <Device[]>Object.values(this.projectData.devices);
-        for (let i = 0; i < devices.length; i++) {
-            if (!deviceName || devices[i].name === deviceName) {
-                let result = <Tag>Object.values(devices[i].tags).find((tag: Tag) => tag.name === tagName);
-                if (result) {
-                    return result.id;
-                }
-            }
-        }
-        return null;
-    }
-
     /**
      * Set Project data and save resource to backend
      * Used from open and upload JSON Project file
@@ -1018,6 +1006,19 @@ export class ProjectService {
         for (let i = 0; i < devices.length; i++) {
             if (devices[i].tags[tagId]) {
                 return devices[i].tags[tagId];
+            }
+        }
+        return null;
+    }
+
+    getTagIdFromName(tagName: string, deviceName?: string): string {
+        let devices = <Device[]>Object.values(this.projectData.devices);
+        for (let i = 0; i < devices.length; i++) {
+            if (!deviceName || devices[i].name === deviceName) {
+                let result = <Tag>Object.values(devices[i].tags).find((tag: Tag) => tag.name === tagName);
+                if (result) {
+                    return result.id;
+                }
             }
         }
         return null;

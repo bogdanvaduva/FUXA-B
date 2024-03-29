@@ -103,7 +103,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 } catch (err) {}
             });
             this.scripts = hmiService.projectService.getScripts();
-            hmiService.getJSONFromURL(this.endPointConfig + dataJSONURL).subscribe(result => {
+            EndPointApi.getJSONFromURL(this.endPointConfig + dataJSONURL).subscribe(result => {
                 let jsonObj = result;
                 Object.entries(jsonObj).forEach(entry => {
                     if (svgDivContainer) {

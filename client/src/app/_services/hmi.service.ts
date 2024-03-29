@@ -1,6 +1,4 @@
 import { Injectable, Output, EventEmitter } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import * as io from 'socket.io-client';
 
 import { environment } from '../../environments/environment';
@@ -50,8 +48,8 @@ export class HmiService {
     constructor(public projectService: ProjectService,
         private translateService: TranslateService,
         private authService: AuthService,
-        private toastr: ToastrService,
-        private http: HttpClient) {
+        private toastr: ToastrService
+        ) {
 
         this.initSocket();
 
@@ -585,10 +583,6 @@ export class HmiService {
         }
     }
 
-    getJSONFromURL(jsonURL: string): Observable<any> {
-        let header = new HttpHeaders({ 'Content-Type': 'application/json' });
-        return this.http.get(jsonURL, { headers : header});
-    }
 }
 
 class ViewSignalGaugeMap {

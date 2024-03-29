@@ -188,7 +188,7 @@ export class DialogTagRepeater implements OnInit {
         this.dataJSONURL = _repeater.lines[0].url;
         this.dataJSONProperties = _repeater.lines[0].url_data_properties.split(",");
 
-        this.hmiService.getJSONFromURL(this.endPointConfig + this.dataJSONURL).subscribe(result => {
+        EndPointApi.getJSONFromURL(this.endPointConfig + this.dataJSONURL).subscribe(result => {
             this.dataJSON = result;
         });
     }

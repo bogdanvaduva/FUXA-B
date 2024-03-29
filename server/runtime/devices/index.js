@@ -274,6 +274,41 @@ function getTagId(tagName, deviceName) {
 }
 
 /**
+ * Get the Device Tag Daq settings
+ * used from Scripts
+ * @param {*} tagid
+ */
+function getTagDaqSettings(tagId) {
+    try {
+        let deviceId = getDeviceIdFromTag(tagId)
+        if (activeDevices[deviceId]) {
+            return activeDevices[deviceId].getTagDaqSettings(tagId);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+    return null;
+}
+
+/**
+ * Set the Device Tag Daq settings
+ * used from Scripts
+ * @param {*} tagId
+ * @param {*} settings
+ */
+function setTagDaqSettings(tagId, settings) {
+    try {
+        let deviceId = getDeviceIdFromTag(tagId)
+        if (activeDevices[deviceId]) {
+            return activeDevices[deviceId].setTagDaqSettings(tagId, settings);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+    return null;
+}
+
+/**
  * Enable/disable Device connection
  * used from Scripts
  * @param {*} deviceName

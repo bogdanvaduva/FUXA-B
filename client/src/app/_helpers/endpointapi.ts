@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
+import { HttpClient, HttpXhrBackend, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class EndPointApi {
@@ -28,5 +30,13 @@ export class EndPointApi {
         const path = destIp + ':' + environment.apiPort;
         return protocoll + '://' + path + '/api';
 
+    }
+
+    static getJSONFromURL(jsonURL: string): Observable<any> {
+        let header = new HttpHeaders({ 'Content-Type': 'application/json' });
+        let _http = new HttpClient(new HttpXhrBackend({ 
+            build: () => new XMLHttpRequest() 
+        }));
+        return _http.get(jsonURL, { headers : header});
     }
 }
