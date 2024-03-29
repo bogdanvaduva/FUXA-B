@@ -2,7 +2,6 @@ import { Component, OnInit, Inject } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { TranslateService } from '@ngx-translate/core';
-import { ProjectService } from '../../_services/project.service';
 import { PluginService } from '../../_services/plugin.service';
 
 import { Plugin } from '../../_models/plugin';
@@ -25,8 +24,7 @@ export class PluginsComponent implements OnInit {
         public dialog: MatDialog,
         public dialogRef: MatDialogRef<PluginsComponent>,
         private translateService: TranslateService,
-        private pluginService: PluginService,
-        private projectService: ProjectService) { }
+        private pluginService: PluginService) { }
 
     ngOnInit() {
         this.translateService.get('dlg.plugins-status-installing').subscribe((txt: string) => { this.installing = txt; });

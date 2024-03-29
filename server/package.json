@@ -18,6 +18,7 @@
     "@types/socket.io": "^2.1.2",
     "app-root-path": "2.2.1",
     "async": "3.2.3",
+    "@tdengine/rest": "3.0.2",
     "axios": "0.21.4",
     "bcryptjs": "2.4.3",
     "bluebird": "3.7.2",

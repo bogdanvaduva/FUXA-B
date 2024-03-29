@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const SqliteDB = require("./sqlite");
 const InfluxDB = require("./influxdb");
+const TDengine  =require("./tdengine");
 const PostgreSQL = require("./postgresql");
 const CurrentStorage = require("./sqlite/currentstorage");
 // var DaqNode = require('./daqnode');
@@ -41,7 +42,7 @@ function reset() {
 function addDaqNode(_id, fncgetprop) {
     var id = _id;
     const dbType = _getDbType();
-    if (dbType === DaqStoreTypeEnum.influxDB || dbType === DaqStoreTypeEnum.influxDB18) {
+    if (dbType === DaqStoreTypeEnum.influxDB || dbType === DaqStoreTypeEnum.influxDB18 || dbType === DaqStoreTypeEnum.TDengine) {
         id = dbType;
     }
     if (dbType === DaqStoreTypeEnum.postgresql) {
@@ -50,6 +51,8 @@ function addDaqNode(_id, fncgetprop) {
     if (!daqDB[id]) {
         if (id === DaqStoreTypeEnum.influxDB || id === DaqStoreTypeEnum.influxDB18) {
             daqDB[id] = InfluxDB.create(settings, logger, currentStorateDB);
+        } else if(id === DaqStoreTypeEnum.TDengine){
+            daqDB[id] = TDengine.create(settings, logger, currentStorateDB);
         } else if (id === DaqStoreTypeEnum.postgresql) {
             daqDB[id] = PostgreSQL.create(settings, logger, currentStorateDB);
         } else {
@@ -161,7 +164,7 @@ function _getDaqNode(tagid) {
 }
 
 function _getDbType() {
-    if (settings.daqstore && settings.daqstore) {
+    if (settings.daqstore && settings.daqstore.type) {
         return settings.daqstore.type;
     }
     return DaqStoreTypeEnum.SQlite;
@@ -171,6 +174,7 @@ var DaqStoreTypeEnum = {
     SQlite: 'SQlite',
     influxDB: 'influxDB',
     influxDB18: 'influxDB18',
+    TDengine: 'TDengine',
     postgresql: 'postgresql'
 }
 

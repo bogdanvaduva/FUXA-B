@@ -49,25 +49,11 @@ function MyScriptsModule(_events, _logger) {
         if (result.module) {
             var paramsValue = _script.parameters.map(p => p.value);
             result.module[initEvents.name](events, _script.outputId);
-            result.module[_script.name](...paramsValue);
+            return result.module[_script.name](...paramsValue);
         }
     }
 
     this.runScript = function (_script) {
-        if (scriptsModule) {
-            var paramsValue = _script.parameters.map(p => p.value);
-            if (!_script.name) {
-                _script = Object.values(scriptsMap).find(s => s.id === _script.id);
-            }
-            try {
-                scriptsModule[_script.name](...paramsValue);
-            } catch (err) {
-                console.error(err);
-            }
-        }
-    }
-
-    this.runScriptWithReturn = function (_script) {
         if (scriptsModule) {
             var paramsValue = _script.parameters.map(p => p.value);
             if (!_script.name) {
@@ -90,6 +76,10 @@ function MyScriptsModule(_events, _logger) {
         }
     }
 
+    this.runSysFunction = function (functionName, params) {
+        return global[functionName](...params);
+    }
+    
     this.getScript = function (_script) {
         return Object.values(scriptsMap).find(s => s.id === _script.id);
     }
