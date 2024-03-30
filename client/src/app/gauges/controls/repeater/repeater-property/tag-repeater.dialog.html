@@ -5,6 +5,30 @@
         <mat-cell *matCellDef="let element"> {{element.id}} - {{tags[element.id]}}</mat-cell>
     </ng-container>
 
+    <!-- Tag Column Used-->
+    <ng-container matColumnDef="tagUsed">
+        <mat-header-cell *matHeaderCellDef mat-sort-header> {{'repeater.property-tags-repeaterdata-used' | translate}} </mat-header-cell>
+        <mat-cell *matCellDef="let element"> 
+            <input [(ngModel)]="element.valueWillBeShowed" type="checkbox" />
+        </mat-cell>
+    </ng-container>
+    
+    <!-- Tag Column Used Value is Object-->
+    <ng-container matColumnDef="tagIsObject">
+        <mat-header-cell *matHeaderCellDef mat-sort-header> {{'repeater.property-tags-repeaterdata-isObject' | translate}} </mat-header-cell>
+        <mat-cell *matCellDef="let element"> 
+            <input [(ngModel)]="element.valueIsObject" type="checkbox"/>
+        </mat-cell>
+    </ng-container>
+
+    <!-- Tag Column Used Value Object Property-->
+    <ng-container matColumnDef="tagObjectProperty">
+        <mat-header-cell *matHeaderCellDef mat-sort-header> {{'repeater.property-tags-repeaterdata-objectProperty' | translate}} </mat-header-cell>
+        <mat-cell *matCellDef="let element"> 
+            <input [(ngModel)]="element.valueObjectProperty" type="text"/>
+        </mat-cell>
+    </ng-container>
+
     <!-- Repeater Data Matching Id Column -->
     <ng-container matColumnDef="repeaterDataId">
         <mat-header-cell *matHeaderCellDef mat-sort-header> </mat-header-cell>
@@ -15,7 +39,7 @@
     <ng-container matColumnDef="input">
         <mat-header-cell *matHeaderCellDef mat-sort-header> {{'repeater.property-repeaterdata-element' | translate}} </mat-header-cell>
         <mat-cell *matCellDef="let element">
-            <input [(ngModel)]="search[element.id]" type="text">
+            <input [(ngModel)]="search[element.id]" type="text"/>
         </mat-cell>
     </ng-container>
     <ng-container matColumnDef="repeaterdDataSearch">

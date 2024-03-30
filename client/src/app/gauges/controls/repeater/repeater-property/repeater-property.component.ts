@@ -152,7 +152,7 @@ export class RepeaterPropertyComponent implements OnInit {
     styleUrls: ['./repeater-property.component.css']
 })
 export class DialogTagRepeater implements OnInit {
-    readonly defAllColumns = ['tag', 'repeaterDataId', 'input', 'repeaterdDataSearch', 'search', 'clear'];
+    readonly defAllColumns = ['tag', 'tagUsed', 'tagIsObject', 'tagObjectProperty', 'repeaterDataId', 'input', 'repeaterdDataSearch', 'search', 'clear'];
     readonly defAllRowWidth = 800;
 
     endPointConfig: string = EndPointApi.getURL();
@@ -180,7 +180,12 @@ export class DialogTagRepeater implements OnInit {
             if (d.tags) {
                 Object.values(d.tags).forEach((t: any) => {
                     this.tags[t.id] = t.name;
-                    this.repeaterDataSource.data.push({id: t.id, repeaterDataId: this.getRepeaterDataId(t.id)});
+                    let _tmpRD = this.getRepeaterDataId(t.id);
+                    let _tmpC1 = (_tmpRD ? _tmpRD['valueWillBeShowed'] : undefined);
+                    let _tmpC2 = (_tmpRD ? _tmpRD['valueIsObject'] : undefined);
+                    let _tmpC3 = (_tmpRD ? _tmpRD['valueObjectProperty'] : undefined);
+                    let _tmpC4 = (_tmpRD ? _tmpRD['repeaterDataId'] : undefined);
+                    this.repeaterDataSource.data.push({id: t.id, valueWillBeShowed: _tmpC1, valueIsObject: _tmpC2, valueObjectProperty: _tmpC3, repeaterDataId: _tmpC4});
                 });
             }
         });        
@@ -245,10 +250,10 @@ export class DialogTagRepeater implements OnInit {
         return _res;
     }
 
-    getRepeaterDataId(id: any): string {
-        let _res = '';
+    getRepeaterDataId(id: any): object {
+        let _res = {};
         try {
-            _res = Object.values(this.data.settings.property.repeaterDataSource).find((e:any)=>e.id===id)['repeaterDataId'].toString();
+            _res = Object.values(this.data.settings.property.repeaterDataSource).find((e:any)=>e.id===id);
         } catch (e) {
             console.log(e);
         }

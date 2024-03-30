@@ -1,6 +1,6 @@
 ![fuxa logo](/client/src/favicon.ico) 
-# FUXA
-FUXA-B is a web-based Process Visualization (SCADA/HMI/Dashboard) software. With FUXA-B you can create modern process visualizations with individual designs for your machines and real-time data display. FUXA-B is a fork of FUXA found at https://github.com/frangoteam/FUXA/. FUXA-B added a new component called Repeater, PostgreSQL DAQ and a generic tagName that can be provided to the view through URL query params allowing to build templates.
+# FUXA-B
+FUXA-B is a web-based Process Visualization (SCADA/HMI/Dashboard) software forked from FUXA found at https://github.com/frangoteam/FUXA/. With FUXA-B you can create modern process visualizations with individual designs for your machines and real-time data display. FUXA-B has a few other features than the original FUXA. It has  been added a new DAQ type which is PostgreSQL (we plan to add MySQL/MariaDB as well), a new data source called Repeater Data, a new component called Repeater. Also within the FUXA-B logic we integrated a generic tagName that can be provided to the view through URL query params allowing to build templates.
 
 ![fuxa editor](/screenshot/fuxa-editor.png) 
 
@@ -8,39 +8,20 @@ FUXA-B is a web-based Process Visualization (SCADA/HMI/Dashboard) software. With
 
 ![fuxa action](/screenshot/feature-action-move.gif)
 
-## Features
+## Features - from the original FUXA
 - Devices connectivity with Modbus RTU/TCP, Siemens S7 Protocol, OPC-UA, BACnet IP, MQTT, Ethernet/IP (Allen Bradley)
 - SCADA/HMI Web-Editor - Engineering and Design completely web-based
 - Cross-Platform Full-Stack - Backend with NodeJs and Frontend with Web technologies (HTML5, CSS, Javascript, Angular, SVG)
 
-## Live Demo
+## Live Demo (of the original FUXA)
 Here is a [live demo](https://frangoteam.github.io) example of main FUXA project.
 
 ## Installing and Running
 FUXA is developed with NodeJS (backend) and Angular (frontend).
 
-running from docker (first option)
-```
-docker pull frangoteam/fuxa:latest
-docker run -d -p 1881:1881 frangoteam/fuxa:latest
+running from docker it's not yet available for FUXA-B
 
-// persistent storage of application data (project), daq (tags history), logs and images (resource)
-docker run -d -p 1881:1881 -v fuxa_appdata:/usr/src/app/FUXA/server/_appdata -v fuxa_db:/usr/src/app/FUXA/server/_db -v fuxa_logs:/usr/src/app/FUXA/server/_logs -v fuxa_images:/usr/src/app/FUXA/server/_images frangoteam/fuxa:latest
-
-// with Docker compose
-// persistent storage will be at ./appdata ./db ./logs and ./images
-wget https://raw.githubusercontent.com/frangoteam/FUXA/master/compose.yml
-docker compose up -d
-```
-
-Install from [NPM](https://www.npmjs.com/package/@frangoteam/fuxa) (second option)
-In linux to use only with nodejs Version 14.21.3
-```
-npm install -g --unsafe-perm @frangoteam/fuxa
-fuxa
-```
-
-Or [Download the latest release](https://github.com/frangoteam/FUXA/releases) and unpack it (second option)
+[Download the latest release](https://github.com/bogdanvaduva/FUXA-B) and unpack it
 
 You need to have installed [Node](https://nodejs.org/en/about/previous-releases) Version 14.21.3 (npm 6.14.18) || 16.20.2 (npm 8.19.4) || 18.18.2 (npm 9.8.1).
 
@@ -96,11 +77,6 @@ If you want to raise a pull-request with a new feature, or a refactoring of exis
 Please ensure you follow the coding standards used through-out the existing code base. Some basic rules include:
 - Indent with 4-spaces, no tabs.
 - Opening brace on same line as if/for/function and so on, closing brace on its own line.
-
-## Let us know!
-We’d be really happy if you send us your own shapes in order to collect a library to share it with others. Just send an email to 4frango@gmail.com and do let us know if you have any questions or suggestions regarding our work.
-
-## <a href="https://discord.gg/WZhxz9uHh4" target="_blank" > <img src="https://skillicons.dev/icons?i=discord" alt=""></a>
 
 ## License
 MIT.

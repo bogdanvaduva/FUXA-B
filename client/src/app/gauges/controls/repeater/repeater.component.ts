@@ -70,15 +70,15 @@ export class RepeaterComponent extends GaugeBaseComponent {
             divInput.appendChild(input);         
             var divReaderStartButtonStart = document.createElement("button");
             divReaderStartButtonStart.id = "repeater_html5_qrcode_start";
-            divReaderStartButtonStart.setAttribute('content', 'QR Code Start');
+            divReaderStartButtonStart.setAttribute('content', 'QR +');
             divReaderStartButtonStart.setAttribute('class', 'repeater-html5-qrcode-start');  
-            divReaderStartButtonStart.textContent = 'QR Code Start';
+            divReaderStartButtonStart.textContent = 'QR +';
             divInput.appendChild(divReaderStartButtonStart);
             var divReaderStartButtonStop = document.createElement("button");
             divReaderStartButtonStop.id = "repeater_html5_qrcode_stop";
-            divReaderStartButtonStop.setAttribute('content', 'QR Code Stop');
+            divReaderStartButtonStop.setAttribute('content', 'QR -');
             divReaderStartButtonStop.setAttribute('class', 'repeater-html5-qrcode-stop');  
-            divReaderStartButtonStop.textContent = 'QR Code Stop';
+            divReaderStartButtonStop.textContent = 'QR -';
             divInput.appendChild(divReaderStartButtonStop);
 
             var divInputSearch = document.createElement("div");
@@ -159,20 +159,15 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 let _text = properties[0][1][property];
                 node[i].setAttribute("data", _data);
                 node[i].style.display = "flex";
-                this.recurseAndAdd(node[i], _data, _id, _text);
-                var divInputHidden = document.createElement("input");
-                divInputHidden.id = (tags[_id] ? tags[_id]: "hidden" + _id);
-                divInputHidden.setAttribute("type","hidden");
-                divInputHidden.style.display = "table"
-                divInputHidden.style.width = "100%";
-                node[i].appendChild(divInputHidden);   
+                this.recurseAndAdd(node[i], _data, _id, _text, tags);
             }
     }
 
-    static recurseAndAdd(el, _data, _id, _text) {
+    static recurseAndAdd(el, _data, _id, _text, tags) {
         var children = el.childNodes;
         for(let i=0; i < children.length; i++) {
-            if (children[i].nodeType == 1) {
+            if (children[i].nodeType == 1 )
+            if (!children[i].getAttribute("tagname")) {
                 if ('id' in children[i]){
                     let id = children[i].id;
                     if (this.viewObjectsScripts.hasOwnProperty(id.toLowerCase())){
@@ -182,21 +177,34 @@ export class RepeaterComponent extends GaugeBaseComponent {
                             children[i].setAttribute("onclick",script['code']);
                         }              
                     }
-                    if (children[i].id !== '') {
+                    if (children[i].id !== '' && !children[i].getAttribute("tagname")) {
                         children[i].id = children[i].id + "_" + _id;
                     }
                     children[i].setAttribute("data", _data);
-                    if (children[i].tagName.toLowerCase() === "button") {
-                        try {
-                            children[i].innerHTML = children[i].innerHTML + " " + _text ;
-                            if (_data.indexOf("&tagName|&")>=0) {
-                                children[i].setAttribute("disabled","true");
-                                children[i].style.backgroundColor = "rgb(112,112,112)";
+                    if (children[i].nodeName.toLowerCase() === "text" ||
+                        children[i].nodeName.toLowerCase() === "input" ||
+                        children[i].nodeName.toLowerCase() === "button")
+                        if (_data.indexOf(children[i].innerHTML.replace("@","")+"|") >=0) {
+                            if (children[i].innerHTML === "@tagName") {
+                                // to add a div with the tag name
+                                children[i].innerHTML = '';
+                                var divDivHidden = document.createElement("div");
+                                divDivHidden.id = (tags[_id] ? tags[_id]: "hidden" + _id);
+                                divDivHidden.setAttribute("tagname",(tags[_id] ? tags[_id] : ""));
+                                divDivHidden.style.color = "rgb(68, 138, 255)";
+                                children[i].appendChild(divDivHidden);
+                            } else {
+                                children[i].innerHTML = _text ;
                             }
-                        } catch (e) {}
-                    }
+                        }
+                    try {
+                        if (_data.indexOf("&tagName|&")>=0) {
+                            children[i].setAttribute("disabled","true");
+                            children[i].style.backgroundColor = "rgb(112,112,112)";
+                        }
+                    } catch (e) {}
                 }
-                this.recurseAndAdd(children[i], _data, _id, _text);
+                this.recurseAndAdd(children[i], _data, _id, _text, tags);
             }
         }
     }
@@ -239,7 +247,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 let _h = document.getElementById(sig.id);
                 if (_h){
                     if (sig.value) {
-                        _h.setAttribute("value", sig.value);
+                        _h.innerHTML = sig.value;
                     }
                 }
             }

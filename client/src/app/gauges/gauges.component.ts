@@ -884,7 +884,6 @@ export class GaugesManager {
                     for (let i = 0; i < chart.lines.length; i++) {
                         let line = chart.lines[i];
                         let _id = "";
-                        let _yProperty = null;
                         if (line.id === "tagName") {
                             if (property.windowParams) {
                                 _id = property.windowParams.tagName;
