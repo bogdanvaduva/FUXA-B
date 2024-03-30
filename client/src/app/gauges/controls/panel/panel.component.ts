@@ -38,10 +38,9 @@ export class PanelComponent extends GaugeBaseComponent {
 
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus, gauge?: FuxaViewComponent) {
         try {
-            let cv = (ga? GaugeSettings.transformObjectValue(ga.property,sig.value): sig.value);
-            const view = PanelComponent.hmi.views.find(x => x.name === cv);
+            const view = PanelComponent.hmi.views.find(x => x.name === sig.value);
             if (view) {
-                gauge?.loadHmi(view, true);
+                gauge?.loadHmi(view, false);
                 if (ga?.property?.scaleMode) {
                     Utils.resizeViewExt('.view-container', ga?.id, ga?.property?.scaleMode);
                 }

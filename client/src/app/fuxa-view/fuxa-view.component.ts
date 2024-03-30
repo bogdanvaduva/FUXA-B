@@ -172,6 +172,8 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
      * @param view
      */
     public loadHmi(view: View, legacyProfile?: boolean) {
+        if (legacyProfile === undefined)
+            legacyProfile = false
         if (!this.hmi) {
             this.hmi = this.projectService.getHmi();
         }
@@ -188,11 +190,14 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
         if (view) {
             this.id = view.id;
             this.view = view;
-            if (view.profile.bkcolor && (this.child || legacyProfile)) {
+            if (view.type === this.cardViewType) {
                 this.ongoto.emit(view.id);
                 return;
             } else {
                 this.dataContainer.nativeElement.innerHTML = view.svgcontent.replace('<title>Layer 1</title>', '');
+            }
+            if (view.profile.bkcolor && (this.child || legacyProfile)) {
+                this.dataContainer.nativeElement.style.backgroundColor = view.profile.bkcolor;
             }
             if (view.profile.bkcolor && this.child) {
                 this.dataContainer.nativeElement.style.backgroundColor = view.profile.bkcolor;
@@ -231,8 +236,8 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
                         (gaToBindMouseEvents) => {
                             this.onBindMouseEvents(gaToBindMouseEvents);
                         },
-                        (gatobindhtmlevent) => {
-                            this.onBindHtmlEvent(gatobindhtmlevent);
+                        (gaToBindHtmlEvent) => {
+                            this.onBindHtmlEvent(gaToBindHtmlEvent);
                         });
                     if (items[key].property) {
                         let gaugeSetting = items[key];

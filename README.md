@@ -1,6 +1,6 @@
 ![fuxa logo](/client/src/favicon.ico) 
 # FUXA
-FUXA is a web-based Process Visualization (SCADA/HMI/Dashboard) software. With FUXA you can create modern process visualizations with individual designs for your machines and real-time data display.
+FUXA-B is a web-based Process Visualization (SCADA/HMI/Dashboard) software. With FUXA-B you can create modern process visualizations with individual designs for your machines and real-time data display. FUXA-B is a fork of FUXA found at https://github.com/frangoteam/FUXA/. FUXA-B added a new component called Repeater, PostgreSQL DAQ and a generic tagName that can be provided to the view through URL query params allowing to build templates.
 
 ![fuxa editor](/screenshot/fuxa-editor.png) 
 
@@ -14,7 +14,7 @@ FUXA is a web-based Process Visualization (SCADA/HMI/Dashboard) software. With F
 - Cross-Platform Full-Stack - Backend with NodeJs and Frontend with Web technologies (HTML5, CSS, Javascript, Angular, SVG)
 
 ## Live Demo
-Here is a [live demo](https://frangoteam.github.io) example of FUXA editor.
+Here is a [live demo](https://frangoteam.github.io) example of main FUXA project.
 
 ## Installing and Running
 FUXA is developed with NodeJS (backend) and Angular (frontend).

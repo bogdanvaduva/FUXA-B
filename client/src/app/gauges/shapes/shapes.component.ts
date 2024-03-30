@@ -128,7 +128,6 @@ export class ShapesComponent extends GaugeBaseComponent {
     }
 
     static runMyAction(element, type, gaugeStatus: GaugeStatus) {
-        console.log('asdf');
         if (gaugeStatus.actionRef && gaugeStatus.actionRef.type === type) {
             return;
         }
