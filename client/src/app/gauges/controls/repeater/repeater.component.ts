@@ -15,13 +15,14 @@ declare function initializeHtml5QrCode(id: any): void;
 })
 export class RepeaterComponent extends GaugeBaseComponent {
 
-    static scripts;
-    static viewObjectsScripts;
+    static scripts : any;
+    static viewObjectsScripts : any;
     static endPointConfig: string = EndPointApi.getURL();
     static TypeTag = 'svg-ext-own_ctrl-repeat';
     static LabelTag = 'Repeater';
     static prefixD = 'D-OXC_';
-    
+    static tagsRepeaterData = {};
+
     static actionsType = { hide: GaugeActionsType.hide, show: GaugeActionsType.show, blink: GaugeActionsType.blink, stop: GaugeActionsType.stop,
                         clockwise: GaugeActionsType.clockwise, anticlockwise: GaugeActionsType.anticlockwise, rotate : GaugeActionsType.rotate,
                         move: GaugeActionsType.move};
@@ -41,9 +42,11 @@ export class RepeaterComponent extends GaugeBaseComponent {
             if (val['repeaterDataId']) {
                 if (val['repeaterDataId']!=='') {
                     dataJSONTags[val['repeaterDataId']] = val['id'];
+                    this.tagsRepeaterData[val['id']] = val;
                 }
             }
         });
+        hmiService.askDeviceValues();
         let view = gaugeSettings.property.view;
         var doc = new DOMParser();
         if (ele) {
@@ -111,7 +114,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                         let prop = [entry, dataJSONProperties];
                         var xml = doc.parseFromString(v.svgcontent, "image/svg+xml");
                         var svgNodes = xml.getElementsByTagName("svg");
-                        this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags);
+                        this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags, hmiService.variables);
                         svgDivContainer.appendChild(svgNodes[0]);
                     }
                 });
@@ -132,7 +135,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
         return Object.entries(scriptsMap).find(s => s[1]['id'] === _script);
     }
 
-    static modifyIdsOfElements(node, properties, property, tags) {
+    static modifyIdsOfElements(node, properties, property, tags, variables) {
         let _data = "";
         let flgTagExist = '';
         let flgTagName = false;
@@ -159,11 +162,11 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 let _text = properties[0][1][property];
                 node[i].setAttribute("data", _data);
                 node[i].style.display = "flex";
-                this.recurseAndAdd(node[i], _data, _id, _text, tags);
+                this.recurseAndAdd(node[i], _data, _id, _text, tags, variables);
             }
     }
 
-    static recurseAndAdd(el, _data, _id, _text, tags) {
+    static recurseAndAdd(el, _data, _id, _text, tags, variables) {
         var children = el.childNodes;
         for(let i=0; i < children.length; i++) {
             if (children[i].nodeType == 1 )
@@ -188,11 +191,21 @@ export class RepeaterComponent extends GaugeBaseComponent {
                             if (children[i].innerHTML === "@tagName") {
                                 // to add a div with the tag name
                                 children[i].innerHTML = '';
-                                var divDivHidden = document.createElement("div");
-                                divDivHidden.id = (tags[_id] ? tags[_id]: "hidden" + _id);
-                                divDivHidden.setAttribute("tagname",(tags[_id] ? tags[_id] : ""));
-                                divDivHidden.style.color = "rgb(68, 138, 255)";
-                                children[i].appendChild(divDivHidden);
+                                children[i].id = (tags[_id] ? tags[_id]: "hidden" + _id);
+                                let _tmpProp = Object.values(this.tagsRepeaterData).find( (e:any) => e.id == tags[_id]);
+                                let _tmpVal = "";
+                                if (_tmpProp) {
+                                    if (_tmpProp.hasOwnProperty("valueWillBeShowed")) {
+                                        let _tmp = Object.values(variables).find( (e:any) => e.id == tags[_id]);
+                                        _tmpVal = (_tmpProp["valueObjectProperty"] ? _tmpProp["valueObjectProperty"] : "") + " " + (_tmp ? (_tmp["value"] === undefined ? "" : (_tmpProp["valueIsObject"] ? JSON.parse(_tmp["value"])[_tmpProp["valueObjectProperty"]] : _tmp["value"])) : "");
+                                    } else {
+                                        _tmpVal = "";
+                                    }
+                                } else {
+                                    _tmpVal = "";
+                                }
+                                _tmpVal = _tmpVal  + (_tmpVal !== "" ? " [" + Math.round(+new Date()/1000) + "]" : "");
+                                children[i].innerHTML = _tmpVal;
                             } else {
                                 children[i].innerHTML = _text ;
                             }
@@ -204,7 +217,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                         }
                     } catch (e) {}
                 }
-                this.recurseAndAdd(children[i], _data, _id, _text, tags);
+                this.recurseAndAdd(children[i], _data, _id, _text, tags, variables);
             }
         }
     }
@@ -246,8 +259,16 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 let _node = svgele.node;
                 let _h = document.getElementById(sig.id);
                 if (_h){
+                    let _val = sig.value;
+                    let _tmpProp = Object.values(this.tagsRepeaterData).find( (e:any) => e.id == sig.id);
+                    if (_tmpProp) {
+                        if (_tmpProp.hasOwnProperty("valueWillBeShowed")) {
+                            _val = (_tmpProp["valueObjectProperty"] ? _tmpProp["valueObjectProperty"] : "") + " " + (_tmpProp["valueIsObject"] ? JSON.parse(_val)[_tmpProp["valueObjectProperty"]] : _val);
+                        }
+                    }
+                    _val = _val + (_val !== "" ? " [" + Math.round(+new Date()/1000) + "]" : "");
                     if (sig.value) {
-                        _h.innerHTML = sig.value;
+                        _h.innerHTML = _val;
                     }
                 }
             }
