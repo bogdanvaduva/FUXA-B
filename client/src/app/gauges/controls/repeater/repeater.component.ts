@@ -195,16 +195,19 @@ export class RepeaterComponent extends GaugeBaseComponent {
                                 let _tmpProp = Object.values(this.tagsRepeaterData).find( (e:any) => e.id == tags[_id]);
                                 let _tmpVal = "";
                                 if (_tmpProp) {
-                                    if (_tmpProp.hasOwnProperty("valueWillBeShowed")) {
-                                        let _tmp = Object.values(variables).find( (e:any) => e.id == tags[_id]);
-                                        _tmpVal = (_tmpProp["valueObjectProperty"] ? _tmpProp["valueObjectProperty"] : "") + " " + (_tmp ? (_tmp["value"] === undefined ? "" : (_tmpProp["valueIsObject"] ? JSON.parse(_tmp["value"])[_tmpProp["valueObjectProperty"]] : _tmp["value"])) : "");
-                                    } else {
+                                    if (_tmpProp.hasOwnProperty("valueWillBeShowed"))
+                                        if (_tmpProp["valueWillBeShowed"]) {
+                                            let _tmp = Object.values(variables).find( (e:any) => e.id == tags[_id]);
+                                            _tmpVal = (_tmpProp["valueObjectProperty"] && _tmpProp["valueObjectProperty"]!="" ? _tmpProp["valueObjectProperty"] : "") + " " + (_tmp ? (_tmp["value"] === undefined ? "" : (_tmpProp["valueIsObject"] ? JSON.parse(_tmp["value"])[_tmpProp["valueObjectProperty"]] : _tmp["value"])) : "");
+                                            _tmpVal = _tmpVal  + (_tmpVal !== "" ? " [" + Math.round(+new Date()/1000) + "]" : "");
+                                        } else {
+                                            _tmpVal = "";
+                                        }
+                                    else
                                         _tmpVal = "";
-                                    }
                                 } else {
                                     _tmpVal = "";
                                 }
-                                _tmpVal = _tmpVal  + (_tmpVal !== "" ? " [" + Math.round(+new Date()/1000) + "]" : "");
                                 children[i].innerHTML = _tmpVal;
                             } else {
                                 children[i].innerHTML = _text ;
@@ -262,11 +265,13 @@ export class RepeaterComponent extends GaugeBaseComponent {
                     let _val = sig.value;
                     let _tmpProp = Object.values(this.tagsRepeaterData).find( (e:any) => e.id == sig.id);
                     if (_tmpProp) {
-                        if (_tmpProp.hasOwnProperty("valueWillBeShowed")) {
-                            _val = (_tmpProp["valueObjectProperty"] ? _tmpProp["valueObjectProperty"] : "") + " " + (_tmpProp["valueIsObject"] ? JSON.parse(_val)[_tmpProp["valueObjectProperty"]] : _val);
+                        if (_tmpProp.hasOwnProperty("valueWillBeShowed")){
+                            if (_tmpProp["valueWillBeShowed"]) {
+                                _val = (_tmpProp["valueObjectProperty"] && _tmpProp["valueObjectProperty"]!="" ? _tmpProp["valueObjectProperty"] : "") + " " + (_tmpProp["valueIsObject"] ? JSON.parse(_val)[_tmpProp["valueObjectProperty"]] : _val);
+                                _val = _val + (_val !== "" ? " [" + Math.round(+new Date()/1000) + "]" : "");
+                            }
                         }
                     }
-                    _val = _val + (_val !== "" ? " [" + Math.round(+new Date()/1000) + "]" : "");
                     if (sig.value) {
                         _h.innerHTML = _val;
                     }

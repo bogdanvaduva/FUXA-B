@@ -171,9 +171,23 @@ export class DeviceComponent implements OnInit, OnDestroy {
             });
     
             dialogRef.afterClosed().subscribe((result) => {
-                if (result) {
-                    console.log('TO DO ...')
-                }
+                try {
+                    if (result) {
+                        let _tags = result[0];
+                        let _alarm = result["alarm"];
+                        Object.values(_tags).forEach( (val:any) => {
+                            let _tmp = { ..._alarm };
+                            _tmp.property = result.property;
+                            _tmp.property.variableId = val.id;
+                            _tmp.property.variableValueIsObject = result.variableValueIsObject;
+                            _tmp.property.variableValueObjectProperty = result.variableValueObjectProperty;
+                            _tmp.name = val.id + " [" + val.name + "]";
+                            this.projectService.setAlarm(_tmp, null).subscribe(result => {
+                                console.log(result);
+                            });
+                        });
+                    }
+                } catch (e) {}
             });
         }  
     }
@@ -393,6 +407,7 @@ export class DeviceAlarmDialog {
     }
 
     onOkClick(): void {
+        this.data.property = this.property;
         this.dialogRef.close(this.data);
     }
 }
