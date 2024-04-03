@@ -166,9 +166,9 @@ if (!fs.existsSync(settings.logDir)) {
 logger.init(settings);
 const version = FUXA.version();
 if (version.indexOf('beta') > 0) {
-    logger.warn('FUXA V.' + version);
+    logger.warn('FUXA-B V.' + version);
 } else {
-    logger.info('FUXA V.' + version);
+    logger.info('FUXA-B V.' + version);
 }
 
 // Check storage Database dir
@@ -222,7 +222,7 @@ settings.uiHost = settings.uiHost || "0.0.0.0";
 
 // Wait ending initialization 
 events.once('init-runtime-ok', function () {
-    logger.info('FUXA init in  ' + utils.endTime(startTime) + 'ms.');
+    logger.info('FUXA-B init in  ' + utils.endTime(startTime) + 'ms.');
     startFuxa();
 });
 
@@ -232,9 +232,9 @@ try {
 } catch(err) {
     if (err.code == 'unsupported_version') {
         logger.error('Unsupported version of node.js:', process.version);
-        logger.error('FUXA requires node.js v6 or later');
+        logger.error('FUXA-B requires node.js v6 or later');
     } else if (err.code == 'not_built') {
-        logger.error('FUXA has not been built. See README.md for details');
+        logger.error('FUXA-B has not been built. See README.md for details');
     } else {
         logger.error('Failed to start server:');
         if (err.stack) {

@@ -159,3 +159,4 @@ const durationToTimeFormat = (duration, format) => {
   }
   return result;
 }
+

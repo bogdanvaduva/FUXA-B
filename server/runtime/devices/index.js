@@ -485,3 +485,4 @@ var devices = module.exports = {
     enableDevice: enableDevice,
     getTagId: getTagId,
 }
+

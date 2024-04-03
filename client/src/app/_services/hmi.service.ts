@@ -240,6 +240,9 @@ export class HmiService {
         this.socket.on(IoEventTypes.SCRIPT_COMMAND, (message) => {
             this.onScriptCommand(message);
         });
+        this.socket.on(IoEventTypes.CHIRPSTACK_MQTT_PUSH, (message) => {
+            this.askChirpstackToPushEvents(message);
+        });
 
         this.askDeviceValues();
         this.askAlarmsStatus();
@@ -583,6 +586,18 @@ export class HmiService {
         }
     }
 
+    //#region Chirpstack functions
+    /**
+     * Ask device browse to backend
+     */
+    public askChirpstackToPushEvents(_device: any) {
+        if (this.socket) {
+            let msg = { chirpstack: _device };
+            this.socket.emit(IoEventTypes.CHIRPSTACK_MQTT_PUSH, msg);
+        }
+    }
+    //#endregion
+
 }
 
 class ViewSignalGaugeMap {
@@ -647,7 +662,8 @@ export enum IoEventTypes {
     ALARMS_STATUS = 'alarms-status',
     HOST_INTERFACES = 'host-interfaces',
     SCRIPT_CONSOLE = 'script-console',
-    SCRIPT_COMMAND = 'script-command'
+    SCRIPT_COMMAND = 'script-command',
+    CHIRPSTACK_MQTT_PUSH = 'chirpstack-mqtt-push'
 }
 
 export const ScriptCommandEnum = {

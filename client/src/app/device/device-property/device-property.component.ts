@@ -19,11 +19,13 @@ export class DevicePropertyComponent implements OnInit, OnDestroy {
 	// @Input() name: any;
 	@ViewChild('panelProperty', {static: false}) panelProperty: MatExpansionPanel;
 	@ViewChild('panelCertificate', {static: false}) panelCertificate: MatExpansionPanel;
+	@ViewChild('panelChirpstack', {static: false}) panelChirpstack: MatExpansionPanel;
 
 	securityRadio: any;
 	mode: any;
 	deviceType: any = {};
 	showPassword: boolean;
+	showChirpstackPassword: boolean;
 
 	pollingPlcType = [{text: '200 ms', value: 200},
 					  {text: '500 ms', value: 500},
@@ -174,7 +176,10 @@ export class DevicePropertyComponent implements OnInit, OnDestroy {
             if (!this.data.device.property.parity) {
                 this.data.device.property.parity = 'None';
             }
-        }
+            if (!this.data.device.property.chirpstack) {
+                this.data.device.property.chirpstack = {};
+            }
+		}
 		this.subscriptionHostInterfaces = this.hmiService.onHostInterfaces.subscribe(res => {
 			if (res.result) {
 				this.hostInterfaces = res;

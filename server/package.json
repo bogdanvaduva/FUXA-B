@@ -42,9 +42,10 @@
     "nopt": "5.0.0",
     "pdfmake": "^0.2.5",
     "socket.io": "2.5.0",
-    "sqlite3": "5.1.5",
+    "sqlite3": "5.1.7",
     "winston": "3.7.2",
-    "pg": "8.11.3"
+    "pg": "8.11.3",
+    "@chirpstack/chirpstack-api": "4.7.0"
   },
   "devDependencies": {
     "@mapbox/node-pre-gyp": "^1.0.0"

@@ -141,6 +141,8 @@ export class DeviceNetProperty {
     format: string;
     /** Connection option used for Modbus RTU/TCP */
     connectionOption: string;
+    /** Connection option used for Chirpstack */
+    chirpstack: any;
 
     static descriptor = {
         address: 'Device address (IP)',
@@ -174,6 +176,14 @@ export class DeviceSecurity {
     certificateFileName: string;
     privateKeyFileName: string;
     caCertificateFileName: string;
+}
+
+export class DeviceChirpstack {
+    isChirpstackConnected: boolean;
+    uel: string;
+    username: string;
+    password: string;
+    applicationIds: string;
 }
 
 export enum DeviceType {
@@ -463,7 +473,8 @@ export class DevicesUtils {
             parity: items[14],
             options: items[15],
             method: items[16],
-            format: items[17]
+            format: items[17],
+            chirpstack: JSON.parse(items[18])
         };
         device.tags = {};
         return device;

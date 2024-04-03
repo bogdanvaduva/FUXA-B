@@ -15,7 +15,14 @@ var scripts = require('./scripts');
 var plugins = require('./plugins');
 var utils = require('./utils');
 const daqstorage = require('./storage/daqstorage');
+
 var jobs = require('./jobs');
+var grpc = require('@grpc/grpc-js');
+var internalService = require('@chirpstack/chirpstack-api/api/internal_grpc_pb');
+var internalMessages = require('@chirpstack/chirpstack-api/api/internal_pb');
+var device_grpc = require("@chirpstack/chirpstack-api/api/device_grpc_pb");
+var device_pb = require("@chirpstack/chirpstack-api/api/device_pb");
+const mqtt = require('mqtt');
 
 var api;
 var settings
@@ -78,6 +85,8 @@ function init(_io, _api, _settings, _log, eventsMain) {
     events.on('alarms-status:changed', updateAlarmsStatus);
     events.on('tag-change:subscription', subscriptionTagChange);
     events.on('script-console', scriptConsoleOutput);
+
+    events.on('chirpstack-devices-push-to-mqtt', chirpstackDevicesPushToMQTT);
 
     io.on('connection', async (socket) => {
         logger.info(`socket.io client connected`);        
@@ -299,6 +308,15 @@ function init(_io, _api, _settings, _log, eventsMain) {
                 devices.enableDevice(message.deviceName, message.enable);
             } catch (err) {
                 logger.error(`${Events.IoEventTypes.DEVICE_ENABLE}: ${err}`);
+            }
+        });
+        socket.on(Events.IoEventTypes.CHRIPSTACK_MQTT_PUSH, (message) => {
+            try {
+                if (message) {
+                    chirpstackMQTTPushOutput(message.chirpstack);
+                }
+            } catch (err) {
+                logger.error(`${Events.IoEventTypes.CHRIPSTACK_MQTT_PUSH}: ${err}`);
             }
         });
     });
@@ -528,12 +546,126 @@ function scriptConsoleOutput(output) {
  * @param {*} command
  * @param {*} parameters
  */
- function scriptSendCommand(command) {
+function scriptSendCommand(command) {
     try {
         io.emit(Events.IoEventTypes.SCRIPT_COMMAND, command);
     } catch (err) {
     }
 }
+
+/**
+ * Trasmit to CHIRPSTACK THE COMMAND TO PUBLISH AGAIN THE LATEST FRAMES
+ * @param {*} output 
+ */
+function chirpstackMQTTPushOutput(_chirpstack) {
+    try {
+        chirpstackMQTTPush(_chirpstack.property);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+function chirpstackMQTTPush(property) {
+    let _framesToPublishToMQTT = {};
+    let _chirpstack = property.chirpstack;
+    // This must point to the ChirpStack API interface.
+    const baseURL = _chirpstack.url;
+    
+    // Create the client for the 'internal' service
+    const internalServiceClient = new internalService.InternalServiceClient(
+        baseURL,
+        grpc.credentials.createInsecure()
+    );
+
+    const deviceService = new device_grpc.DeviceServiceClient(
+        baseURL,
+        grpc.credentials.createInsecure()
+    );
+        
+    // // Create and build the login request message
+    const loginRequest = new internalMessages.LoginRequest();
+    loginRequest.setEmail(_chirpstack.username);
+    loginRequest.setPassword(_chirpstack.password);
+
+    
+    // // Send the login request
+    internalServiceClient.login(loginRequest, (error, response) => {
+        // Build a gRPC metadata object, setting the authorization key to the JWT we
+        // got back from logging in.
+        const metadata = new grpc.Metadata();
+        metadata.set('authorization', "Bearer " + response.getJwt());
+
+        const request = new device_pb.ListDevicesRequest();
+        // TO DO IF WE WANT MORE THAN ONE APPID
+        request.setApplicationId(_chirpstack.applicationIds);
+        request.setLimit(1000);
+
+        deviceService.list(request, metadata, (err, response) => {
+            if (err) {
+                reject(err);
+            }
+            let _arr = response.array[1];
+            Object.values(_arr).forEach( (val) => {
+                let devEUI = val[0];
+                const streamEv = new internalMessages.StreamDeviceEventsRequest();
+                streamEv.setDevEui(devEUI);
+        
+                let call = internalServiceClient.streamDeviceEvents(streamEv, metadata);
+        
+                call.on('data', (frame) => {
+                    if (frame.array[2] === "up"){
+                        let objFrame = JSON.parse(frame.array[3]);
+                        if (_framesToPublishToMQTT[devEUI]){
+                            let d1 = new Date(_framesToPublishToMQTT[devEUI].time)
+                            let d2 = new Date(objFrame.time)
+                            if (d1 < d2){
+                                _framesToPublishToMQTT[devEUI] = objFrame
+                            } 
+                        }else {
+                            _framesToPublishToMQTT[devEUI] = objFrame;
+                        }
+                    }
+                });
+        
+                call.on('error', (err) => {
+                    console.error('Error while streaming device frames:', err);
+                    reject(err);
+                });
+            });
+        
+            (async() => {
+                console.log("waiting for variable");
+                while(Object.keys(_framesToPublishToMQTT).length===0) // define the condition as you like
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                    events.emit("chirpstack-devices-push-to-mqtt", [_framesToPublishToMQTT, property]);
+            })();
+        });
+    });
+}
+
+function chirpstackDevicesPushToMQTT  (_topics) {
+    const connectUrl = _topics[1].address;
+    const clientId = `mqtt_${Math.random().toString(16).slice(3)}`
+    let _chirpstack = _topics[1].chirpstack;
+    let _framesToPublishToMQTT = _topics[0];
+    const client = mqtt.connect(connectUrl, {
+        clientId,
+        clean: true,
+        connectTimeout: 4000,
+        reconnectPeriod: 1000,
+    })
+        
+    client.on('connect', () => {
+        console.log(`Is client connected: ${client.connected}`);    
+        if (client.connected === true) {
+            Object.entries(_framesToPublishToMQTT).forEach(entry=> {
+                console.log("MQTT -> application/" + _chirpstack.applicationIds + "/device/" + entry[0] + "/event/up");
+                client.publish("application/" + _chirpstack.applicationIds + "/device/" + entry[0] + "/event/up", JSON.stringify(entry[1]));
+            });
+        }
+    });
+}
+
 
 var runtime = module.exports = {
     init: init,
@@ -555,5 +687,8 @@ var runtime = module.exports = {
     get scriptsMgr() { return scriptsMgr },
     get jobsMgr() { return jobsMgr },
     events: events,
-    scriptSendCommand: scriptSendCommand,
+    scriptSendCommand: scriptSendCommand
 }
+
+
+

@@ -198,7 +198,8 @@ export class RepeaterComponent extends GaugeBaseComponent {
                                     if (_tmpProp.hasOwnProperty("valueWillBeShowed"))
                                         if (_tmpProp["valueWillBeShowed"]) {
                                             let _tmp = Object.values(variables).find( (e:any) => e.id == tags[_id]);
-                                            _tmpVal = (_tmpProp["valueObjectProperty"] && _tmpProp["valueObjectProperty"]!="" ? _tmpProp["valueObjectProperty"] : "") + " " + (_tmp ? (_tmp["value"] === undefined ? "" : (_tmpProp["valueIsObject"] ? JSON.parse(_tmp["value"])[_tmpProp["valueObjectProperty"]] : _tmp["value"])) : "");
+                                            if (_tmp["value"])
+                                                _tmpVal = (_tmpProp["valueObjectProperty"] && _tmpProp["valueObjectProperty"]!="" ? _tmpProp["valueObjectProperty"] : "") + " " + (_tmp ? (_tmp["value"] === undefined ? "" : (_tmpProp["valueIsObject"] ? JSON.parse(_tmp["value"])[_tmpProp["valueObjectProperty"]] : _tmp["value"])) : "");
                                             _tmpVal = _tmpVal  + (_tmpVal !== "" ? " [" + Math.round(+new Date()/1000) + "]" : "");
                                         } else {
                                             _tmpVal = "";

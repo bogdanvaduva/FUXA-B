@@ -22,6 +22,7 @@ const IoEventTypes = {
     HOST_INTERFACES: 'host-interfaces',
     SCRIPT_CONSOLE: 'script-console',
     SCRIPT_COMMAND: 'script-command',
+    CHRIPSTACK_MQTT_PUSH: 'chirpstack-mqtt-push'
 }
 
 // module.exports = IoEventTypes;

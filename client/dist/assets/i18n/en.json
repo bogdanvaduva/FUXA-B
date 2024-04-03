@@ -849,6 +849,12 @@
     "device.webapi-property-gettags": "URL GET Tags",
     "device.webapi-property-posttags": "URL POST Tags",
     "device.webapi-property-loadtags": "Load Tags",
+    "device.property-chirpstack-section": "MQTT linked to Chirpstack",
+    "device.property-chirpstack-is-connected": "Is linked to Chirpstack",
+    "device.property-chirpstack-url": "Chirpstack URL",
+    "device.property-chirpstack-username": "Chirpstack Username",
+    "device.property-chirpstack-password": "Chirpstack Password",
+    "device.property-chirpstack-application-ids": "Chirpstack Application Id",
 
     "device.browsetopics-property-title": "Broker Topics to subscribe and publish",
     "device.browsetopics-property-sub": "Subscribe",
