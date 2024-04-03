@@ -592,8 +592,12 @@ export class HmiService {
      */
     public askChirpstackToPushEvents(_device: any) {
         if (this.socket) {
-            let msg = { chirpstack: _device };
-            this.socket.emit(IoEventTypes.CHIRPSTACK_MQTT_PUSH, msg);
+            if (_device.property) 
+                if (_device.property.chirpstack)
+                    if (_device.property.chirpstack.isChirpstackConnected) {
+                        let msg = { chirpstack: _device };
+                        this.socket.emit(IoEventTypes.CHIRPSTACK_MQTT_PUSH, msg);
+                    }
         }
     }
     //#endregion
