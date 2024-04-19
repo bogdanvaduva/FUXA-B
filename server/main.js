@@ -275,7 +275,7 @@ app.use('/_images', express.static(settings.imagesFileDir));
 
 // I've added a proxy request to a specific server in order to have a list of 100+ points
 app.use('/gis', function (clientRequest, clientResponse) {
-    const targetUrl = 'https://gis.vitalmm.ro';
+    const targetUrl = '....';
 
     const parsedHost = targetUrl.split('/').splice(2).splice(0, 1).join('/');
     let parsedPort;
