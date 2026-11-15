@@ -191,7 +191,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
             }
         }
         if (!flgTagName) {
-            _data += "tagName|" + flgTagExist;
+            _data += (_data !== "" ? "&" : "") + "tagName|" + flgTagExist;
         }
         let _id = properties[0][0];
         for(let i = 0; i < node.length; i++)
@@ -199,11 +199,11 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 let _text = properties[0][1][property];
                 node[i].setAttribute("data", _data);
                 node[i].style.display = "flex";
-                this.recurseAndAdd(node[i], _data, _id, _text, tags, variables);
+                this.recurseAndAdd(node[i], _data, _id, _text, tags, variables, properties[0][1]);
             }
     }
 
-    static recurseAndAdd(el, _data, _id, _text, tags, variables) {
+    static recurseAndAdd(el, _data, _id, _text, tags, variables, item?: any) {
         var children = el.childNodes;
         for(let i=0; i < children.length; i++) {
             if (children[i].nodeType == 1 )
@@ -249,7 +249,10 @@ export class RepeaterComponent extends GaugeBaseComponent {
                                 }
                                 children[i].innerHTML = _tmpVal;
                             } else {
-                                children[i].innerHTML = _text ;
+                                // @field shows the value of that field of the item (fallback: the 'property to show')
+                                const field = children[i].innerHTML.replace("@", "");
+                                const value = (item && item[field] !== undefined && item[field] !== null) ? item[field] : _text;
+                                children[i].textContent = value === undefined || value === null ? '' : String(value);
                             }
                         }
                     try {
@@ -259,7 +262,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                         }
                     } catch (e) {}
                 }
-                this.recurseAndAdd(children[i], _data, _id, _text, tags, variables);
+                this.recurseAndAdd(children[i], _data, _id, _text, tags, variables, item);
             }
         }
     }
