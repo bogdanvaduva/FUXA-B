@@ -123,14 +123,17 @@ export class RepeaterComponent extends GaugeBaseComponent {
             this.scripts = hmiService.projectService.getScripts();
             RepeaterUtils.getItems(dataLine).subscribe({ error: (err) => console.error(`Repeater: cannot load ${dataLine.url}`, err), next: result => {
                 let jsonObj = result;
-                Object.entries(jsonObj).forEach(entry => {
+                Object.entries(jsonObj || {}).forEach(entry => {
                     if (svgDivContainer) {
-                        const [key, value] = entry;
-                        let prop = [entry, dataJSONProperties];
-                        var xml = doc.parseFromString(v.svgcontent, "image/svg+xml");
-                        var svgNodes = xml.getElementsByTagName("svg");
-                        this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags, hmiService.variables);
-                        svgDivContainer.appendChild(svgNodes[0]);
+                        try {
+                            let prop = [entry, dataJSONProperties];
+                            var xml = doc.parseFromString(v.svgcontent, "image/svg+xml");
+                            var svgNodes = xml.getElementsByTagName("svg");
+                            this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags, hmiService.variables);
+                            svgDivContainer.appendChild(svgNodes[0]);
+                        } catch (err) {
+                            console.error(`Repeater: cannot render item ${entry[0]}`, err);
+                        }
                     }
                 });
                 setTimeout(function() {
@@ -187,11 +190,12 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 if ('id' in children[i]){
                     let id = children[i].id;
                     if (this.viewObjectsScripts.hasOwnProperty(id.toLowerCase())){
-                        let scriptEntry = this.getScript(this.scripts, this.viewObjectsScripts[id.toLowerCase()]);
-                        let script = scriptEntry[1];
-                        if (script['mode'] === 'CLIENT') {
+                        // only events running a CLIENT script are wired, other events (e.g. open a view) are skipped
+                        let scriptEntry = this.getScript(this.scripts || [], this.viewObjectsScripts[id.toLowerCase()]);
+                        let script = scriptEntry?.[1];
+                        if (script?.['mode'] === 'CLIENT') {
                             children[i].setAttribute("onclick",script['code']);
-                        }              
+                        }
                     }
                     if (children[i].id !== '' && !children[i].getAttribute("tagname")) {
                         children[i].id = children[i].id + "_" + _id;

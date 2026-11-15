@@ -27,7 +27,7 @@
             </div>
             <div class="my-form-field section-item section-item-block mt5">
                 <span>{{'card.config-content-view' | translate}}</span>
-                <mat-select [(value)]="property.view">
+                <mat-select [(value)]="property.view" (selectionChange)="onPropertyChanged()">
                     <mat-option *ngFor="let view of data.views" [value]="view.id">
                         {{ view.name }}
                     </mat-option>
