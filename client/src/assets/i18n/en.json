@@ -367,6 +367,7 @@
     "repeater.config-line-url-data-type": "Data type",
     "repeater.config-line-url-data-properties": "Data properties",
     "repeater.config-line-url-data-path": "Data path (items inside the JSON, e.g. data)",
+    "repeater.config-line-data-path": "Data path",
     "repeater.config-name-title": "Repeater",
     "repeater.config-name": "Name",
     "repeater.config-rename": "Rename",

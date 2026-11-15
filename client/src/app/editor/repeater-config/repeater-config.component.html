@@ -1,12 +1,12 @@
 <div>
-    <h1 mat-dialog-title style="display:inline-block;cursor: move" mat-dialog-draggable>{{'repeater.config-title' | translate}}</h1>
+    <h1 mat-dialog-title class="dialog-title" mat-dialog-draggable>{{'repeater.config-title' | translate}}</h1>
     <mat-icon (click)="onNoClick()" class="dialog-close-btn">clear</mat-icon>
-    <div style="display: inline-block; width: 100%; position: relative;">
-        <div class="toolbox-toadd">
-            <button mat-icon-button (click)="onEditRepeaterData(null)">
-                <mat-icon>add_circle_outline</mat-icon>
-            </button>
-        </div>
+    <div class="toolbox-toadd">
+        <button mat-icon-button (click)="onEditRepeaterData(null)">
+            <mat-icon>add_circle_outline</mat-icon>
+        </button>
+    </div>
+    <div mat-dialog-content class="content">
         <div class="panelTop">
             <div *ngFor="let repeaterData of data.repeaters; index as i" class="mychips" (click)="onSelectRepeaterData(repeaterData)" [ngClass]="isRepeaterDataSelected(repeaterData)">
                 <mat-icon (click)="onSelectRepeaterData(repeaterData);onRemoveRepeaterData(i)">cancel</mat-icon>
@@ -30,6 +30,7 @@
                     <span class="list-item-name">{{'repeater.config-line-name' | translate}}</span>
                     <span class="list-item-url">{{'repeater.config-line-url' | translate}}</span>
                     <span class="list-item-url-data-type">{{'repeater.config-line-url-data-type' | translate}}</span>
+                    <span class="list-item-url-data-path">{{'repeater.config-line-data-path' | translate}}</span>
                     <span class="list-item-url-data-properties">{{'repeater.config-line-url-data-properties' | translate}}</span>
                 </mat-list-item>
                 <div class="list-panel">
@@ -42,7 +43,10 @@
                             <span>{{line.url}}</span>
                         </div>
                         <div class="list-item-text list-item-url-data-type">
-                            <span>{{line.url_data_type}}</span>
+                            <span>{{isCsv(line) ? 'CSV' : 'JSON'}}</span>
+                        </div>
+                        <div class="list-item-text list-item-url-data-path">
+                            <span>{{isCsv(line) ? '' : line.url_data_path}}</span>
                         </div>
                         <div class="list-item-text list-item-url-data-properties">
                             <span>{{line.url_data_properties}}</span>

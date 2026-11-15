@@ -6,14 +6,14 @@ import { TranslateService } from '@ngx-translate/core';
 import { ProjectService } from '../../_services/project.service';
 
 import { Utils } from '../../_helpers/utils';
-import { RepeaterData, RepeaterDataLine } from '../../_models/repeater';
+import { RepeaterData, RepeaterDataLine, RepeaterDataType, RepeaterUtils } from '../../_models/repeater';
 import { ConfirmDialogComponent } from '../../gui-helpers/confirm-dialog/confirm-dialog.component';
 import { EditNameComponent } from '../../gui-helpers/edit-name/edit-name.component';
 
 @Component({
   selector: 'app-repeater-config',
   templateUrl: './repeater-config.component.html',
-  styleUrls: ['./repeater-config.component.css']
+  styleUrls: ['./repeater-config.component.scss']
 })
 export class RepeaterConfigComponent implements OnInit {
 
@@ -70,6 +70,10 @@ export class RepeaterConfigComponent implements OnInit {
         }
     }
 
+    isCsv(line: RepeaterDataLine): boolean {
+        return RepeaterUtils.isCsv(line);
+    }
+
     hasRepeaterDataLines(item: RepeaterData){
         if (item === this.selectedRepeaterData) {
             if (item.lines) {
@@ -109,7 +113,7 @@ export class RepeaterConfigComponent implements OnInit {
     onAddRepeaterDataLine(repeater: RepeaterData) {
         let dialogRef = this.dialog.open(DialogRepeaterDataLine, {
             position: { top: '60px' },
-            data:  <RepeaterDataLine>{ name: '', url: '', url_data_type: '', url_data_properties: '', url_data_path: '' }
+            data:  <RepeaterDataLine>{ name: '', url: '', url_data_type: RepeaterDataType.json, url_data_properties: '', url_data_path: '' }
         });
 
         dialogRef.afterClosed().subscribe((result) => {
@@ -122,7 +126,7 @@ export class RepeaterConfigComponent implements OnInit {
     editRepeaterDataLine(line: RepeaterDataLine) {
         let dialogRef = this.dialog.open(DialogRepeaterDataLine, {
             position: { top: '60px' },
-            data: <RepeaterDataLine>{ id: line.id, name: line.name, url: line.url, url_data_type: line.url_data_type, url_data_properties: line.url_data_properties, url_data_path: line.url_data_path }
+            data: <RepeaterDataLine>{ id: line.id, name: line.name, url: line.url, url_data_type: RepeaterUtils.isCsv(line) ? RepeaterDataType.csv : RepeaterDataType.json, url_data_properties: line.url_data_properties, url_data_path: line.url_data_path }
         });
         dialogRef.afterClosed().subscribe((result:RepeaterDataLine) => {
             if (result) {
@@ -149,7 +153,7 @@ export class RepeaterConfigComponent implements OnInit {
 @Component({
     selector: 'dialog-repeater-line',
     templateUrl: './repeater-line.dialog.html',
-    styleUrls: ['./repeater-config.component.css']
+    styleUrls: ['./repeater-config.component.scss']
 })
 export class DialogRepeaterDataLine {
 
