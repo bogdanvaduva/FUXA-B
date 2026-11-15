@@ -121,6 +121,15 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 initializeHtml5QrCode(gaugeSettings.id);
                 return createComponent();
             }
+            if (v.items?.[gaugeSettings.id]) {
+                // the Repeater would copy the page it is placed in (including itself) for every item
+                const message = document.createElement("div");
+                message.style.padding = "5px";
+                message.textContent = 'Repeater: select a different view, a Repeater cannot repeat the view it is placed in.';
+                svgDivContainer.appendChild(message);
+                initializeHtml5QrCode(gaugeSettings.id);
+                return createComponent();
+            }
             this.viewObjectsScripts = {};
             Object.entries(v.items).forEach(entry => {
                 try {
@@ -137,6 +146,8 @@ export class RepeaterComponent extends GaugeBaseComponent {
                         try {
                             let prop = [entry, dataJSONProperties];
                             var xml = doc.parseFromString(v.svgcontent, "image/svg+xml");
+                            // a Repeater saved inside the repeated view (toolbar and rendered items) is not repeated
+                            this.removeRepeaters(xml);
                             var svgNodes = xml.getElementsByTagName("svg");
                             this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags, hmiService.variables);
                             svgDivContainer.appendChild(svgNodes[0]);
@@ -315,6 +326,38 @@ export class RepeaterComponent extends GaugeBaseComponent {
 
     static detectChange(gab: GaugeSettings, gaugeManager: GaugesManager, hmiService: HmiService, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef ): RepeaterComponent {
         return RepeaterComponent.initElement(gab, gaugeManager, hmiService, resolver, viewContainerRef, false);
+    }
+
+    /** remove the Repeater controls (with their toolbar and rendered items) from a parsed view */
+    static removeRepeaters(xml: Document) {
+        xml.querySelectorAll(`[type^="${RepeaterComponent.TypeTag}"], .repeater-toolbar`).forEach(element => element.remove());
+    }
+
+    /**
+     * The editor saves the view SVG as shown, so a Repeater would be saved with its toolbar and all
+     * rendered items: keep its container empty in the saved content (it is rendered again on load).
+     */
+    static stripRenderedContent(svgContent: string): string {
+        if (!svgContent || svgContent.indexOf(RepeaterComponent.TypeTag) < 0) {
+            return svgContent;
+        }
+        try {
+            const xml = new DOMParser().parseFromString(svgContent, 'image/svg+xml');
+            if (xml.getElementsByTagName('parsererror').length) {
+                return svgContent;
+            }
+            xml.querySelectorAll(`[type^="${RepeaterComponent.TypeTag}"]`).forEach(repeater => {
+                repeater.querySelectorAll(`[id^="${RepeaterComponent.prefixD}"]`).forEach(container => {
+                    while (container.firstChild) {
+                        container.removeChild(container.firstChild);
+                    }
+                });
+            });
+            return new XMLSerializer().serializeToString(xml);
+        } catch (err) {
+            console.error('Repeater: cannot clean the view content', err);
+            return svgContent;
+        }
     }
 
     static getView(hmiService: HmiService, name: string) {

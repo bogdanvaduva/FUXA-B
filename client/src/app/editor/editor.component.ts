@@ -12,6 +12,7 @@ import { WindowRef } from '../_helpers/windowref';
 import { GaugePropertyComponent, GaugeDialogType, GaugePropertyData } from '../gauges/gauge-property/gauge-property.component';
 
 import { GaugesManager } from '../gauges/gauges.component';
+import { RepeaterComponent } from '../gauges/controls/repeater/repeater.component';
 import { GaugeBaseComponent } from '../gauges/gauge-base/gauge-base.component';
 import { Utils } from '../_helpers/utils';
 import { Define } from '../_helpers/define';
@@ -406,7 +407,7 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
         } else if (this.currentView.type === ViewType.maps) {
             return this.currentView.svgcontent;
         }
-        return this.winRef.nativeWindow.svgEditor.getSvgString();
+        return RepeaterComponent.stripRenderedContent(this.winRef.nativeWindow.svgEditor.getSvgString());
     }
 
     private destroyRemovedGauges() {
