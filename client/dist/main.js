@@ -7287,6 +7287,67 @@ class UploadFile {
 
 /***/ }),
 
+/***/ 82532:
+/*!*************************************!*\
+  !*** ./src/app/_models/repeater.ts ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   RepeaterData: () => (/* binding */ RepeaterData),
+/* harmony export */   RepeaterDataLine: () => (/* binding */ RepeaterDataLine),
+/* harmony export */   RepeaterUtils: () => (/* binding */ RepeaterUtils)
+/* harmony export */ });
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs */ 70271);
+/* harmony import */ var _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../_helpers/endpointapi */ 68326);
+
+
+class RepeaterData {
+  id;
+  name;
+  lines;
+}
+class RepeaterDataLine {
+  id;
+  name;
+  url;
+  url_data_type;
+  url_data_properties;
+  /** optional dotted path to the items inside the JSON (e.g. 'data' or 'result.items') */
+  url_data_path;
+}
+class RepeaterUtils {
+  /**
+   * Absolute http(s) URLs are used as they are (GitHub file pages are mapped to the raw file),
+   * relative paths are resolved against the FUXA server (e.g. a path configured in settings.proxies).
+   */
+  static resolveUrl(url) {
+    const value = (url || '').trim();
+    const github = value.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(.+)$/i);
+    if (github) {
+      return `https://raw.githubusercontent.com/${github[1]}/${github[2]}/${github[3]}`;
+    }
+    if (/^https?:\/\//i.test(value)) {
+      return value;
+    }
+    return _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_0__.EndPointApi.getURL() + (value.startsWith('/') ? value : '/' + value);
+  }
+  /** return the items (array or object) found at the dotted path, the whole JSON without path */
+  static selectItems(json, path) {
+    const keys = (path || '').split('.').map(k => k.trim()).filter(k => k);
+    const items = keys.reduce((obj, key) => obj === null || obj === undefined ? undefined : obj[key], json);
+    return items ?? {};
+  }
+  /** load the JSON of a Repeater data line and return the items to repeat */
+  static getItems(line) {
+    return _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_0__.EndPointApi.getJSONFromURL(RepeaterUtils.resolveUrl(line?.url)).pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_1__.map)(result => RepeaterUtils.selectItems(result, line?.url_data_path)));
+  }
+}
+
+/***/ }),
+
 /***/ 67426:
 /*!***********************************!*\
   !*** ./src/app/_models/report.ts ***!
@@ -29976,7 +30037,8 @@ let RepeaterConfigComponent = class RepeaterConfigComponent {
         name: '',
         url: '',
         url_data_type: '',
-        url_data_properties: ''
+        url_data_properties: '',
+        url_data_path: ''
       }
     });
     dialogRef.afterClosed().subscribe(result => {
@@ -29995,7 +30057,8 @@ let RepeaterConfigComponent = class RepeaterConfigComponent {
         name: line.name,
         url: line.url,
         url_data_type: line.url_data_type,
-        url_data_properties: line.url_data_properties
+        url_data_properties: line.url_data_properties,
+        url_data_path: line.url_data_path
       }
     });
     dialogRef.afterClosed().subscribe(result => {
@@ -30004,6 +30067,7 @@ let RepeaterConfigComponent = class RepeaterConfigComponent {
         line.url = result.url;
         line.url_data_type = result.url_data_type;
         line.url_data_properties = result.url_data_properties;
+        line.url_data_path = result.url_data_path;
       }
     });
   }
@@ -45819,18 +45883,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _repeater_property_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./repeater-property.component.css?ngResource */ 39182);
 /* harmony import */ var _repeater_property_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_repeater_property_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _tag_repeater_dialog_html_ngResource__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./tag-repeater.dialog.html?ngResource */ 57599);
-/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @angular/core */ 37580);
-/* harmony import */ var _angular_material_dialog__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @angular/material/dialog */ 12587);
-/* harmony import */ var _angular_material_table__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! @angular/material/table */ 77697);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! rxjs */ 56042);
-/* harmony import */ var _angular_forms__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @angular/forms */ 34456);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs/operators */ 33900);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! rxjs */ 10819);
-/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! @ngx-translate/core */ 597);
-/* harmony import */ var _services_project_service__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../_services/project.service */ 27324);
-/* harmony import */ var _services_hmi_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../../_services/hmi.service */ 83131);
-/* harmony import */ var _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../../_helpers/endpointapi */ 68326);
-/* harmony import */ var _editor_repeater_config_repeater_config_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../../editor/repeater-config/repeater-config.component */ 57588);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @angular/core */ 37580);
+/* harmony import */ var _angular_material_dialog__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! @angular/material/dialog */ 12587);
+/* harmony import */ var _angular_material_table__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! @angular/material/table */ 77697);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! rxjs */ 56042);
+/* harmony import */ var _angular_forms__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @angular/forms */ 34456);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs/operators */ 33900);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs */ 10819);
+/* harmony import */ var _ngx_translate_core__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! @ngx-translate/core */ 597);
+/* harmony import */ var _models_repeater__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../_models/repeater */ 82532);
+/* harmony import */ var _services_project_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../../_services/project.service */ 27324);
+/* harmony import */ var _services_hmi_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../../_services/hmi.service */ 83131);
+/* harmony import */ var _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../../_helpers/endpointapi */ 68326);
+/* harmony import */ var _editor_repeater_config_repeater_config_component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../../../editor/repeater-config/repeater-config.component */ 57588);
 var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
   var c = arguments.length,
     r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
@@ -45858,19 +45923,20 @@ var __metadata = undefined && undefined.__metadata || function (k, v) {
 
 
 
+
 let RepeaterPropertyComponent = class RepeaterPropertyComponent {
   dialog;
   translateService;
   data;
-  onPropChanged = new _angular_core__WEBPACK_IMPORTED_MODULE_7__.EventEmitter();
+  onPropChanged = new _angular_core__WEBPACK_IMPORTED_MODULE_8__.EventEmitter();
   set reload(b) {
     this._reload();
   }
-  repeaterDataCtrl = new _angular_forms__WEBPACK_IMPORTED_MODULE_8__.UntypedFormControl();
-  repeaterDataFilterCtrl = new _angular_forms__WEBPACK_IMPORTED_MODULE_8__.UntypedFormControl();
-  filteredRepeaterData = new rxjs__WEBPACK_IMPORTED_MODULE_9__.ReplaySubject(1);
+  repeaterDataCtrl = new _angular_forms__WEBPACK_IMPORTED_MODULE_9__.UntypedFormControl();
+  repeaterDataFilterCtrl = new _angular_forms__WEBPACK_IMPORTED_MODULE_9__.UntypedFormControl();
+  filteredRepeaterData = new rxjs__WEBPACK_IMPORTED_MODULE_10__.ReplaySubject(1);
   property;
-  _onDestroy = new rxjs__WEBPACK_IMPORTED_MODULE_10__.Subject();
+  _onDestroy = new rxjs__WEBPACK_IMPORTED_MODULE_11__.Subject();
   constructor(dialog, translateService) {
     this.dialog = dialog;
     this.translateService = translateService;
@@ -45913,7 +45979,7 @@ let RepeaterPropertyComponent = class RepeaterPropertyComponent {
     this.onPropChanged.emit(this.data.settings);
   }
   onEditNewRepeaterData() {
-    let dialogRef = this.dialog.open(_editor_repeater_config_repeater_config_component__WEBPACK_IMPORTED_MODULE_6__.RepeaterConfigComponent, {
+    let dialogRef = this.dialog.open(_editor_repeater_config_repeater_config_component__WEBPACK_IMPORTED_MODULE_7__.RepeaterConfigComponent, {
       position: {
         top: '60px'
       },
@@ -45935,7 +46001,7 @@ let RepeaterPropertyComponent = class RepeaterPropertyComponent {
     // load the initial repeater data list
     this.filteredRepeaterData.next(this.data.repeaters.slice());
     // listen for search field value changes
-    this.repeaterDataFilterCtrl.valueChanges.pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_11__.takeUntil)(this._onDestroy)).subscribe(() => {
+    this.repeaterDataFilterCtrl.valueChanges.pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_12__.takeUntil)(this._onDestroy)).subscribe(() => {
       this.filterRepeaterData();
     });
     if (toset) {
@@ -45986,28 +46052,28 @@ let RepeaterPropertyComponent = class RepeaterPropertyComponent {
     });
   }
   static ctorParameters = () => [{
-    type: _angular_material_dialog__WEBPACK_IMPORTED_MODULE_12__.MatDialog
+    type: _angular_material_dialog__WEBPACK_IMPORTED_MODULE_13__.MatDialog
   }, {
-    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_13__.TranslateService
+    type: _ngx_translate_core__WEBPACK_IMPORTED_MODULE_14__.TranslateService
   }];
   static propDecorators = {
     data: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_7__.Input
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Input
     }],
     onPropChanged: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_7__.Output
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Output
     }],
     reload: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_7__.Input,
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Input,
       args: ['reload']
     }]
   };
 };
-RepeaterPropertyComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_7__.Component)({
+RepeaterPropertyComponent = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_8__.Component)({
   selector: 'app-repeater-property',
   template: _repeater_property_component_html_ngResource__WEBPACK_IMPORTED_MODULE_0__,
   styles: [(_repeater_property_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1___default())]
-}), __metadata("design:paramtypes", [_angular_material_dialog__WEBPACK_IMPORTED_MODULE_12__.MatDialog, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_13__.TranslateService])], RepeaterPropertyComponent);
+}), __metadata("design:paramtypes", [_angular_material_dialog__WEBPACK_IMPORTED_MODULE_13__.MatDialog, _ngx_translate_core__WEBPACK_IMPORTED_MODULE_14__.TranslateService])], RepeaterPropertyComponent);
 
 let DialogTagRepeater = class DialogTagRepeater {
   dialogRef;
@@ -46016,8 +46082,8 @@ let DialogTagRepeater = class DialogTagRepeater {
   data;
   defAllColumns = ['tag', 'tagUsed', 'tagIsObject', 'tagObjectProperty', 'repeaterDataId', 'input', 'repeaterdDataSearch', 'search', 'clear'];
   defAllRowWidth = 800;
-  endPointConfig = _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_5__.EndPointApi.getURL();
-  repeaterDataSource = new _angular_material_table__WEBPACK_IMPORTED_MODULE_14__.MatTableDataSource([]);
+  endPointConfig = _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_6__.EndPointApi.getURL();
+  repeaterDataSource = new _angular_material_table__WEBPACK_IMPORTED_MODULE_15__.MatTableDataSource([]);
   readonly = false;
   displayedColumns = this.defAllColumns;
   tableWidth = this.defAllRowWidth;
@@ -46055,10 +46121,15 @@ let DialogTagRepeater = class DialogTagRepeater {
       }
     });
     let _repeater = Object.values(this.data.repeaters).find(e => e.id === this.data.settings.property.repeaterData);
-    this.dataJSONURL = _repeater.lines[0].url;
-    this.dataJSONProperties = _repeater.lines[0].url_data_properties.split(",");
-    _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_5__.EndPointApi.getJSONFromURL(this.endPointConfig + this.dataJSONURL).subscribe(result => {
-      this.dataJSON = result;
+    const dataLine = _repeater?.lines?.[0];
+    if (!dataLine) {
+      return;
+    }
+    this.dataJSONURL = dataLine.url;
+    this.dataJSONProperties = (dataLine.url_data_properties || '').split(",");
+    _models_repeater__WEBPACK_IMPORTED_MODULE_3__.RepeaterUtils.getItems(dataLine).subscribe({
+      next: result => this.dataJSON = result,
+      error: err => console.error(`Repeater: cannot load ${dataLine.url}`, err)
     });
   }
   onNoClick() {
@@ -46116,29 +46187,29 @@ let DialogTagRepeater = class DialogTagRepeater {
     return _res;
   }
   static ctorParameters = () => [{
-    type: _angular_material_dialog__WEBPACK_IMPORTED_MODULE_12__.MatDialogRef
+    type: _angular_material_dialog__WEBPACK_IMPORTED_MODULE_13__.MatDialogRef
   }, {
-    type: _services_project_service__WEBPACK_IMPORTED_MODULE_3__.ProjectService
+    type: _services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService
   }, {
-    type: _services_hmi_service__WEBPACK_IMPORTED_MODULE_4__.HmiService
+    type: _services_hmi_service__WEBPACK_IMPORTED_MODULE_5__.HmiService
   }, {
     type: undefined,
     decorators: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_7__.Inject,
-      args: [_angular_material_dialog__WEBPACK_IMPORTED_MODULE_12__.MAT_DIALOG_DATA]
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Inject,
+      args: [_angular_material_dialog__WEBPACK_IMPORTED_MODULE_13__.MAT_DIALOG_DATA]
     }]
   }];
   static propDecorators = {
     readonly: [{
-      type: _angular_core__WEBPACK_IMPORTED_MODULE_7__.Input
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_8__.Input
     }]
   };
 };
-DialogTagRepeater = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_7__.Component)({
+DialogTagRepeater = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_8__.Component)({
   selector: 'tag-repeater-matching',
   template: _tag_repeater_dialog_html_ngResource__WEBPACK_IMPORTED_MODULE_2__,
   styles: [(_repeater_property_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1___default())]
-}), __metadata("design:paramtypes", [_angular_material_dialog__WEBPACK_IMPORTED_MODULE_12__.MatDialogRef, _services_project_service__WEBPACK_IMPORTED_MODULE_3__.ProjectService, _services_hmi_service__WEBPACK_IMPORTED_MODULE_4__.HmiService, Object])], DialogTagRepeater);
+}), __metadata("design:paramtypes", [_angular_material_dialog__WEBPACK_IMPORTED_MODULE_13__.MatDialogRef, _services_project_service__WEBPACK_IMPORTED_MODULE_4__.ProjectService, _services_hmi_service__WEBPACK_IMPORTED_MODULE_5__.HmiService, Object])], DialogTagRepeater);
 
 
 /***/ }),
@@ -46157,12 +46228,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _repeater_component_html_ngResource__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./repeater.component.html?ngResource */ 92522);
 /* harmony import */ var _repeater_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./repeater.component.css?ngResource */ 53819);
 /* harmony import */ var _repeater_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_repeater_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @angular/core */ 37580);
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @angular/core */ 37580);
 /* harmony import */ var _gauge_base_gauge_base_component__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../gauge-base/gauge-base.component */ 71457);
 /* harmony import */ var _models_hmi__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../_models/hmi */ 53276);
 /* harmony import */ var _helpers_utils__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../_helpers/utils */ 23728);
 /* harmony import */ var _gauge_property_gauge_property_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../gauge-property/gauge-property.component */ 9161);
 /* harmony import */ var _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../_helpers/endpointapi */ 68326);
+/* harmony import */ var _models_repeater__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../../_models/repeater */ 82532);
 var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
   var c = arguments.length,
     r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
@@ -46174,6 +46246,7 @@ var __metadata = undefined && undefined.__metadata || function (k, v) {
   if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var RepeaterComponent_1;
+
 
 
 
@@ -46220,7 +46293,6 @@ let RepeaterComponent = class RepeaterComponent extends _gauge_base_gauge_base_c
     if (!dataLine) {
       return createComponent();
     }
-    let dataJSONURL = dataLine.url;
     let dataJSONProperties = (dataLine.url_data_properties || '').split(",");
     let dataJSONPropertyToShow = gaugeSettings.property.repeaterDataPropertyToShow;
     let dataJSONTags = {};
@@ -46292,22 +46364,25 @@ let RepeaterComponent = class RepeaterComponent extends _gauge_base_gauge_base_c
         } catch (err) {}
       });
       this.scripts = hmiService.projectService.getScripts();
-      _helpers_endpointapi__WEBPACK_IMPORTED_MODULE_6__.EndPointApi.getJSONFromURL(this.endPointConfig + dataJSONURL).subscribe(result => {
-        let jsonObj = result;
-        Object.entries(jsonObj).forEach(entry => {
-          if (svgDivContainer) {
-            const [key, value] = entry;
-            let prop = [entry, dataJSONProperties];
-            var xml = doc.parseFromString(v.svgcontent, "image/svg+xml");
-            var svgNodes = xml.getElementsByTagName("svg");
-            this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags, hmiService.variables);
-            svgDivContainer.appendChild(svgNodes[0]);
-          }
-        });
-        setTimeout(function () {
-          var content = svgDivContainer.innerHTML;
-          svgDivContainer.innerHTML = content;
-        }, 1000);
+      _models_repeater__WEBPACK_IMPORTED_MODULE_7__.RepeaterUtils.getItems(dataLine).subscribe({
+        error: err => console.error(`Repeater: cannot load ${dataLine.url}`, err),
+        next: result => {
+          let jsonObj = result;
+          Object.entries(jsonObj).forEach(entry => {
+            if (svgDivContainer) {
+              const [key, value] = entry;
+              let prop = [entry, dataJSONProperties];
+              var xml = doc.parseFromString(v.svgcontent, "image/svg+xml");
+              var svgNodes = xml.getElementsByTagName("svg");
+              this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags, hmiService.variables);
+              svgDivContainer.appendChild(svgNodes[0]);
+            }
+          });
+          setTimeout(function () {
+            var content = svgDivContainer.innerHTML;
+            svgDivContainer.innerHTML = content;
+          }, 1000);
+        }
       });
     }
     initializeHtml5QrCode(gaugeSettings.id);
@@ -46463,7 +46538,7 @@ let RepeaterComponent = class RepeaterComponent extends _gauge_base_gauge_base_c
   }
   static ctorParameters = () => [];
 };
-RepeaterComponent = RepeaterComponent_1 = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_7__.Component)({
+RepeaterComponent = RepeaterComponent_1 = __decorate([(0,_angular_core__WEBPACK_IMPORTED_MODULE_8__.Component)({
   selector: 'app-repeater',
   template: _repeater_component_html_ngResource__WEBPACK_IMPORTED_MODULE_0__,
   styles: [(_repeater_component_css_ngResource__WEBPACK_IMPORTED_MODULE_1___default())]
@@ -83662,7 +83737,7 @@ module.exports = "<div>\r\n    <h1 mat-dialog-title style=\"display:inline-block
 /***/ ((module) => {
 
 "use strict";
-module.exports = "<div>\r\n    <h1 mat-dialog-title style=\"display:inline-block; cursor:move;\" mat-dialog-draggable>{{'repeater.config-lines' | translate}}</h1>\r\n    <mat-icon (click)=\"onNoClick()\" style=\"float:right;margin-right:-10px;margin-top:-10px;cursor:pointer;color:gray;\">clear</mat-icon>\r\n    <div mat-dialog-content>\r\n        <div class=\"my-form-field\" style=\"display: block;margin-bottom: 10px;\">\r\n            <span>{{'repeater.config-line-name' | translate}}</span>\r\n            <input [(ngModel)]=\"data.name\" type=\"text\" style=\"width:300px\">\r\n        </div>\r\n        <div class=\"my-form-field\" style=\"display: block;margin-bottom: 10px;\">\r\n            <span>{{'repeater.config-line-url' | translate}}</span>\r\n            <input [(ngModel)]=\"data.url\" type=\"text\" style=\"width:300px\">\r\n        </div>\r\n        <div class=\"my-form-field\" style=\"display: block;margin-bottom: 10px;\">\r\n            <span>{{'repeater.config-line-url-data-type' | translate}}</span>\r\n            <input [(ngModel)]=\"data.url_data_type\" type=\"text\" style=\"width:300px\">\r\n        </div>\r\n        <div class=\"my-form-field\" style=\"display: block;margin-bottom: 10px;\">\r\n            <span>{{'repeater.config-line-url-data-properties' | translate}}</span>\r\n            <input [(ngModel)]=\"data.url_data_properties\" type=\"text\" style=\"width:300px\">\r\n        </div>\r\n    </div>\r\n    <div mat-dialog-actions class=\"dialog-action\">\r\n        <button mat-raised-button (click)=\"onNoClick()\">{{'dlg.cancel' | translate}}</button>\r\n        <button mat-raised-button color=\"primary\" [mat-dialog-close]=\"data\" >{{'dlg.ok' | translate}}</button>\r\n    </div>\r\n</div>";
+module.exports = "<div>\r\n    <h1 mat-dialog-title style=\"display:inline-block; cursor:move;\" mat-dialog-draggable>{{'repeater.config-lines' | translate}}</h1>\r\n    <mat-icon (click)=\"onNoClick()\" style=\"float:right;margin-right:-10px;margin-top:-10px;cursor:pointer;color:gray;\">clear</mat-icon>\r\n    <div mat-dialog-content>\r\n        <div class=\"my-form-field\" style=\"display: block;margin-bottom: 10px;\">\r\n            <span>{{'repeater.config-line-name' | translate}}</span>\r\n            <input [(ngModel)]=\"data.name\" type=\"text\" style=\"width:300px\">\r\n        </div>\r\n        <div class=\"my-form-field\" style=\"display: block;margin-bottom: 10px;\">\r\n            <span>{{'repeater.config-line-url' | translate}}</span>\r\n            <input [(ngModel)]=\"data.url\" type=\"text\" style=\"width:300px\">\r\n        </div>\r\n        <div class=\"my-form-field\" style=\"display: block;margin-bottom: 10px;\">\r\n            <span>{{'repeater.config-line-url-data-type' | translate}}</span>\r\n            <input [(ngModel)]=\"data.url_data_type\" type=\"text\" style=\"width:300px\">\r\n        </div>\r\n        <div class=\"my-form-field\" style=\"display: block;margin-bottom: 10px;\">\r\n            <span>{{'repeater.config-line-url-data-properties' | translate}}</span>\r\n            <input [(ngModel)]=\"data.url_data_properties\" type=\"text\" style=\"width:300px\">\r\n        </div>\r\n        <div class=\"my-form-field\" style=\"display: block;margin-bottom: 10px;\">\r\n            <span>{{'repeater.config-line-url-data-path' | translate}}</span>\r\n            <input [(ngModel)]=\"data.url_data_path\" type=\"text\" style=\"width:300px\" placeholder=\"data\">\r\n        </div>\r\n    </div>\r\n    <div mat-dialog-actions class=\"dialog-action\">\r\n        <button mat-raised-button (click)=\"onNoClick()\">{{'dlg.cancel' | translate}}</button>\r\n        <button mat-raised-button color=\"primary\" [mat-dialog-close]=\"data\" >{{'dlg.ok' | translate}}</button>\r\n    </div>\r\n</div>";
 
 /***/ }),
 
