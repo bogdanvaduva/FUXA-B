@@ -126,8 +126,10 @@
         }
     
         function qrCodeSuccessCallback(decodedText, decodedResult) {
-            /* handle success */
-            document.getElementById("repeater_html5_qrcode_input").value = decodedText;
+            /* handle success: set the search text, the Repeater filters its items on input */
+            var input = document.getElementById("repeater_html5_qrcode_input");
+            input.value = decodedText;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
         }
     
         function qrCodeErrorCallback(error) {
@@ -139,23 +141,7 @@
         }
     
         function searchRepeater() {
-            var flgClear = false;
-            if (document.getElementById("repeater_html5_qrcode_input").value === "") {
-                flgClear = true;
-            }
-            var nodes = document.getElementById(document.getElementById("repeater_input_search").getAttribute("data")).getElementsByTagName("svg");
-            for(let i = 0; i < nodes.length; i++) {
-                if (!flgClear) {
-                    if (!nodes[i].getAttribute("data").includes(document.getElementById("repeater_html5_qrcode_input").value)) {
-                        nodes[i].style.display = 'none';
-                    } else {
-                        nodes[i].style.display = 'flex';
-                    }
-                } else {
-                    nodes[i].style.display = 'flex';
-                }
-            }
-
+            // search is handled by the Repeater component (filters while typing, on Enter and with this button)
         }
     </script>
 </head>

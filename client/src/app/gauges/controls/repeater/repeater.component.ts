@@ -74,7 +74,12 @@ export class RepeaterComponent extends GaugeBaseComponent {
             toolbar.style.zIndex = "1";
             const containerBackground = getComputedStyle(svgDivContainer).backgroundColor;
             toolbar.style.backgroundColor = (!containerBackground || containerBackground === 'transparent' || containerBackground === 'rgba(0, 0, 0, 0)') ? '#ffffff' : containerBackground;
+            if (isview) {
+                // the control group has pointer-events:none (editor), the toolbar must be usable in the view
+                toolbar.style.pointerEvents = "auto";
+            }
             svgDivContainer.appendChild(toolbar);
+            this.bindSearch(svgDivContainer);
             var divReader = document.createElement("div");
             divReader.style.display = "table"
             divReader.style.width = "100%";
@@ -153,6 +158,9 @@ export class RepeaterComponent extends GaugeBaseComponent {
                             var svgNodes = xml.getElementsByTagName("svg");
                             this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags, hmiService.variables);
                             this.applyViewStyle(svgNodes[0], v);
+                            if (isview) {
+                                (<SVGElement>svgNodes[0]).style.pointerEvents = 'auto';
+                            }
                             svgDivContainer.appendChild(svgNodes[0]);
                         } catch (err) {
                             console.error(`Repeater: cannot render item ${entry[0]}`, err);
@@ -350,6 +358,51 @@ export class RepeaterComponent extends GaugeBaseComponent {
         if (view.profile?.bkcolor) {
             style.setProperty('background-color', view.profile.bkcolor);
         }
+    }
+
+    /**
+     * Search in the toolbar: filter the items while typing, on Enter or with the search button.
+     * Listeners are delegated to the container because its content is rebuilt after rendering.
+     */
+    static bindSearch(container: HTMLElement) {
+        if (container['repeaterSearchBound']) {
+            return;
+        }
+        container['repeaterSearchBound'] = true;
+        const isSearchInput = (target: EventTarget) => (<HTMLElement>target)?.id === 'repeater_html5_qrcode_input';
+        container.addEventListener('input', (event) => {
+            if (isSearchInput(event.target)) {
+                RepeaterComponent.filterItems(container);
+            }
+        });
+        container.addEventListener('keydown', (event: KeyboardEvent) => {
+            if (isSearchInput(event.target)) {
+                event.stopPropagation();        // keep the keys away from the editor shortcuts
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    RepeaterComponent.filterItems(container);
+                }
+            }
+        });
+        container.addEventListener('click', (event) => {
+            if ((<HTMLElement>event.target)?.closest?.('#repeater_input_search')) {
+                RepeaterComponent.filterItems(container);
+            }
+        });
+    }
+
+    /** show only the items with a value containing the search text (case insensitive), all with empty search */
+    static filterItems(container: HTMLElement) {
+        const input = <HTMLInputElement>container.querySelector('#repeater_html5_qrcode_input');
+        const search = (input?.value || '').trim().toLowerCase();
+        Array.from(container.children).forEach((item: HTMLElement) => {
+            if (item.nodeName.toLowerCase() !== 'svg') {
+                return;
+            }
+            const values = (item.getAttribute('data') || '').split('&').map(pair => pair.substring(pair.indexOf('|') + 1));
+            const text = (values.join(' ') + ' ' + (item.textContent || '')).toLowerCase();
+            item.style.display = (!search || text.includes(search)) ? 'flex' : 'none';
+        });
     }
 
     /** controls of the repeated view bound to an item field: tag set to '@field' (e.g. an Output with tag @country) */
