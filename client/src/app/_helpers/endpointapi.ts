@@ -57,7 +57,9 @@ export class EndPointApi {
         catch { return input.startsWith('/') ? input : '/' + input; }
     };
     static getJSONFromURL(jsonURL: string): Observable<any> {
-        let header = new HttpHeaders({ 'Content-Type': 'application/json' });
+        // Accept (not Content-Type) keeps this a "simple" CORS request: a Content-Type header on a GET
+        // forces a preflight OPTIONS request that many public servers (e.g. raw.githubusercontent.com) reject
+        let header = new HttpHeaders({ 'Accept': 'application/json' });
         let _http = new HttpClient(new HttpXhrBackend({ 
             build: () => new XMLHttpRequest() 
         }));
