@@ -227,9 +227,9 @@ if (!fs.existsSync(settings.logDir)) {
 logger.init(settings);
 const version = FUXA.version();
 if (version.indexOf('beta') > 0) {
-    logger.warn('FUXA V.' + version);
+    logger.warn('FUXA-B V.' + version);
 } else {
-    logger.info('FUXA V.' + version);
+    logger.info('FUXA-B V.' + version);
 }
 
 // Check storage Database dir
@@ -339,7 +339,7 @@ settings.uiHost = settings.uiHost || "0.0.0.0";
 
 // Wait ending initialization
 events.once('init-runtime-ok', function () {
-    logger.info('FUXA init in  ' + utils.endTime(startTime) + 'ms.');
+    logger.info('FUXA-B init in  ' + utils.endTime(startTime) + 'ms.');
     startFuxa();
     initWebcamSnapshotCleanup();
 });
@@ -350,9 +350,9 @@ try {
 } catch (err) {
     if (err.code == 'unsupported_version') {
         logger.error('Unsupported version of node.js:', process.version);
-        logger.error('FUXA requires node.js v6 or later');
+        logger.error('FUXA-B requires node.js v6 or later');
     } else if (err.code == 'not_built') {
-        logger.error('FUXA has not been built. See README.md for details');
+        logger.error('FUXA-B has not been built. See README.md for details');
     } else {
         logger.error('Failed to start server:');
         if (err.stack) {
@@ -439,6 +439,54 @@ function snapshotAuth(req, res, next) {
         return res.status(401).end();
     }
 }
+
+// FUXA-B: proxy request to a specific server in order to have a list of 100+ points
+app.use(BASE_PATH + '/gis', function (clientRequest, clientResponse) {
+    const targetUrl = 'YOUR GIS DATA';
+
+    const parsedHost = targetUrl.split('/').splice(2).splice(0, 1).join('/');
+    let parsedPort;
+    let parsedSSL;
+    if (targetUrl.startsWith('https://')) {
+        parsedPort = 443;
+        parsedSSL = https;
+    } else if (targetUrl.startsWith('http://')) {
+        parsedPort = 80;
+        parsedSSL = http;
+    } else {
+        return clientResponse.status(501).send('GIS proxy target not configured');
+    }
+    const options = {
+        hostname: parsedHost,
+        port: parsedPort,
+        path: '/gis' + clientRequest.url,
+        method: clientRequest.method,
+        headers: {
+            'User-Agent': clientRequest.headers['user-agent']
+        }
+    };
+
+    const serverRequest = parsedSSL.request(options, function (serverResponse) {
+        let body = '';
+        if (String(serverResponse.headers['content-type']).indexOf('text/html') !== -1) {
+            serverResponse.on('data', function (chunk) {
+                body += chunk;
+            });
+            serverResponse.on('end', function () {
+                clientResponse.writeHead(serverResponse.statusCode, serverResponse.headers);
+                clientResponse.end(body);
+            });
+        } else {
+            serverResponse.pipe(clientResponse, { end: true });
+            clientResponse.contentType(serverResponse.headers['content-type']);
+        }
+    });
+    serverRequest.on('error', (err) => {
+        logger.error('gis proxy: ' + err);
+        if (!clientResponse.headersSent) clientResponse.status(502).end();
+    });
+    serverRequest.end();
+});
 
 // All the calls that are directly parsed as static http are mapped here
 const SHELL_ROUTES = [
@@ -606,13 +654,11 @@ function startFuxa() {
         }
     }).catch(function (err) {
         logger.error('server.failed-to-start');
-        if (err) {
             if (err.stack) {
                 logger.error(err.stack);
             } else {
                 logger.error(err);
             }
-        }
     });
 }
 

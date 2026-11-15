@@ -424,6 +424,12 @@ export class ChartUplotComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.pauseMemoryValue[id].push({ x, y });
                 return;
             }
+            // FUXA-B: extract a property from a JSON object value
+            if (this['variableObjectProperty']) {
+                try {
+                    y = JSON.parse(y)[this['variableObjectProperty']];
+                } catch (e) { }
+            }
             this.nguplot.addValue(property.index, x, y, this.zoomSize || this.options.realtime * 60);
             property.lastValueTime = Date.now();
             this.range.to = Date.now();

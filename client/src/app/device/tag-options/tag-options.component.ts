@@ -57,6 +57,7 @@ export class TagOptionsComponent implements OnInit, OnDestroy {
             scaleReadExpression: null,
             scaleWriteExpression: null,
             unsPath: [null, [this.validateUnsPathUnique()]],
+            functionName: null
         });
 
         this.formGroup.controls.enabled.valueChanges.subscribe(enabled => {
@@ -90,6 +91,7 @@ export class TagOptionsComponent implements OnInit, OnDestroy {
             let scaleReadExpression = { value: null, valid: true };
             let scaleWriteExpression = { value: null, valid: true };
             let unsPath = { value: null, valid: true, initialized: false };
+            let functionName = { value: null, valid: true };
             for (let i = 0; i < this.data.tags.length; i++) {
                 if (!this.data.tags[i].daq) {
                     continue;
@@ -134,6 +136,7 @@ export class TagOptionsComponent implements OnInit, OnDestroy {
                     dateTimeFormat.value = this.data.tags[i].scale?.dateTimeFormat;
                     scaleReadExpression.value = this.data.tags[i].scale?.readExpression;
                     scaleWriteExpression.value = this.data.tags[i].scale?.writeExpression;
+                    functionName.value = this.data.tags[i].scale?.functionName;
                 } else if (scaleMode.value !== this.data.tags[i].scale?.mode) {
                     scaleMode.valid = false;
                 }
@@ -192,7 +195,8 @@ export class TagOptionsComponent implements OnInit, OnDestroy {
                     scaledHigh: scaledHigh.value,
                     dateTimeFormat: dateTimeFormat.value,
                     scaleReadExpression: scaleReadExpression.value,
-                    scaleWriteExpression: scaleWriteExpression.value
+                    scaleWriteExpression: scaleWriteExpression.value,
+                    functionName: functionName.value
                 };
             }
             if (scaleReadFunction.valid && scaleReadFunction.value) {
@@ -282,7 +286,8 @@ export class TagOptionsComponent implements OnInit, OnDestroy {
                 scaledHigh: this.formGroup.value.scaledHigh,
                 dateTimeFormat: this.formGroup.value.dateTimeFormat,
                 readExpression: this.formGroup.value.scaleReadExpression,
-                writeExpression: this.formGroup.value.scaleWriteExpression
+                writeExpression: this.formGroup.value.scaleWriteExpression,
+                functionName: this.formGroup.value.functionName
             } : null,
             scaleReadFunction: this.formGroup.value.scaleReadFunction,
             scaleReadParams: readParamsStr,

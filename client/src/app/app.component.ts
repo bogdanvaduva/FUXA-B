@@ -7,11 +7,11 @@ import { Observable, Subject, Subscription, combineLatest, fromEvent, map, merge
 import { environment } from '../environments/environment';
 
 import { ProjectService } from './_services/project.service';
+import { AuthService } from './_services/auth.service';
 import { SettingsService } from './_services/settings.service';
 import { UserGroups } from './_models/user';
 import { AppService } from './_services/app.service';
 import { HeartbeatService } from './_services/heartbeat.service';
-import { AuthService } from './_services/auth.service';
 import { HmiService } from './_services/hmi.service';
 
 @Component({
@@ -40,10 +40,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 		private projectService: ProjectService,
 		private settingsService: SettingsService,
 		private translateService: TranslateService,
+		private authService: AuthService,
 		private heartbeatService: HeartbeatService,
 		private cdr: ChangeDetectorRef,
 		private hmiService: HmiService,
-		private authService: AuthService,
 		location: Location
 	) {
 		this.location = location;
@@ -113,6 +113,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 		catch (err) {
 			console.error(err);
 		}
+
 	}
 
 	ngOnDestroy() {
@@ -155,6 +156,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 		}
 		return false;
 	}
+
+    isLoggedIn() {
+        return this.authService.isLoggedIn();
+    }
 
 	getClass() {
 		const route = this.location.path();

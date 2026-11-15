@@ -245,6 +245,10 @@ function setProjectData(cmd, value) {
                 section.table = prjstorage.TableType.GENERAL;
                 section.name = cmd;
                 setGraphs(value);
+            } else if (cmd === ProjectDataCmdType.Repeaters) {
+                section.table = prjstorage.TableType.GENERAL;
+                section.name = cmd;
+                setRepeaters(value);
             } else if (cmd === ProjectDataCmdType.SetText) {
                 section.table = prjstorage.TableType.TEXTS;
                 section.name = value.id;
@@ -410,6 +414,14 @@ function setHmiLayout(layout) {
  */
 function setCharts(charts) {
     data.charts = charts;
+}
+
+/**
+ * Set Repeaters
+ * @param {*} repeaters
+ */
+function setRepeaters(repeaters) {
+    data.repeaters = repeaters;
 }
 
 /**
@@ -1328,6 +1340,7 @@ const ProjectDataCmdType = {
     Graphs: 'graphs',
     Languages: 'languages',
     ClientAccess: 'client-access',
+    Repeaters: 'repeaters',
     SetText: 'set-text',
     SetText: 'set-text',
     DelText: 'del-text',

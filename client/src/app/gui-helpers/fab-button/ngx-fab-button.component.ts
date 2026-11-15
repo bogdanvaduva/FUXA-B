@@ -209,6 +209,11 @@ export class NgxFabButtonComponent implements AfterContentInit, OnDestroy, OnCha
 
     // if @Input values changes, we need check the direction type
     ngOnChanges(changes) {
+        if (this.disabled) {
+            this.elementref.style.display = 'none';
+        } else {
+            this.elementref.style.display = 'flex';
+        }
         if (changes.direction && !changes.direction.firstChange) {
             this.state.next({
                 ...this.state.getValue(),

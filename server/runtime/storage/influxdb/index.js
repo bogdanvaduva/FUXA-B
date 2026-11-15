@@ -20,16 +20,16 @@ function Influx(_settings, _log, _currentStorate) {
 
     var settings = _settings;               // Application settings
     var logger = _log;                      // Application logger
-    var currentStorage = _currentStorate    // Database to set the last value (current)
+    var currentStorage = _currentStorate;   // Database to set the last value (current)
     var status = InfluxDBStatusEnum.CLOSE;
 
 
     var influxError = { error: null, timestamp: 0 };
     var influxdbVersion = VERSION_20;
     var client = null;
-    var clientOptions = null
-    var writeApi = null
-    var queryApi = null
+    var clientOptions = null;
+    var writeApi = null;
+    var queryApi = null;
 
     this.init = function () {
 

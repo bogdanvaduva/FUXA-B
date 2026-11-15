@@ -9,6 +9,7 @@ const path = require('path');
 const SqliteDB = require("./sqlite");
 const InfluxDB = require("./influxdb");
 const TDengine  =require("./tdengine");
+const PostgreSQL = require("./postgresql");
 const CurrentStorage = require("./sqlite/currentstorage");
 // var DaqNode = require('./daqnode');
 var calculator = require('./calculator');
@@ -28,6 +29,7 @@ function init(_settings, _log, _runtime) {
     logger = _log;
     runtime = _runtime;
     logger.info("daqstorage: init successful!", true);
+    logger.info("daqstorage: settings - " + JSON.stringify(settings), true);
     currentStorateDB = CurrentStorage.create(_settings, _log);
 }
 
@@ -46,6 +48,9 @@ function addDaqNode(_id, fncgetprop) {
     if (dbType === DaqStoreTypeEnum.influxDB || dbType === DaqStoreTypeEnum.influxDB18 || dbType === DaqStoreTypeEnum.TDengine || dbType === DaqStoreTypeEnum.questDB) {
         id = dbType;
     }
+    if (dbType === DaqStoreTypeEnum.postgresql) {
+        id = dbType;
+    }
     if (!daqDB[id]) {
         if (id === DaqStoreTypeEnum.influxDB || id === DaqStoreTypeEnum.influxDB18) {
             daqDB[id] = InfluxDB.create(settings, logger, currentStorateDB);
@@ -59,6 +64,8 @@ function addDaqNode(_id, fncgetprop) {
                 logger.warn('daqstorage: QuestDB storage selected but package dependencies are not installed. Falling back to SQLite.');
                 daqDB[id] = SqliteDB.create(settings, logger, id, currentStorateDB);
             }
+        } else if (id === DaqStoreTypeEnum.postgresql) {
+            daqDB[id] = PostgreSQL.create(settings, logger, currentStorateDB);
         } else {
             daqDB[id] = SqliteDB.create(settings, logger, id, currentStorateDB);
         }
@@ -194,6 +201,7 @@ var DaqStoreTypeEnum = {
     influxDB18: 'influxDB18',
     TDengine: 'TDengine',
     questDB: 'questDB',
+    postgresql: 'postgresql'
 }
 
 function _getValue(value) {

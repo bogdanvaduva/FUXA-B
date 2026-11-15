@@ -53,7 +53,7 @@ const appRoutes: Routes = [
     { path: 'ar', component: ArViewComponent },
 
     // otherwise redirect to home
-    { path: '**', redirectTo: '' }
+    { path: '**', redirectTo: 'home' }
 ];
 
 export const routing = RouterModule.forRoot(appRoutes, {});

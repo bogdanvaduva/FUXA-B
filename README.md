@@ -1,17 +1,6 @@
 ![fuxa logo](/client/src/favicon.ico)
-# FUXA
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Docs](https://img.shields.io/badge/docs-online-brightgreen)](https://frangoteam.github.io/FUXA/)
-[![Node](https://img.shields.io/badge/node-22%20LTS-green)](https://nodejs.org/)
-[![GitHub stars](https://img.shields.io/github/stars/frangoteam/FUXA?style=flat)](https://github.com/frangoteam/FUXA/stargazers)
-[![Docker Pulls](https://img.shields.io/docker/pulls/frangoteam/fuxa)](https://hub.docker.com/r/frangoteam/fuxa)
-[![npm downloads](https://img.shields.io/npm/dt/%40frangoteam/fuxa?label=npm%20downloads)](https://www.npmjs.com/package/@frangoteam/fuxa)
-
-FUXA is a **web-based SCADA / HMI platform** for industrial automation, IoT and real-time process visualization.
-
-It allows you to build modern dashboards, connect industrial devices and monitor machines using standard industrial protocols such as **Modbus, OPC-UA, MQTT and Siemens S7**.
-
-⭐ If you find FUXA useful, please consider giving the project a star.
+# FUXA-B
+FUXA-B is a web-based Process Visualization (SCADA/HMI/Dashboard) software forked from FUXA found at https://github.com/frangoteam/FUXA/. With FUXA-B you can create modern process visualizations with individual designs for your machines and real-time data display. FUXA-B has a few other features than the original FUXA. It has  been added a new DAQ type which is PostgreSQL (we plan to add MySQL/MariaDB as well), a new data source called Repeater Data, a new component called Repeater. Also within the FUXA-B logic we integrated a generic tagName that can be provided to the view through URL query params allowing to build templates.
 
 ![fuxa editor](/screenshot/fuxa-editor.png)
 
@@ -62,29 +51,9 @@ The site is built using MkDocs (Material theme) and automatically deployed via G
 ## 🛠 Installing and Running
 FUXA is developed with NodeJS (backend) and Angular (frontend).
 
-For detailed guides and advanced configuration options, see the official documentation:
+running from docker it's not yet available for FUXA-B
 
-👉 https://frangoteam.github.io/FUXA/
-
-
-### 1° Option - Running from docker
-```
-docker pull frangoteam/fuxa:latest
-docker run -d -p 1881:1881 frangoteam/fuxa:latest
-
-// persistent storage of application data (project), daq (tags history), logs and images (resource)
-docker run -d -p 1881:1881 -v fuxa_appdata:/usr/src/app/FUXA/server/_appdata -v fuxa_db:/usr/src/app/FUXA/server/_db -v fuxa_logs:/usr/src/app/FUXA/server/_logs -v fuxa_images:/usr/src/app/FUXA/server/_images frangoteam/fuxa:latest
-
-// with Docker compose
-// persistent storage will be at ./appdata ./db ./logs and ./images
-wget https://raw.githubusercontent.com/frangoteam/FUXA/master/compose.yml
-docker compose up -d
-```
-
-Open up a browser (better Chrome) and navigate to http://localhost:1881
-
-### 2° Option - Install from source
-[Download the latest release](https://github.com/frangoteam/FUXA/releases) and unpack it
+[Download the latest release](https://github.com/bogdanvaduva/FUXA-B) and unpack it
 
 You need to have installed [Node.js](https://nodejs.org/en/about/previous-releases)
 - Recommended: Node.js 22 LTS
@@ -204,44 +173,5 @@ FUXA is used in industrial automation, IoT, monitoring and research environments
 
 ### FUXA Pro
 
-If you are using FUXA in production, consider supporting the development of the project by using **FUXA Pro**.**.
-
-FUXA Pro includes additional professional features such as:
-
-- White-label branding (custom logo and labels)
-- Additional resources and templates
-- User and script event logging
-- Unlimited installations
-
-The open-source version of FUXA remains fully available and continues to evolve with community contributions.
-
-**License:** one-time payment – €100
-
-More information:
-https://frangoteam.org
-
-## 🤝 Contributing
-
-Contributions are welcome and greatly appreciated.
-
-You can contribute by:
-
-- Improving or fixing code
-- Enhancing documentation
-- Reporting bugs
-- Proposing new features
-- Sharing examples and use cases
-
-Before submitting a Pull Request, please open an issue to discuss major changes.
-
-For full contribution guidelines (code and documentation), please read:
-
-👉 [CONTRIBUTING.md](CONTRIBUTING.md)
-
-## 💬 Let us know!
-We’d be really happy if you send us your own shapes in order to collect a library to share it with others. Just send an email to info@frangoteam.org and do let us know if you have any questions or suggestions regarding our work.
-
-## <a href="https://discord.gg/WZhxz9uHh4" target="_blank" > <img src="https://skillicons.dev/icons?i=discord" alt=""></a>
-
-## 📄 License
+## License
 MIT.

@@ -70,6 +70,12 @@ export class LayoutSettings {
     customStyles = '';
 }
 
+export enum LoginOverlayColorType {
+    none = 'none',
+    black = 'black',
+    white = 'white',
+}
+
 export class NavigationSettings {
     /** Side menu mode (over, push, fix) */
     mode: NaviModeType;
@@ -87,12 +93,6 @@ export class NavigationSettings {
         this.mode = Object.keys(NaviModeType).find(key => NaviModeType[key] === NaviModeType.over) as NaviModeType;
         this.type = Object.keys(NaviItemType).find(key => NaviItemType[key] === NaviItemType.block) as NaviItemType;
     }
-}
-
-export enum LoginOverlayColorType {
-    none = 'none',
-    black = 'black',
-    white = 'white',
 }
 
 export enum NaviModeType {
@@ -211,6 +211,43 @@ export class GaugeSettings {
     lock = false;
     constructor(public id: string, public type: string) {
     }
+
+    static transformObjectValue(property, value): any {
+        let cv = value;
+        if (value) {
+            if (property.variableValueIsObject) {
+                if (property.variableValueObjectProperty) {
+                    try {
+                        if (typeof cv === 'object' && cv !== null) {
+                            cv = (cv ? cv[property.variableValueObjectProperty] : '');
+                        } else {
+                            let obj = JSON.parse(cv);
+                            if (obj) {
+                                cv = obj[property.variableValueObjectProperty];
+                                cv = (cv ? cv : value);
+                            }
+                        }
+                    } catch (err) {
+                        //console.log(err);
+                    }
+                }
+            }
+        } else {
+            if (property.variableId) {
+                if (property.variableValueIsObject) {
+                    if (property.variableValueObjectProperty) {
+                        cv = -2;
+                    }
+                } else {
+                    cv = -1;
+                }
+            } else {
+                cv = '';
+            }
+        }
+        return cv;            
+    }
+    
 }
 
 export class ViewProperty {
@@ -230,6 +267,12 @@ export class GaugeProperty {
     options: any;
     readonly: boolean;
     text: string;               // Text property (used by button)
+    repeaterData: string;
+    repeaterDataPropertyToShow: string;
+    dataSource: any;
+    view: string;
+    variableValueIsObject: boolean;
+    variableValueObjectProperty: string;
     icon?: string;              // Optional Material icon (used by button)
     image?: string;             // Optional image resource (used by button)
     buttonAction?: ButtonActionProperty;    // Optional toggle/press action (used by button)
@@ -503,7 +546,6 @@ export enum PropertyScaleModeType {
     contain = 'contain',
     stretch = 'stretch'
 }
-
 export interface GaugeTableProperty {
     id: string;
     type: TableType;
@@ -542,6 +584,13 @@ export interface SchedulerDevice {
         show: string[];
         enabled: string[];
     };
+}
+
+export interface RepeaterProperty {
+    repeaterData: string;
+    repeaterDataPropertyToShow: string;
+    repeaterDataSource: any;
+    view: string;
 }
 
 export enum TableType {

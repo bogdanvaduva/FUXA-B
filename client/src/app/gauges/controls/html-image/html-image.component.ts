@@ -184,7 +184,7 @@ export class HtmlImageComponent extends GaugeBaseComponent {
                     HtmlImageComponent.processWebcamValue(ga, svgele, sig, gaugeStatus);
                     return;
                 }
-                let value = parseFloat(sig.value);
+                let value = parseFloat((ga ? GaugeSettings.transformObjectValue(ga.property, sig.value) : sig.value));
                 if (Number.isNaN(value)) {
                     // maybe boolean
                     value = Number(sig.value);

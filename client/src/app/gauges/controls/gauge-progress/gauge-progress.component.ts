@@ -41,7 +41,7 @@ export class GaugeProgressComponent extends GaugeBaseComponent {
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus) {
         try {
             if (svgele.node?.children?.length === 3) {
-                let value = parseFloat(sig.value);
+                let value = parseFloat((ga ? GaugeSettings.transformObjectValue(ga.property, sig.value) : sig.value));
                 const min = ga.property?.ranges?.reduce((lastMin, item) => item.min < lastMin.min ? item : lastMin,
                     ga.property?.ranges?.length ? ga.property.ranges[0] : undefined)?.min ?? 0;
                 const max = ga.property?.ranges?.reduce((lastMax, item) => item.max > lastMax.max ? item : lastMax,

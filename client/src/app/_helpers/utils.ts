@@ -287,11 +287,11 @@ export class Utils {
     }
 
     static Boolify(arg) {
-        var BoolArray = [true, false, 'true', 'false', 1, 0];
+        var BoolArray = [true, false, 'true', 'TRUE', 'false', 'FALSE', 1, 0];
         if (BoolArray.indexOf(arg) === -1) {
             return null;
         } else {
-            return (arg == true || arg == 'true' || arg == 1) ? true : false;
+            return (arg == true || arg == 'true' || arg == 'TRUE' || arg == 1) ? true : false;
         }
     }
 

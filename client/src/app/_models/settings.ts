@@ -91,6 +91,7 @@ export class DaqStore {
     credentials?: StoreCredentials;
     bucket?: string;
     database?: string;
+    schema?: string;
     retention = DaqStoreRetentionType.year1;
 
     constructor(daqstore: DaqStore = null) {
@@ -104,6 +105,7 @@ export class DaqStore {
             this.credentials = daqstore.credentials;
             this.bucket = daqstore.bucket;
             this.database = daqstore.database;
+            this.schema = daqstore.schema;
             this.retention = daqstore.retention || DaqStoreRetentionType.year1;
         }
     }
@@ -111,7 +113,7 @@ export class DaqStore {
     isEquals(store: DaqStore) {
         if (this.type === store.type && this.bucket === store.bucket && this.url === store.url &&
             this.host === store.host && this.tableName === store.tableName && this.configurationString === store.configurationString &&
-            this.organization === store.organization && this.database === store.database &&
+            this.organization === store.organization && this.database === store.database && this.schema === store.schema &&
             (this.credentials && StoreCredentials.isEquals(this.credentials, store.credentials)) && this.retention === store.retention) {
             return true;
         }
@@ -143,6 +145,7 @@ export enum DaqStoreType {
     influxDB18 = 'influxDB 1.8',
     TDengine = 'TDengine' ,
     questDB = 'questDB',
+    postgresql = 'PostgreSQL'
 }
 
 export enum influxDBVersionType {

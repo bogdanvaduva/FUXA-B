@@ -31,6 +31,8 @@ function MQTTclient(_data, _logger, _events, _runtime) {
     var refTagToTopics = {};            // Map of Tag to Topic (with ref to other device tag)
     var refPublishReceiver = null;      // Bound 'tag-value:changed' listener (registered once)
 
+    deviceUtils.init(_runtime);
+
     const certificatesDir = _data.certificatesDir;
 
     /**

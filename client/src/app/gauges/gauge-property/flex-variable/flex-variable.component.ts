@@ -3,6 +3,7 @@ import { MatDialog as MatDialog } from '@angular/material/dialog';
 
 import { Tag, DevicesUtils, Device, PlaceholderDevice } from '../../../_models/device';
 import { Utils } from '../../../_helpers/utils';
+import { DeviceTagDialog } from '../../../device/device.component';
 import { BitmaskComponent } from '../../../gui-helpers/bitmask/bitmask.component';
 import { Observable, map, startWith } from 'rxjs';
 import { UntypedFormControl } from '@angular/forms';
@@ -119,6 +120,10 @@ export class FlexVariableComponent implements OnInit {
             const tag = this.devices[i].tags.find(tag => tag.id === tagId);
             if (tag) {
                 return tag;
+            } else {
+                if (tagId) {
+                    return <DeviceTagOption>{id: tagId, name: tagId, device: ''};
+                }
             }
         }
         return null;
@@ -208,6 +213,14 @@ export class FlexVariableComponent implements OnInit {
         this.value.variableValue = this.variableValue;
         this.onchange.emit(this.value);   // Legacy
         this.valueChange.emit(this.value);
+    }
+
+    onDeviceTagBlur(event: any) {
+        this.value.variableId = event.currentTarget.value;
+        this.value.variableRaw = null;
+        this.value.variableValue = null;
+        this.onchange.emit(event.currentTarget.value);   // Legacy
+        this.valueChange.emit(event.currentTarget.value);
     }
 
     onBindTag() {

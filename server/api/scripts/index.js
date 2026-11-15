@@ -111,6 +111,7 @@ module.exports = {
                 }
             }
         });
+
         return scriptsApp;
     }
 }

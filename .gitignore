@@ -92,3 +92,4 @@ server/_widgets
 
 .agents/
 AGENTS.md
+server/SCADA-CANALIZARE.json

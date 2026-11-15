@@ -6,7 +6,7 @@
   "description": "Web-based Process Visualization (SCADA/HMI/Dashboard) software",
   "repository": {
     "type": "git",
-    "url": "https://github.com/frangoteam/FUXA.git"
+    "url": "https://github.com/bogdanvaduva/FUXA-B.git"
   },
   "scripts": {
     "ng": "ng",

@@ -32,7 +32,9 @@ const IoEventTypes = {
     RECIPE_UPLOAD_PROGRESS: 'recipe:upload-progress',
     RECIPE_UPLOAD_COMPLETE: 'recipe:upload-complete',
     RECIPE_UPLOAD_ERROR: 'recipe:upload-error',
-    RECIPE_CANCELED: 'recipe:cancel-confirmed'
+    RECIPE_CANCELED: 'recipe:cancel-confirmed',
+    SCRIPT_COMMAND: 'script-command',
+    CHRIPSTACK_MQTT_PUSH: 'chirpstack-mqtt-push'
 }
 
 // module.exports = IoEventTypes;

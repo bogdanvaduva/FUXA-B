@@ -40,7 +40,7 @@ export class PanelComponent extends GaugeBaseComponent {
         try {
             const view = PanelComponent.hmi.views.find(x => x.name === sig.value);
             if (view) {
-                gauge?.loadHmi(view, true);
+                gauge?.loadHmi(view, false);
                 if (ga?.property?.scaleMode) {
                     Utils.resizeViewExt('.view-container', ga?.id, ga?.property?.scaleMode);
                 }

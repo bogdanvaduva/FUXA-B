@@ -154,6 +154,10 @@ export class AuthService {
 		this.currentUser$.next(this.currentUser);
 	}
 
+	isLoggedIn(): boolean {
+		return (this.currentUser == null ? false: true);
+	}
+
 	// to check by page refresh
 	private saveUserToken(user: UserProfile) {
 		if (this.useRefreshCookieAuth) {

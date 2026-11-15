@@ -12,6 +12,7 @@ import {
     ViewChild,
     ViewContainerRef
 } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, Subscription, take } from 'rxjs';
 import { ChangeDetectorRef } from '@angular/core';
 
@@ -69,12 +70,15 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     cards: CardModel[] = [];
     iframes: CardModel[] = [];
+    dialog: DialogModalModel;
     mapGaugeStatus = {};
     mapControls = {};
     inputDialog = { show: false, timer: null, x: 0, y: 0, target: null };
     gaugeInput = '';
     gaugeInputCurrent = '';
     parent: FuxaViewComponent;
+    windowParams = {};
+
     cardViewType = Utils.getEnumKey(ViewType, ViewType.cards);
 
     viewLoaded: boolean = false;
@@ -90,6 +94,7 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
     private buttonActionDisposers: Array<() => void> = [];
 
     constructor(
+        private route: ActivatedRoute,
         private translateService: TranslateService,
         private changeDetector: ChangeDetectorRef,
         private viewContainerRef: ViewContainerRef,
@@ -99,22 +104,33 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
         private languageService: LanguageService,
         private resolver: ComponentFactoryResolver,
         private fuxaDialog: MatDialog) {
+
     }
 
     ngOnInit() {
+        // FUXA-B: expose URL query params to the view as windowParams
+        try {
+            Object.entries(this.route.snapshot.queryParamMap).forEach(entry => {
+                let params = entry[1];
+                Object.entries(params).forEach(kv => {
+                    this.windowParams[kv[0]] = ((kv[1] !== null && kv[1] !== undefined && kv[1] !== 'null') ? kv[1] : '');
+                });
+            });
+            this.hmiService.variables['windowParams'] = this.windowParams;
+        } catch (err) {
+            console.log(err);
+        }
         this.loadVariableMapping();
     }
 
     ngAfterViewInit() {
         this.loadHmi(this.view);
-        /* check if already loaded */
+        // /* check if already loaded */
         // if (this.projectService.getHmi()) {
-        //     this.initScheduledScripts();
+        //     this.projectService.initScheduledScripts();
         // } else {
-        //     this.projectService.onLoadHmi.pipe(
-        //         takeUntil(this.destroy$)
-        //     ).subscribe(() => {
-        //         this.initScheduledScripts();
+        //     this.subscriptionLoad = this.projectService.onLoadHmi.subscribe(
+        //         load => {this.projectService.initScheduledScripts();
         //     });
         // }
         try {
@@ -249,6 +265,7 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
                 }
             }
             this.changeDetector.detectChanges();
+        if (this.view)
             this.loadWatch(this.view);
             this.onResize();
 
@@ -340,7 +357,21 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
                     if (items[key].property) {
                         let gaugeSetting = items[key];
                         let gaugeStatus = this.getGaugeStatus(gaugeSetting);
-                        let variables = [];
+                        let variables = new Array<Variable>();
+                        Object.entries(this.windowParams).forEach(entry => {
+                            let [key, value] = entry;
+                            let variable: Variable = <Variable>{ id: key, value: value };
+                            if (key === "tagName") {
+                                variables.push(<Variable>{ id: value, value: null });
+                            }
+                            variables.push(<Variable>variable);
+                        });
+                        if (items[key].property.variableId === "tagName" && variables.length>0) {
+                            items[key].property.variableId = variables.find((element) => element.id==="tagName").value;
+                        }
+                        if (gaugeSetting.property.variableId === "tagName" && variables.length>0) {
+                            gaugeSetting.property.variableId = variables.find((element) => element.id==="tagName").value;
+                        }
                         // prepare the start value to precess
                         if (items[key].property.variableValue || gaugeSetting.property.variableId) {
                             let variable: Variable = <Variable>{ id: gaugeSetting.property.variableId, value: gaugeSetting.property.variableValue };
@@ -453,6 +484,7 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
             if (!property) {
                 continue;
             }
+            property['windowParams'] = this.windowParams;
             this.applyVariableMappingTo(property, sourceTags);
             if (property.actions) {
                 property.actions.forEach(action => {
@@ -626,7 +658,7 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
                 self.openWindow(ga.id, ev, events[i].actparam, events[i].actoptions);
             } else if (eventTypes.indexOf(GaugeEventActionType.onclose) === actindex) {
                 self.onClose(ev);
-            } else if (eventTypes.indexOf(GaugeEventActionType.onMonitor) === actindex) {
+            }else if (eventTypes.indexOf(GaugeEventActionType.onMonitor) === actindex) {
                 self.onMonitor(ga, ev, events[i].actparam, events[i].actoptions);
             } else if (events[i].action === this.eventRunScript) {
                 self.onRunScript(events[i]);
@@ -730,7 +762,9 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
                     htmlevent.dom.onfocus = function(ev) {
                         self.touchKeyboard.closePanel();
                         let eleRef = new ElementRef(htmlevent.dom);
-                        if (htmlevent.ga?.property?.options?.numeric || htmlevent.ga?.property?.options?.type === InputOptionType.number) {
+                        if (htmlevent.ga?.property?.options?.numeric || htmlevent.ga?.property?.options?.type === InputOptionType.number ||
+                            htmlevent.ga?.property?.options?.type === InputOptionType.datetime || htmlevent.ga?.property?.options?.type === InputOptionType.date ||
+                            htmlevent.ga?.property?.options?.type === InputOptionType.time) {
                             eleRef.nativeElement.inputMode = 'decimal';
                         }
                         if (htmlevent.ga?.property?.options?.type !== InputOptionType.datetime && htmlevent.ga?.property?.options?.type !== InputOptionType.date &&
@@ -768,7 +802,11 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
                 htmlevent.dom.oninput = function(ev){
                     // Remove any error message when input changes
+                    try {
                     htmlevent.dom.setCustomValidity('');
+                    } catch (e){
+                        //console.log("I've reached line 566 in fuxa-view.component.ts");
+                    }
                 };
             }
         } else if (htmlevent.type === 'change') {
@@ -1053,6 +1091,10 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     onCloseCard(card: CardModel) {
         this.cards.splice(this.cards.indexOf(card), 1);
+    }
+
+    onCloseDialog() {
+        delete this.dialog;
     }
 
     private onClose($event) {

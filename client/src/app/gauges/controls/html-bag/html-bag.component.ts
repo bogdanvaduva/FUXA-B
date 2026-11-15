@@ -34,7 +34,8 @@ export class HtmlBagComponent extends GaugeBaseComponent {
 
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus, gauge?: NgxGaugeComponent) {
         try {
-            gauge.setValue(sig.value);
+            let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
+            gauge.setValue(cv);
         } catch (err) {
             console.error(err);
         }

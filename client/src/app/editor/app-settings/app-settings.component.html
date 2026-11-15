@@ -179,6 +179,28 @@
                                     <input [(ngModel)]="settings.daqstore.organization" placeholder="" class="input-row" type="text">
                                 </div>
                             </div>
+                            <div *ngSwitchCase="'postgresql'">
+                                <div class="my-form-field block mt15 w100">
+                                    <span>{{'dlg.app-settings-daqstore-url' | translate}}</span>
+                                    <input [(ngModel)]="settings.daqstore.url" placeholder="postgres://localhost:5432" class="input-row" type="text">
+                                </div>
+                                <div class="my-form-field block mt15 w100">
+                                    <span>{{'dlg.app-settings-daqstore-database' | translate}}</span>
+                                    <input [(ngModel)]="settings.daqstore.database" placeholder="" class="input-row" type="text">
+                                </div>
+                                <div class="my-form-field block mt15 w100">
+                                    <span>{{'dlg.app-settings-daqstore-schema' | translate}}</span>
+                                    <input [(ngModel)]="settings.daqstore.schema" placeholder="" class="input-row" type="text">
+                                </div>
+                                <div class="my-form-field block mt15 w100">
+                                    <span>{{'dlg.app-settings-daqstore-username' | translate}}</span>
+                                    <input [(ngModel)]="settings.daqstore.credentials.username" placeholder="" class="input-row" type="text">
+                                </div>
+                                <div class="my-form-field block mt15 w100">
+                                    <span>{{'dlg.app-settings-daqstore-password' | translate}}</span>
+                                    <input [(ngModel)]="settings.daqstore.credentials.password" placeholder="" class="input-row" type="password">
+                                </div>
+                            </div>                            
                             <div *ngSwitchCase="influxDB18">
                                 <div class="my-form-field block mt15 w100">
                                     <span>{{'dlg.app-settings-daqstore-url' | translate}}</span>
@@ -194,7 +216,7 @@
                                 </div>
                                 <div class="my-form-field block mt15 w100">
                                     <span>{{'dlg.app-settings-daqstore-password' | translate}}</span>
-                                    <input [(ngModel)]="settings.daqstore.credentials.password" placeholder="" class="input-row" type="text">
+                                    <input [(ngModel)]="settings.daqstore.credentials.password" placeholder="" class="input-row" type="password">
                                 </div>
                             </div>
                             <div *ngSwitchCase="daqstoreType.TDengine">
@@ -278,6 +300,6 @@
     </div>
     <div mat-dialog-actions class="dialog-action">
         <button mat-raised-button (click)="onNoClick()">{{'dlg.cancel' | translate}}</button>
-        <button mat-raised-button color="primary" (click)="onOkClick()" cdkFocusInitial>{{'dlg.ok' | translate}}</button>
+        <button mat-raised-button color="primary" (click)="onOkClick()" >{{'dlg.ok' | translate}}</button>
     </div>
 </div>

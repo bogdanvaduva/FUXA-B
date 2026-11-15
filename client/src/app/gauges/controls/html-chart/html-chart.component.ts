@@ -37,7 +37,7 @@ export class HtmlChartComponent extends GaugeBaseComponent {
         }
     }
 
-    static initElement(gab: GaugeSettings, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef, isview: boolean, chartRange: any) {
+    static initElement(gab: GaugeSettings, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef, isview: boolean, chartRange: any, yProperty?: any) {
         let ele = document.getElementById(gab.id);
         if (ele) {
             ele?.setAttribute('data-name', gab.name);
@@ -50,6 +50,7 @@ export class HtmlChartComponent extends GaugeBaseComponent {
                 }
                 htmlChart.innerHTML = '';
                 componentRef.instance.isEditor = !isview;
+
                 componentRef.instance.rangeType = chartRange;
                 componentRef.instance.id = gab.id;
                 componentRef.instance.property = gab.property;

@@ -10,6 +10,7 @@ import { Utils } from '../../_helpers/utils';
 import { Device, DevicesUtils, Tag } from '../../_models/device';
 import { Chart, ChartLine } from '../../_models/chart';
 import { ConfirmDialogComponent } from '../../gui-helpers/confirm-dialog/confirm-dialog.component';
+import { DeviceTagDialog } from '../../device/device.component';
 import { EditNameComponent } from '../../gui-helpers/edit-name/edit-name.component';
 import { DeviceTagSelectionComponent, DeviceTagSelectionData } from '../../device/device-tag-selection/device-tag-selection.component';
 import { ChartLineAndInterpolationsType, ChartLinePropertyComponent } from './chart-line-property/chart-line-property.component';
@@ -38,7 +39,8 @@ export class ChartConfigComponent implements OnInit {
         public dialog: MatDialog,
         public dialogRef: MatDialogRef<ChartConfigComponent>,
         private translateService: TranslateService,
-        private projectService: ProjectService) {
+        private projectService: ProjectService
+        ) {
             this.loadData();
     }
 
@@ -119,11 +121,14 @@ export class ChartConfigComponent implements OnInit {
     }
 
     onAddChartLine(chart: Chart) {
-        let dialogRef = this.dialog.open(DeviceTagSelectionComponent, {
+        let dialogRef = this.dialog.open(DeviceTagSelectionComponent //DeviceTagDialog
+            , {
             disableClose: true,
             position: { top: '60px' },
             data: <DeviceTagSelectionData> {
                 variableId: null,
+                //variableValue: null, 
+                //devices: this.data.devices,
                 multiSelection: true
             }
         });
@@ -137,6 +142,11 @@ export class ChartConfigComponent implements OnInit {
                     tagsId.push(result.variableId);
                 }
                 tagsId.forEach(id => {
+                    if (id === "tagName") {
+                        const myCopiedObject: ChartLine = {id: result.variableId, name: result.variableValue, device: result.variableId + '|' + result.variableValue, color: this.getNextColor(),
+                            label: result.variableId + '|' + result.variableValue, yaxis: 1, spanGaps: true };
+                        chart.lines.push(myCopiedObject);
+                    } else {
                     let device = DevicesUtils.getDeviceFromTagId(this.data.devices, id);
                     let tag = DevicesUtils.getTagFromTagId([device], id);
                     if (tag) {
@@ -152,6 +162,7 @@ export class ChartConfigComponent implements OnInit {
                             };
                             chart.lines.push(myCopiedObject);
                         }
+                    }
                     }
                 });
             }

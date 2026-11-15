@@ -92,6 +92,12 @@
                         <input formControlName="scaleWriteExpression">
                     </div>
                 </ng-container>
+                <ng-container *ngSwitchCase="'functionName'">
+                    <div class="my-form-field item-block mt5">
+                        <span>{{'device.tag-convert-function' | translate}}</span>
+                        <input formControlName="functionName">
+                    </div>
+                </ng-container>
             </ng-container>
             <div class="my-form-field item-block mt10">
                 <span>{{'device.tag-scale-read-script' | translate}}</span>

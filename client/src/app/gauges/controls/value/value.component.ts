@@ -59,7 +59,8 @@ export class ValueComponent extends GaugeBaseComponent {
         try {
             if (svgele.node && svgele.node.children && svgele.node.children.length <= 1) {
                 let g = svgele.node.children[0];
-                let val: any = parseFloat(sig.value);
+                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
+                let val: any = parseFloat(cv);
                 switch(typeof(sig.value)){
                     case 'undefined':
                         break;
@@ -70,7 +71,7 @@ export class ValueComponent extends GaugeBaseComponent {
                         val = parseFloat(val.toFixed(5));
                         break;
                     case 'string':
-                        val = sig.value;
+                        val = cv;
                         break;
                     default: break;
                 }
@@ -80,7 +81,7 @@ export class ValueComponent extends GaugeBaseComponent {
                     if (digitValue != null && digitValue !== '') {
                         const digit = Number(digitValue);
                         if (Number.isInteger(digit) && digit >= 0) {
-                            const numericValue = Utils.toFiniteNumber(sig.value); // o val, ma coerente
+                            const numericValue = Utils.toFiniteNumber(val);
                             if (numericValue !== null) {
                                 val = numericValue.toFixed(digit);
                             }

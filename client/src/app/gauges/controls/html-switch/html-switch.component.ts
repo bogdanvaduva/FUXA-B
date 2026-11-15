@@ -68,7 +68,7 @@ export class HtmlSwitchComponent extends GaugeBaseComponent {
         try {
             if (switcher) {
                 if (ga.property.variableId === sig.id) {
-                    let value = parseFloat(sig.value);
+                    let value = parseFloat((ga ? GaugeSettings.transformObjectValue(ga.property, sig.value) : sig.value));
                     if (Number.isNaN(value)) {
                         // maybe boolean
                         value = Number(sig.value);
