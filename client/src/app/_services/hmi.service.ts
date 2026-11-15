@@ -363,9 +363,6 @@ export class HmiService {
         this.socket.on(IoEventTypes.RECIPE_CANCELED, (message) => {
             this.onRecipeCanceled.emit(message);
         });
-        this.socket.on(IoEventTypes.CHIRPSTACK_MQTT_PUSH, (message) => {
-            this.askChirpstackToPushEvents(message);
-        });
 
         this.askDeviceValues();
         this.askAlarmsStatus();
@@ -763,21 +760,6 @@ export class HmiService {
         }
     }
 
-    //#region Chirpstack functions
-    /**
-     * Ask device browse to backend
-     */
-    public askChirpstackToPushEvents(_device: any) {
-        if (this.socket) {
-            if (_device.property) 
-                if (_device.property.chirpstack)
-                    if (_device.property.chirpstack.isChirpstackConnected) {
-                        let msg = { chirpstack: _device };
-                        this.socket.emit(IoEventTypes.CHIRPSTACK_MQTT_PUSH, msg);
-                    }
-        }
-    }
-    //#endregion
 
 }
 
@@ -856,8 +838,7 @@ export enum IoEventTypes {
     RECIPE_UPLOAD_COMPLETE = 'recipe:upload-complete',
     RECIPE_UPLOAD_ERROR = 'recipe:upload-error',
     RECIPE_CANCEL = 'recipe:cancel-execution',
-    RECIPE_CANCELED = 'recipe:cancel-confirmed',
-    CHIRPSTACK_MQTT_PUSH = 'chirpstack-mqtt-push'
+    RECIPE_CANCELED = 'recipe:cancel-confirmed'
 }
 
 export const ScriptCommandEnum = {

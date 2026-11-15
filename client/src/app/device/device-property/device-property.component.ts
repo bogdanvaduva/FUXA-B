@@ -22,7 +22,6 @@ export class DevicePropertyComponent implements OnInit, OnDestroy {
 	// @Input() name: any;
 	@ViewChild('panelProperty', { static: false }) panelProperty: MatExpansionPanel;
 	@ViewChild('panelCertificate', { static: false }) panelCertificate: MatExpansionPanel;
-	@ViewChild('panelChirpstack', { static: false }) panelChirpstack: MatExpansionPanel;
 
 	tableRadio: any;
 	databaseTables = [];
@@ -31,7 +30,6 @@ export class DevicePropertyComponent implements OnInit, OnDestroy {
 	mode: any;
 	deviceType: any = {};
 	showPassword: boolean;
-	showChirpstackPassword: boolean;
 
 	pollingPlcType = [{ text: '50 ms', value: 50 },
 	{ text: '100 ms', value: 100 },
@@ -228,9 +226,6 @@ export class DevicePropertyComponent implements OnInit, OnDestroy {
 			}
 			if (!this.data.device.property.timeout) {
 				this.data.device.property.timeout = (this.data.device.type === DeviceType.MQTTclient) ? 10000 : 2000;
-			}
-			if (!this.data.device.property.chirpstack) {
-				this.data.device.property.chirpstack = {};
 			}
 		}
 		if (this.data.device.type === DeviceType.REDIS) {

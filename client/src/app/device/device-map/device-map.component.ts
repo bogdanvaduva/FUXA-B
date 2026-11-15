@@ -9,7 +9,6 @@ import { TranslateService } from '@ngx-translate/core';
 import { DevicePropertyComponent } from './../device-property/device-property.component';
 import { ProjectService } from '../../_services/project.service';
 import { PluginService } from '../../_services/plugin.service';
-import { HmiService } from '../../_services/hmi.service';
 import { Device, DeviceType, DeviceNetProperty, DEVICE_PREFIX, DeviceViewModeType, DeviceConnectionStatusType } from './../../_models/device';
 import { Utils } from '../../_helpers/utils';
 import { AppService } from '../../_services/app.service';
@@ -70,8 +69,7 @@ export class DeviceMapComponent implements OnInit, OnDestroy, AfterViewInit {
         private elementRef: ElementRef,
         private appService: AppService,
         private pluginService: PluginService,
-        private projectService: ProjectService,
-        private hmiService: HmiService) {
+        private projectService: ProjectService) {
         this.domArea = this.elementRef.nativeElement.parent;
     }
 
@@ -538,11 +536,7 @@ export class DeviceMapComponent implements OnInit, OnDestroy, AfterViewInit {
                         device.modules = JSON.parse(JSON.stringify(tempdevice.modules || {}));
                         device.property.ioport = parseInt(tempdevice.property?.ioport) || 2222;
                     }
-                    if (tempdevice.property?.chirpstack) {
-                        device.property.chirpstack = tempdevice.property.chirpstack;
-                    }
                     this.projectService.setDevice(device, olddevice, result.security);
-                    this.hmiService.askChirpstackToPushEvents(device);
                 }
                 this.loadDevices();
             }

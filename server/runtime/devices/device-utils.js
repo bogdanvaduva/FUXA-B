@@ -69,7 +69,7 @@ module.exports = {
                         value = +value.toFixed(tag.format);
                     }
                 } else if (tag.rawValue != null) {
-                    // FUXA-B: non-numeric payloads (e.g. ChirpStack JSON) scaled by a named server script
+                    // FUXA-B: non-numeric payloads (e.g. JSON objects) scaled by a named server script
                     value = tag.rawValue;
                     if (tag.scale && tag.scale.mode === 'functionName' && tag.scale.functionName) {
                         try {

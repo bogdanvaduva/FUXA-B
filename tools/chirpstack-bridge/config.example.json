@@ -1,0 +1,22 @@
+{
+    "chirpstack": {
+        "server": "localhost:8080",
+        "tls": false,
+        "apiToken": "",
+        "email": "",
+        "password": ""
+    },
+    "applicationIds": ["00000000-0000-0000-0000-000000000000"],
+    "mqtt": {
+        "url": "mqtt://localhost:1883",
+        "username": "",
+        "password": ""
+    },
+    "topicTemplate": "application/{applicationId}/device/{devEui}/event/up",
+    "retain": false,
+    "triggerTopic": "chirpstack-bridge/replay",
+    "replayOnStart": true,
+    "intervalMinutes": 0,
+    "collectSeconds": 10,
+    "maxConcurrentStreams": 50
+}

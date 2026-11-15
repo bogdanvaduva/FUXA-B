@@ -132,6 +132,11 @@ npm run package
 
 After following these steps, you will have a standalone Electron application for FUXA. The application can be found in the ./app directory.
 
+## ChirpStack (LoRaWAN)
+FUXA-B reads ChirpStack uplinks through a standard MQTT device. To get the latest values right away
+(instead of waiting for each sensor to transmit again), run the companion service in
+[tools/chirpstack-bridge](tools/chirpstack-bridge/README.md).
+
 ## Usage and Documentation
 - 📚 Official Documentation: https://frangoteam.github.io/FUXA/
 - Look video from [frangoteam](https://www.youtube.com/@umbertonocelli5301)

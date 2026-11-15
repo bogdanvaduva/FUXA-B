@@ -1,0 +1,21 @@
+{
+  "name": "chirpstack-bridge",
+  "version": "1.0.0",
+  "description": "Republish the latest ChirpStack uplinks to MQTT (FUXA-B companion service)",
+  "main": "index.js",
+  "bin": {
+    "chirpstack-bridge": "index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@chirpstack/chirpstack-api": "4.7.0",
+    "@grpc/grpc-js": "^1.14.0",
+    "mqtt": "4.3.7"
+  }
+}

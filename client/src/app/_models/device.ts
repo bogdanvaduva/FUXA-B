@@ -296,8 +296,6 @@ export class DeviceNetProperty {
     frame?: string;
     /** Connection timeout (ms), used by MELSEC and by the S7 nodes7 driver */
     timeout?: number;
-    /** FUXA-B: connection option used for Chirpstack */
-    chirpstack?: any;
 
     static descriptor = {
         address: 'Device address (IP)',
@@ -337,14 +335,6 @@ export class DeviceSecurity {
     caCertificateFileName: string;
     /** SNMP v3 privacy (encryption) key, the authentication key is in password */
     privKey: string;
-}
-
-export class DeviceChirpstack {
-    isChirpstackConnected: boolean;
-    uel: string;
-    username: string;
-    password: string;
-    applicationIds: string;
 }
 
 export enum DeviceType {
