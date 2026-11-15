@@ -66,16 +66,25 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 svgDivContainer.removeChild(svgDivContainer.lastChild);
             }
             svgDivContainer.style['overflow'] = 'auto';
+            // toolbar (QR reader, search input and buttons) stays at the top, only the items scroll
+            var toolbar = document.createElement("div");
+            toolbar.className = "repeater-toolbar";
+            toolbar.style.position = "sticky";
+            toolbar.style.top = "0";
+            toolbar.style.zIndex = "1";
+            const containerBackground = getComputedStyle(svgDivContainer).backgroundColor;
+            toolbar.style.backgroundColor = (!containerBackground || containerBackground === 'transparent' || containerBackground === 'rgba(0, 0, 0, 0)') ? '#ffffff' : containerBackground;
+            svgDivContainer.appendChild(toolbar);
             var divReader = document.createElement("div");
             divReader.style.display = "table"
             divReader.style.width = "100%";
             divReader.id= "reader";
-            svgDivContainer.appendChild(divReader); 
+            toolbar.appendChild(divReader); 
             
             var divInput = document.createElement("div");
             divInput.style.display = "table"
             divInput.style.width = "100%";
-            svgDivContainer.appendChild(divInput);         
+            toolbar.appendChild(divInput);         
             
             var input = document.createElement("input");
             input.type ="text";
@@ -98,7 +107,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
             var divInputSearch = document.createElement("div");
             divInputSearch.style.display = "table"
             divInputSearch.style.width = "100%";
-            svgDivContainer.appendChild(divInputSearch);         
+            toolbar.appendChild(divInputSearch);         
             var divReaderSearch = document.createElement("button");
             divReaderSearch.id = "repeater_input_search";
             divReaderSearch.setAttribute('content', '...');
