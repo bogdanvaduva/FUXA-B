@@ -141,6 +141,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
             this.scripts = hmiService.projectService.getScripts();
             RepeaterUtils.getItems(dataLine).subscribe({ error: (err) => console.error(`Repeater: cannot load ${dataLine.url}`, err), next: result => {
                 let jsonObj = result;
+                const fieldBindings = this.getFieldBindings(v);
                 Object.entries(jsonObj || {}).forEach(entry => {
                     if (svgDivContainer) {
                         try {
@@ -148,6 +149,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                             var xml = doc.parseFromString(v.svgcontent, "image/svg+xml");
                             // a Repeater saved inside the repeated view (toolbar and rendered items) is not repeated
                             this.removeRepeaters(xml);
+                            this.applyFieldBindings(xml, fieldBindings, entry[1]);
                             var svgNodes = xml.getElementsByTagName("svg");
                             this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags, hmiService.variables);
                             this.applyViewStyle(svgNodes[0], v);
@@ -348,6 +350,26 @@ export class RepeaterComponent extends GaugeBaseComponent {
         if (view.profile?.bkcolor) {
             style.setProperty('background-color', view.profile.bkcolor);
         }
+    }
+
+    /** controls of the repeated view bound to an item field: tag set to '@field' (e.g. an Output with tag @country) */
+    static getFieldBindings(view: View): { id: string, field: string }[] {
+        return Object.values(view.items || {})
+            .filter(item => typeof item?.property?.variableId === 'string' && item.property.variableId.startsWith('@'))
+            .map(item => ({ id: item.id, field: item.property.variableId.substring(1) }))
+            .filter(binding => binding.field && binding.field !== 'tagName');
+    }
+
+    /** show the item field value in the text of the bound controls */
+    static applyFieldBindings(xml: Document, bindings: { id: string, field: string }[], item: any) {
+        bindings.forEach(binding => {
+            const element = xml.querySelector(`[id="${binding.id}"]`);
+            const text = element?.nodeName.toLowerCase() === 'text' ? element : element?.querySelector('text');
+            if (text && item) {
+                const value = item[binding.field];
+                text.textContent = value === undefined || value === null ? '' : String(value);
+            }
+        });
     }
 
     /** remove the Repeater controls (with their toolbar and rendered items) from a parsed view */
