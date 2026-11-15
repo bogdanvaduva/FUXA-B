@@ -197,7 +197,7 @@ export class DialogTagRepeater implements OnInit {
         this.dataJSONURL = dataLine.url;
         this.dataJSONProperties = (dataLine.url_data_properties || '').split(",");
 
-        RepeaterUtils.getItems(dataLine).subscribe({
+        RepeaterUtils.getItems(dataLine, _repeater.id).subscribe({
             next: result => this.dataJSON = result,
             error: err => console.error(`Repeater: cannot load ${dataLine.url}`, err)
         });

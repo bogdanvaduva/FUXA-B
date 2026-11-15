@@ -149,7 +149,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 } catch (err) {}
             });
             this.scripts = hmiService.projectService.getScripts();
-            RepeaterUtils.getItems(dataLine).subscribe({ error: (err) => console.error(`Repeater: cannot load ${dataLine.url}`, err), next: result => {
+            RepeaterUtils.getItems(dataLine, _repeater.id).subscribe({ error: (err) => console.error(`Repeater: cannot load ${RepeaterUtils.isDb(dataLine) ? 'the DB data' : dataLine.url}`, err), next: result => {
                 let jsonObj = result;
                 if (svgDivContainer['repeaterContext']) {
                     svgDivContainer['repeaterContext'].items = jsonObj;
@@ -158,7 +158,10 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 Object.entries(jsonObj || {}).forEach(entry => {
                     if (svgDivContainer) {
                         try {
-                            let prop = [entry, dataJSONProperties];
+                            // without configured properties every field of the item is used (e.g. the columns of a DB row)
+                            const itemProperties = dataJSONProperties.some(p => p) ? dataJSONProperties
+                                : (entry[1] && typeof entry[1] === 'object' ? Object.keys(entry[1]) : []);
+                            let prop = [entry, itemProperties];
                             var xml = doc.parseFromString(v.svgcontent, "image/svg+xml");
                             // a Repeater saved inside the repeated view (toolbar and rendered items) is not repeated
                             this.removeRepeaters(xml);

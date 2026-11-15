@@ -159,6 +159,29 @@ function checkRetention() {
     });
 }
 
+/**
+ * Return the DAQ storages that can run SQL queries: SQLite one pro device, PostgreSQL only one
+ */
+function getSqlNodes() {
+    const devices = runtime?.project?.getDevices() || {};
+    return Object.keys(daqDB).filter(id => typeof daqDB[id].query === 'function').map(id => ({
+        id: id,
+        name: devices[id]?.name || id,
+        type: _getDbType()
+    }));
+}
+
+/**
+ * Run a read-only SQL query on the DAQ storage with the given id
+ */
+function querySql(id, sql) {
+    const node = daqDB[id];
+    if (!node || typeof node.query !== 'function') {
+        return Promise.reject(new Error(`DAQ storage '${id}' not found or without SQL support`));
+    }
+    return node.query(sql);
+}
+
 function getCurrentStorageFnc() {
     return currentStorateDB.getValuesByDeviceId;
 }
@@ -219,4 +242,6 @@ module.exports = {
     getNodesValues: getNodesValues,
     checkRetention: checkRetention,
     getCurrentStorageFnc: getCurrentStorageFnc,
+    getSqlNodes: getSqlNodes,
+    querySql: querySql,
 };

@@ -925,6 +925,13 @@ function setProject(prjcontent) {
 }
 
 /**
+ * Return Repeaters data list
+ */
+function getRepeaters() {
+    return data.repeaters || [];
+}
+
+/**
  * Return Devices list
  */
 function getDevices() {
@@ -1364,6 +1371,7 @@ module.exports = {
     init: init,
     load: load,
     getDevices: getDevices,
+    getRepeaters: getRepeaters,
     getServer: getServer,
     getDevice: getDevice,
     getAlarms: getAlarms,

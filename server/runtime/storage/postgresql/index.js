@@ -103,6 +103,24 @@ function PostgreSQL(_settings, _log, _currentStorate) {
         }
     };
 
+    /**
+     * Run a SQL query in a read-only transaction, the extended protocol allows a single statement only
+     */
+    this.query = async function (sql) {
+        if (!client || status !== PostgreSQLStatusEnum.OPEN) {
+            throw new Error('PostgreSQL is not connected');
+        }
+        const conn = await client.connect();
+        try {
+            await conn.query('BEGIN READ ONLY');
+            const result = await conn.query({ text: sql, queryMode: 'extended' });
+            return result.rows;
+        } finally {
+            await conn.query('ROLLBACK').catch(() => {});
+            conn.release();
+        }
+    };
+
     this.getDaqMap = function (tagid) {
         var dummy = {};
         dummy[tagid] = true;

@@ -40,16 +40,16 @@
                             <span>{{line.name}}</span>
                         </div>
                         <div class="list-item-text list-item-url">
-                            <span>{{line.url}}</span>
+                            <span>{{isDb(line) ? line.sql : line.url}}</span>
                         </div>
                         <div class="list-item-text list-item-url-data-type">
-                            <span>{{isCsv(line) ? 'CSV' : 'JSON'}}</span>
+                            <span>{{isDb(line) ? 'DB' : (isCsv(line) ? 'CSV' : 'JSON')}}</span>
                         </div>
                         <div class="list-item-text list-item-url-data-path">
-                            <span>{{isCsv(line) ? '' : line.url_data_path}}</span>
+                            <span>{{isCsv(line) || isDb(line) ? '' : line.url_data_path}}</span>
                         </div>
                         <div class="list-item-text list-item-url-data-properties">
-                            <span>{{line.url_data_properties}}</span>
+                            <span>{{isDb(line) ? '' : line.url_data_properties}}</span>
                         </div>
                     </mat-list-item>
                 </div>

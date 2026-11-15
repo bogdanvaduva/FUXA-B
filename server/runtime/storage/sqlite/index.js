@@ -285,6 +285,34 @@ function DaqNode(_settings, _log, _id, _currentStorate) {
     }
 
     /**
+     * Run a read-only SQL query on the current data database, the tags map is attached as 'map'
+     * (e.g. SELECT m.name, d.value, d.dt FROM data d JOIN map.data m ON m.mapid = d.id)
+     */
+    this.query = function (sql) {
+        return new Promise(function (resolve, reject) {
+            var db = new sqlite3.Database(db_daqdata_file, sqlite3.OPEN_READONLY, function (err) {
+                if (err) {
+                    return reject(err);
+                }
+                db.run('ATTACH DATABASE ? AS map', [db_daqmap_file], function (err) {
+                    if (err) {
+                        db.close();
+                        return reject(err);
+                    }
+                    db.all(sql, function (err, rows) {
+                        db.close();
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(rows);
+                        }
+                    });
+                });
+            });
+        });
+    }
+
+    /**
      * Return Tags/Nodes map list
      */
     this.getDaqMap = function () {

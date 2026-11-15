@@ -1,4 +1,4 @@
-import { HttpClient, HttpXhrBackend } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpXhrBackend } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { EndPointApi } from '../_helpers/endpointapi';
 
@@ -11,12 +11,29 @@ export class RepeaterData {
 export class RepeaterDataLine {
     id: string;
     name: string;
+    /** RepeaterSourceType: 'url' (default, also legacy lines) or 'db' */
+    type?: string;
+    /** DB: id of the DAQ storage (device id for SQLite, the storage type for PostgreSQL) */
+    daq?: string;
+    /** DB: read-only SQL query, every row is an item */
+    sql?: string;
     url: string;
     /** RepeaterDataType: 'json' (default, also any legacy value) or 'csv' */
     url_data_type: string;
     url_data_properties: string;
     /** optional dotted path to the items inside the JSON (e.g. 'data' or 'result.items') */
     url_data_path?: string;
+}
+
+export enum RepeaterSourceType {
+    url = 'url',
+    db = 'db',
+}
+
+export interface RepeaterDaqNode {
+    id: string;
+    name: string;
+    type: string;
 }
 
 export enum RepeaterDataType {
@@ -27,7 +44,23 @@ export enum RepeaterDataType {
 export class RepeaterUtils {
 
     static isCsv(line: RepeaterDataLine): boolean {
-        return (line?.url_data_type || '').toLowerCase() === RepeaterDataType.csv;
+        return !RepeaterUtils.isDb(line) && (line?.url_data_type || '').toLowerCase() === RepeaterDataType.csv;
+    }
+
+    static isDb(line: RepeaterDataLine): boolean {
+        return line?.type === RepeaterSourceType.db;
+    }
+
+    /** headers for the FUXA server API (the static HttpClient has no auth interceptor) */
+    static getAuthHeaders(): HttpHeaders {
+        let headers = new HttpHeaders({ 'Accept': 'application/json' });
+        try {
+            const user = JSON.parse(sessionStorage.getItem('currentUser'));
+            if (user?.token) {
+                headers = headers.set('x-access-token', user.token);
+            }
+        } catch (err) { }
+        return headers;
     }
 
     /**
@@ -109,8 +142,27 @@ export class RepeaterUtils {
         }, {}));
     }
 
-    /** load the data of a Repeater data line (JSON or CSV) and return the items to repeat */
-    static getItems(line: RepeaterDataLine): Observable<any> {
+    /** the DAQ storages that can run SQL queries */
+    static getDaqNodes(): Observable<RepeaterDaqNode[]> {
+        const http = new HttpClient(new HttpXhrBackend({ build: () => new XMLHttpRequest() }));
+        return http.get<RepeaterDaqNode[]>(EndPointApi.getURL() + '/api/daq/sql/nodes',
+            { headers: RepeaterUtils.getAuthHeaders(), withCredentials: true });
+    }
+
+    /**
+     * load the data of a Repeater data line (URL with JSON or CSV, or DB with the rows of the SQL query)
+     * and return the items to repeat. The SQL of a DB line runs on the server from the saved project
+     */
+    static getItems(line: RepeaterDataLine, repeaterId?: string): Observable<any> {
+        if (RepeaterUtils.isDb(line)) {
+            const http = new HttpClient(new HttpXhrBackend({ build: () => new XMLHttpRequest() }));
+            const params: any = { repeater: repeaterId || '' };
+            if (line.id) {
+                params.line = line.id;
+            }
+            return http.get<any[]>(EndPointApi.getURL() + '/api/daq/sql/repeater',
+                { headers: RepeaterUtils.getAuthHeaders(), params, withCredentials: true }).pipe(map(rows => rows || []));
+        }
         const url = RepeaterUtils.resolveUrl(line?.url);
         if (RepeaterUtils.isCsv(line)) {
             const http = new HttpClient(new HttpXhrBackend({ build: () => new XMLHttpRequest() }));
