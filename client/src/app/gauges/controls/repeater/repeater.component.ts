@@ -150,6 +150,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                             this.removeRepeaters(xml);
                             var svgNodes = xml.getElementsByTagName("svg");
                             this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags, hmiService.variables);
+                            this.applyViewStyle(svgNodes[0], v);
                             svgDivContainer.appendChild(svgNodes[0]);
                         } catch (err) {
                             console.error(`Repeater: cannot render item ${entry[0]}`, err);
@@ -326,6 +327,24 @@ export class RepeaterComponent extends GaugeBaseComponent {
 
     static detectChange(gab: GaugeSettings, gaugeManager: GaugesManager, hmiService: HmiService, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef ): RepeaterComponent {
         return RepeaterComponent.initElement(gab, gaugeManager, hmiService, resolver, viewContainerRef, false);
+    }
+
+    /**
+     * The item is placed inside the Repeater group, whose fill/stroke (white fill and black stroke by default)
+     * would be inherited by the item elements without their own colors: reset them to the SVG defaults,
+     * as in the standalone view, and use the view background color (not part of the view SVG content).
+     */
+    static applyViewStyle(itemSvg: Element, view: View) {
+        const style = (<SVGElement>itemSvg).style;
+        if (!style) {
+            return;
+        }
+        style.setProperty('fill', '#000000');
+        style.setProperty('stroke', 'none');
+        style.setProperty('stroke-width', '1');
+        if (view.profile?.bkcolor) {
+            style.setProperty('background-color', view.profile.bkcolor);
+        }
     }
 
     /** remove the Repeater controls (with their toolbar and rendered items) from a parsed view */
