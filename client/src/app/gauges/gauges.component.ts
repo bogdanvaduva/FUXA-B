@@ -984,7 +984,7 @@ export class GaugesManager {
                     this.hmiService.variables[val['id']] = _v;
                 }
             });
-            let gauge = RepeaterComponent.initElement(ga, this, this.hmiService, res, ref, isview);
+            let gauge = RepeaterComponent.initElement(ga, this, this.hmiService, res, ref, isview, parent);
             this.mapGauges[ga.id] = gauge;
             return gauge;
         } else if (ga.type.startsWith(PanelComponent.TypeTag)) {

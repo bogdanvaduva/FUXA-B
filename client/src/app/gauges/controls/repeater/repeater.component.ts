@@ -1,6 +1,6 @@
 import { Component, ViewContainerRef, ComponentFactoryResolver } from '@angular/core';
 import { GaugeBaseComponent } from '../../gauge-base/gauge-base.component';
-import { GaugeActionsType, Event, GaugeSettings, GaugeStatus, View, Variable } from '../../../_models/hmi';
+import { GaugeActionsType, Event, GaugeSettings, GaugeStatus, View, Variable, GaugeEventType, GaugeEventActionType } from '../../../_models/hmi';
 import { Utils } from '../../../_helpers/utils';
 import { GaugeDialogType } from '../../gauge-property/gauge-property.component';
 import { HmiService } from '../../../_services/hmi.service';
@@ -32,7 +32,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
         super();
     }
 
-    static initElement(gaugeSettings: GaugeSettings, gaugeManager: GaugesManager, hmiService: HmiService, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef, isview: boolean): RepeaterComponent {
+    static initElement(gaugeSettings: GaugeSettings, gaugeManager: GaugesManager, hmiService: HmiService, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef, isview: boolean, parent?: any): RepeaterComponent {
         let ele = document.getElementById(gaugeSettings.id);
         const createComponent = () => {
             let factory = resolver.resolveComponentFactory(RepeaterComponent);
@@ -135,6 +135,11 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 initializeHtml5QrCode(gaugeSettings.id);
                 return createComponent();
             }
+            // in the view, clicks on the items run the events of the template controls through the hosting view
+            svgDivContainer['repeaterContext'] = { view: v, parent, gaugeManager };
+            if (isview && parent) {
+                this.bindItemEvents(svgDivContainer);
+            }
             this.viewObjectsScripts = {};
             Object.entries(v.items).forEach(entry => {
                 try {
@@ -161,6 +166,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                             if (isview) {
                                 (<SVGElement>svgNodes[0]).style.pointerEvents = 'auto';
                             }
+                            svgNodes[0].setAttribute('data-repeater-item', entry[0]);
                             svgDivContainer.appendChild(svgNodes[0]);
                         } catch (err) {
                             console.error(`Repeater: cannot render item ${entry[0]}`, err);
@@ -387,6 +393,46 @@ export class RepeaterComponent extends GaugeBaseComponent {
         container.addEventListener('click', (event) => {
             if ((<HTMLElement>event.target)?.closest?.('#repeater_input_search')) {
                 RepeaterComponent.filterItems(container);
+            }
+        });
+    }
+
+    /**
+     * Run the click events (open dialog, open view, set value, ...) of the template control under the click.
+     * Item element ids are '<template id>_<item key>'. CLIENT scripts are left to the onclick attribute
+     * set while rendering (it gets the item data as 'this'), to not run them twice.
+     */
+    static bindItemEvents(container: HTMLElement) {
+        if (container['repeaterEventsBound']) {
+            return;
+        }
+        container['repeaterEventsBound'] = true;
+        const runScriptAction = Utils.getEnumKey(GaugeEventActionType, GaugeEventActionType.onRunScript);
+        container.addEventListener('click', (event: MouseEvent) => {
+            const context = container['repeaterContext'];
+            const target = <Element>event.target;
+            const itemRoot = target?.closest?.('[data-repeater-item]');
+            if (!context?.parent || !itemRoot) {
+                return;
+            }
+            const suffix = '_' + itemRoot.getAttribute('data-repeater-item');
+            for (let node: Element = target; node && node !== itemRoot; node = node.parentElement) {
+                if (!node.id) {
+                    continue;
+                }
+                const templateId = node.id.endsWith(suffix) ? node.id.slice(0, -suffix.length) : node.id;
+                const settings: GaugeSettings = context.view.items?.[templateId];
+                if (!settings) {
+                    continue;
+                }
+                const scripts = this.scripts || [];
+                const events = (context.gaugeManager.getBindMouseEvent(settings, GaugeEventType.click) || []).filter(ev =>
+                    !(ev.action === runScriptAction && scripts.find(s => s.id === ev.actparam)?.mode === 'CLIENT'));
+                if (events.length) {
+                    const self = context.parent.parent || context.parent;
+                    self.runEvents(self, settings, event, events);
+                }
+                return;
             }
         });
     }
