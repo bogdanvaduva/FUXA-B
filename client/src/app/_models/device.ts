@@ -1044,8 +1044,7 @@ export class DevicesUtils {
             parity: items[14],
             options: items[15],
             method: items[16],
-            format: items[17],
-            chirpstack: JSON.parse(items[18])
+            format: items[17]
         };
         device.tags = {};
         return device;
