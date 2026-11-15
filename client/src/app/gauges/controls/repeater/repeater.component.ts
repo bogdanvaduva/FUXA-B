@@ -151,6 +151,9 @@ export class RepeaterComponent extends GaugeBaseComponent {
             this.scripts = hmiService.projectService.getScripts();
             RepeaterUtils.getItems(dataLine).subscribe({ error: (err) => console.error(`Repeater: cannot load ${dataLine.url}`, err), next: result => {
                 let jsonObj = result;
+                if (svgDivContainer['repeaterContext']) {
+                    svgDivContainer['repeaterContext'].items = jsonObj;
+                }
                 const fieldBindings = this.getFieldBindings(v);
                 Object.entries(jsonObj || {}).forEach(entry => {
                     if (svgDivContainer) {
@@ -429,8 +432,11 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 const events = (context.gaugeManager.getBindMouseEvent(settings, GaugeEventType.click) || []).filter(ev =>
                     !(ev.action === runScriptAction && scripts.find(s => s.id === ev.actparam)?.mode === 'CLIENT'));
                 if (events.length) {
+                    // pass the item fields to the opened view/dialog as placeholder values ('@country' -> item.country)
+                    const placeholderValues = this.getPlaceholderValues(context.items?.[itemRoot.getAttribute('data-repeater-item')]);
+                    const itemEvents = events.map(ev => ({ ...ev, actoptions: { ...ev.actoptions, placeholderValues } }));
                     const self = context.parent.parent || context.parent;
-                    self.runEvents(self, settings, event, events);
+                    self.runEvents(self, settings, event, itemEvents);
                 }
                 return;
             }
@@ -452,6 +458,19 @@ export class RepeaterComponent extends GaugeBaseComponent {
     }
 
     /** controls of the repeated view bound to an item field: tag set to '@field' (e.g. an Output with tag @country) */
+    /** map the item fields to placeholders: { country: 'Italy' } -> { '@country': 'Italy' }, a plain value -> { '@value': value } */
+    static getPlaceholderValues(item: any): { [placeholder: string]: any } {
+        const values = {};
+        if (item !== null && typeof item === 'object') {
+            Object.entries(item).forEach(([key, value]) => {
+                values['@' + key] = (value !== null && typeof value === 'object') ? JSON.stringify(value) : value;
+            });
+        } else if (item !== undefined) {
+            values['@value'] = item;
+        }
+        return values;
+    }
+
     static getFieldBindings(view: View): { id: string, field: string }[] {
         return Object.values(view.items || {})
             .filter(item => typeof item?.property?.variableId === 'string' && item.property.variableId.startsWith('@'))
