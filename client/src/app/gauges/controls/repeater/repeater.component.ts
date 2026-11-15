@@ -33,12 +33,23 @@ export class RepeaterComponent extends GaugeBaseComponent {
 
     static initElement(gaugeSettings: GaugeSettings, gaugeManager: GaugesManager, hmiService: HmiService, resolver: ComponentFactoryResolver, viewContainerRef: ViewContainerRef, isview: boolean): RepeaterComponent {
         let ele = document.getElementById(gaugeSettings.id);
-        let _repeater = hmiService.getRepeater(gaugeSettings.property.repeaterData);
-        let dataJSONURL = _repeater.lines[0].url;
-        let dataJSONProperties = _repeater.lines[0].url_data_properties.split(",");
+        const createComponent = () => {
+            let factory = resolver.resolveComponentFactory(RepeaterComponent);
+            const componentRef = viewContainerRef.createComponent(factory);
+            return componentRef.instance;
+        };
+        // A newly drawn Repeater has no settings yet: add it to the view and render
+        // the data once a Repeater data source (with at least one line) is selected.
+        let _repeater = gaugeSettings.property?.repeaterData ? hmiService.getRepeater(gaugeSettings.property.repeaterData) : null;
+        const dataLine = _repeater?.lines?.[0];
+        if (!dataLine) {
+            return createComponent();
+        }
+        let dataJSONURL = dataLine.url;
+        let dataJSONProperties = (dataLine.url_data_properties || '').split(",");
         let dataJSONPropertyToShow = gaugeSettings.property.repeaterDataPropertyToShow;
         let dataJSONTags = {};
-        Object.values(gaugeSettings.property.repeaterDataSource).forEach(val => {
+        Object.values(gaugeSettings.property.repeaterDataSource || {}).forEach(val => {
             if (val['repeaterDataId']) {
                 if (val['repeaterDataId']!=='') {
                     dataJSONTags[val['repeaterDataId']] = val['id'];
@@ -97,6 +108,10 @@ export class RepeaterComponent extends GaugeBaseComponent {
             divInputSearch.appendChild(divReaderSearch);
 
             let v: View = this.getView(hmiService, view);
+            if (!v) {
+                initializeHtml5QrCode(gaugeSettings.id);
+                return createComponent();
+            }
             this.viewObjectsScripts = {};
             Object.entries(v.items).forEach(entry => {
                 try {
@@ -126,9 +141,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
 
         }
         initializeHtml5QrCode(gaugeSettings.id);
-        let factory = resolver.resolveComponentFactory(RepeaterComponent);
-        const componentRef = viewContainerRef.createComponent(factory);
-        return componentRef.instance;
+        return createComponent();
     }
 
     static getScript = function (scriptsMap, _script) {

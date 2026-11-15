@@ -977,7 +977,7 @@ export class GaugesManager {
             this.mapGauges[ga.id] = gauge;
             return gauge;
         } else if (ga.type.startsWith(RepeaterComponent.TypeTag)) {
-            Object.values(ga.property.repeaterDataSource).forEach(val => {
+            Object.values(ga.property?.repeaterDataSource || {}).forEach(val => {
                 if (val['repeaterDataId'] !== '') {
                     let _v: Variable = new Variable(val['id'], null, this.hmiService.projectService.getDeviceFromTagId(val['id']));
                     _v.value = '-3';

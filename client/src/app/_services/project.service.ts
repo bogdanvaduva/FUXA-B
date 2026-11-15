@@ -604,11 +604,7 @@ export class ProjectService {
     }
 
     getRepeater(id: string) {
-        for (let i = 0; i < this.projectData.repeaters.length; i++) {
-            if (this.projectData.repeaters[i].id === id) {
-                return this.projectData.repeaters[i];
-            }
-        }
+        return this.projectData?.repeaters?.find(repeater => repeater.id === id);
     }
 
     /**
