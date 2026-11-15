@@ -491,6 +491,21 @@ export class DeviceAlarmDialog {
         this.data.property = this.property;
         this.dialogRef.close(this.data);
     }
+
+    onAddAction() {
+        if (!this.data.alarm.actions.values) {
+            this.data.alarm.actions.values = [];
+        }
+        this.data.alarm.actions.values.push(new AlarmAction());
+    }
+
+    onAlarmAction(index: number) {
+        this.data.alarm.actions.values.splice(index, 1);
+    }
+
+    setActionVariable(action: AlarmAction, event) {
+        action.variableId = event.variableId;
+    }
 }
 
 export interface TagElement {
