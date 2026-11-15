@@ -5,6 +5,7 @@ import { Utils } from '../../../_helpers/utils';
 import { GaugeDialogType } from '../../gauge-property/gauge-property.component';
 import { HmiService } from '../../../_services/hmi.service';
 import { EndPointApi } from '../../../_helpers/endpointapi';
+import { RepeaterUtils } from '../../../_models/repeater';
 import { GaugesManager } from '../../gauges.component';
 declare function initializeHtml5QrCode(id: any): void;
 
@@ -45,7 +46,6 @@ export class RepeaterComponent extends GaugeBaseComponent {
         if (!dataLine) {
             return createComponent();
         }
-        let dataJSONURL = dataLine.url;
         let dataJSONProperties = (dataLine.url_data_properties || '').split(",");
         let dataJSONPropertyToShow = gaugeSettings.property.repeaterDataPropertyToShow;
         let dataJSONTags = {};
@@ -121,7 +121,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 } catch (err) {}
             });
             this.scripts = hmiService.projectService.getScripts();
-            EndPointApi.getJSONFromURL(this.endPointConfig + dataJSONURL).subscribe(result => {
+            RepeaterUtils.getItems(dataLine).subscribe({ error: (err) => console.error(`Repeater: cannot load ${dataLine.url}`, err), next: result => {
                 let jsonObj = result;
                 Object.entries(jsonObj).forEach(entry => {
                     if (svgDivContainer) {
@@ -137,7 +137,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                     var content = svgDivContainer.innerHTML;
                     svgDivContainer.innerHTML= content;
                 }, 1000); 
-            } );
+            } });
 
         }
         initializeHtml5QrCode(gaugeSettings.id);

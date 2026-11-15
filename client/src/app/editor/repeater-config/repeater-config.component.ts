@@ -109,7 +109,7 @@ export class RepeaterConfigComponent implements OnInit {
     onAddRepeaterDataLine(repeater: RepeaterData) {
         let dialogRef = this.dialog.open(DialogRepeaterDataLine, {
             position: { top: '60px' },
-            data:  <RepeaterDataLine>{ name: '', url: '', url_data_type: '', url_data_properties: '' }
+            data:  <RepeaterDataLine>{ name: '', url: '', url_data_type: '', url_data_properties: '', url_data_path: '' }
         });
 
         dialogRef.afterClosed().subscribe((result) => {
@@ -122,7 +122,7 @@ export class RepeaterConfigComponent implements OnInit {
     editRepeaterDataLine(line: RepeaterDataLine) {
         let dialogRef = this.dialog.open(DialogRepeaterDataLine, {
             position: { top: '60px' },
-            data: <RepeaterDataLine>{ id: line.id, name: line.name, url: line.url, url_data_type: line.url_data_type, url_data_properties: line.url_data_properties }
+            data: <RepeaterDataLine>{ id: line.id, name: line.name, url: line.url, url_data_type: line.url_data_type, url_data_properties: line.url_data_properties, url_data_path: line.url_data_path }
         });
         dialogRef.afterClosed().subscribe((result:RepeaterDataLine) => {
             if (result) {
@@ -130,6 +130,7 @@ export class RepeaterConfigComponent implements OnInit {
                 line.url = result.url;
                 line.url_data_type = result.url_data_type;
                 line.url_data_properties = result.url_data_properties;
+                line.url_data_path = result.url_data_path;
             }
         });
     }

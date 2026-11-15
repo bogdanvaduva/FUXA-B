@@ -8,7 +8,7 @@ import { Subject } from 'rxjs';
 
 import { TranslateService } from '@ngx-translate/core';
 import { RepeaterProperty } from '../../../../_models/hmi';
-import { RepeaterData } from '../../../../_models/repeater';
+import { RepeaterData, RepeaterUtils } from '../../../../_models/repeater';
 import { ProjectService } from '../../../../_services/project.service';
 import { HmiService } from '../../../../_services/hmi.service';
 import { EndPointApi } from '../../../../_helpers/endpointapi';
@@ -190,11 +190,16 @@ export class DialogTagRepeater implements OnInit {
             }
         });        
         let _repeater:any = Object.values(this.data.repeaters).find((e:any) => e.id === this.data.settings.property.repeaterData);
-        this.dataJSONURL = _repeater.lines[0].url;
-        this.dataJSONProperties = _repeater.lines[0].url_data_properties.split(",");
+        const dataLine = _repeater?.lines?.[0];
+        if (!dataLine) {
+            return;
+        }
+        this.dataJSONURL = dataLine.url;
+        this.dataJSONProperties = (dataLine.url_data_properties || '').split(",");
 
-        EndPointApi.getJSONFromURL(this.endPointConfig + this.dataJSONURL).subscribe(result => {
-            this.dataJSON = result;
+        RepeaterUtils.getItems(dataLine).subscribe({
+            next: result => this.dataJSON = result,
+            error: err => console.error(`Repeater: cannot load ${dataLine.url}`, err)
         });
     }
     
