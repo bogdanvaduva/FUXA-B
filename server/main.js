@@ -12,6 +12,7 @@ const jwt = require('jsonwebtoken');
 const paths = require('./paths');
 const logger = require('./runtime/logger');
 const utils = require('./runtime/utils');
+const proxies = require('./api/proxies');
 var events = require("./runtime/events").create();
 const FUXA = require('./fuxa.js');
 const runtime = require('./runtime');
@@ -440,53 +441,8 @@ function snapshotAuth(req, res, next) {
     }
 }
 
-// FUXA-B: proxy request to a specific server in order to have a list of 100+ points
-app.use(BASE_PATH + '/gis', function (clientRequest, clientResponse) {
-    const targetUrl = 'YOUR GIS DATA';
-
-    const parsedHost = targetUrl.split('/').splice(2).splice(0, 1).join('/');
-    let parsedPort;
-    let parsedSSL;
-    if (targetUrl.startsWith('https://')) {
-        parsedPort = 443;
-        parsedSSL = https;
-    } else if (targetUrl.startsWith('http://')) {
-        parsedPort = 80;
-        parsedSSL = http;
-    } else {
-        return clientResponse.status(501).send('GIS proxy target not configured');
-    }
-    const options = {
-        hostname: parsedHost,
-        port: parsedPort,
-        path: '/gis' + clientRequest.url,
-        method: clientRequest.method,
-        headers: {
-            'User-Agent': clientRequest.headers['user-agent']
-        }
-    };
-
-    const serverRequest = parsedSSL.request(options, function (serverResponse) {
-        let body = '';
-        if (String(serverResponse.headers['content-type']).indexOf('text/html') !== -1) {
-            serverResponse.on('data', function (chunk) {
-                body += chunk;
-            });
-            serverResponse.on('end', function () {
-                clientResponse.writeHead(serverResponse.statusCode, serverResponse.headers);
-                clientResponse.end(body);
-            });
-        } else {
-            serverResponse.pipe(clientResponse, { end: true });
-            clientResponse.contentType(serverResponse.headers['content-type']);
-        }
-    });
-    serverRequest.on('error', (err) => {
-        logger.error('gis proxy: ' + err);
-        if (!clientResponse.headersSent) clientResponse.status(502).end();
-    });
-    serverRequest.end();
-});
+// Generic reverse proxies (settings.proxies), mounted before any body parser
+proxies.mount(app, settings.proxies, BASE_PATH, logger);
 
 // All the calls that are directly parsed as static http are mapped here
 const SHELL_ROUTES = [
