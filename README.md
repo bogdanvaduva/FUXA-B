@@ -1,6 +1,18 @@
 ![fuxa logo](/client/src/favicon.ico)
 # FUXA-B
-FUXA-B is a web-based Process Visualization (SCADA/HMI/Dashboard) software forked from FUXA found at https://github.com/frangoteam/FUXA/. With FUXA-B you can create modern process visualizations with individual designs for your machines and real-time data display. FUXA-B has a few other features than the original FUXA. It has  been added a new DAQ type which is PostgreSQL (we plan to add MySQL/MariaDB as well), a new data source called Repeater Data, a new component called Repeater. Also within the FUXA-B logic we integrated a generic tagName that can be provided to the view through URL query params allowing to build templates.
+FUXA-B is a web-based Process Visualization (SCADA/HMI/Dashboard) software forked from
+[FUXA](https://github.com/frangoteam/FUXA/). With FUXA-B you can create modern process visualizations with
+individual designs for your machines and real-time data display. It follows the upstream FUXA and adds:
+
+- **Repeater**: a control that repeats a template view for every item of a list (URL with JSON/CSV, SQL on the
+  DAQ storage or on the FUXA App DB), with live tag values and colors per item. See [Repeater](#repeater).
+- **PostgreSQL** as DAQ storage (data historian). See [PostgreSQL DAQ storage](#postgresql-daq-storage).
+- **Reverse proxies** to use external HTTP services from the views without CORS. See [Proxies](#proxies).
+- **Template views by URL**: a control bound to `tagName` shows the tag given in the URL
+  (`?tagName=<tag id>`). See [Generic tagName view](#generic-tagname-view-template-by-url).
+- **Create alarms** for all the tags of a device at once. See [Create alarms](#create-alarms-for-a-device).
+- The editor menu button is hidden when nobody is logged in.
+- [ChirpStack bridge](#chirpstack-lorawan) for the latest LoRaWAN values.
 
 ![fuxa editor](/screenshot/fuxa-editor.png)
 
@@ -12,7 +24,7 @@ FUXA-B is a web-based Process Visualization (SCADA/HMI/Dashboard) software forke
 - **Industrial protocol support**
   Modbus RTU/TCP, Siemens S7 Protocol, OPC-UA, BACnet IP, MQTT, Ethernet/IP (Allen Bradley), ODBC, ADSclient, Gpio (Raspberry), WebCam, MELSEC, Redis, SNMP
 - **Database and data storage**
-  Built-in data historian (DAQ) with support for SQLite, InfluxDB and other time-series databases.
+  Built-in data historian (DAQ) with support for SQLite, InfluxDB, PostgreSQL and other time-series databases.
   External integrations via ODBC and Redis.
 - **SCADA/HMI Web-Editor**
   Engineering and Design completely web-based
@@ -49,11 +61,15 @@ The documentation source is located in the `/docs` directory of this repository.
 The site is built using MkDocs (Material theme) and automatically deployed via GitHub Actions.
 
 ## 🛠 Installing and Running
-FUXA is developed with NodeJS (backend) and Angular (frontend).
+FUXA-B is developed with NodeJS (backend) and Angular (frontend). The built client is included in the
+repository (`client/dist`), so only the server has to be installed.
 
-running from docker it's not yet available for FUXA-B
+Docker images, NPM packages, Electron and portable builds are not available for FUXA-B yet: the options 3 to 5
+below install the upstream FUXA (without the FUXA-B features).
 
-[Download the latest release](https://github.com/bogdanvaduva/FUXA-B) and unpack it
+### 1° Option - From the repository
+
+[Download the repository](https://github.com/bogdanvaduva/FUXA-B) (or `git clone`) and unpack it
 
 You need to have installed [Node.js](https://nodejs.org/en/about/previous-releases)
 - Recommended: Node.js 22 LTS
@@ -73,7 +89,11 @@ npm start
 
 Open up a browser (better Chrome) and navigate to http://localhost:1881
 
-### 3° Option - Install from [NPM](https://www.npmjs.com/package/@frangoteam/fuxa)
+### 2° Option - Docker
+
+Not available for FUXA-B yet.
+
+### 3° Option - Install upstream FUXA from [NPM](https://www.npmjs.com/package/@frangoteam/fuxa)
 
 You need to have installed [Node.js](https://nodejs.org/en/about/previous-releases)
 - Recommended: Node.js 22 LTS
@@ -88,7 +108,7 @@ fuxa
 
 Open up a browser (better Chrome) and navigate to http://localhost:1881
 
-### 4° Option - Install using prebuilt Electron Packages
+### 4° Option - Install upstream FUXA using prebuilt Electron Packages
 
 You will need to be logged into github to access the download button for Electron Action Builds,
 click on the workflow and scroll down to Artifacts and click the download icon for you system
@@ -97,7 +117,7 @@ click on the workflow and scroll down to Artifacts and click the download icon f
 
 <img width="2082" height="531" alt="image" src="https://github.com/user-attachments/assets/40f01e1d-cf39-4145-99a0-e8fedf791edf" />
 
-### 5° Option - Headless Portable Binaries for Embedded Devices
+### 5° Option - Upstream FUXA Headless Portable Binaries for Embedded Devices
 
 For headless deployments on embedded devices or servers without GUI, FUXA provides self-contained portable binaries for Windows, macOS, and Linux.
 
@@ -148,28 +168,19 @@ first line of the source. A line has a **Type**:
 
 | Field | Meaning |
 |---|---|
-| URL | `https://raw.githubusercontent.com/sharmadhiraj/free-json-datasets/refs/heads/master/docs/climate-weather/countries_by_average_annual_precipitation.json` used as is (a GitHub `.../blob/...` file page is mapped to the raw file). A relative path (`/gis/rest/...`) goes to the FUXA server, e.g. to a proxy configured in `settings.js` (see below) |
+| URL | `https://...` used as is (a GitHub `.../blob/...` file page is mapped to the raw file). A relative path (`/gis/rest/...`) goes to the FUXA server, e.g. to a [proxy](#proxies) |
 | Data type | `JSON` (default) or `CSV` |
 | Data properties | comma separated item fields to use, e.g. `name,city,value`. Empty: every field of the item |
 | Data path | JSON only, dotted path to the items inside the response, e.g. `data` or `result.items`. Empty: the whole JSON |
+
+Example: URL `https://raw.githubusercontent.com/sharmadhiraj/free-json-datasets/refs/heads/master/docs/climate-weather/countries_by_average_annual_precipitation.json`,
+data type `JSON`, data path `data`, data properties `rank,country,average_annual_precipitation_mm,continent`.
 
 - JSON: the items are the array (or the values of the object) found at the data path.
 - CSV: the first row is the header, every following row is an item keyed by the header. The delimiter
   (`,` `;` or tab) is detected from the header, quoted fields (RFC 4180) are supported.
 
-To read an external service without CORS problems, add a reverse proxy in `server/_appdata/settings.js`
-and use the relative path in the URL field:
-
-```js
-proxies: [
-    { path: '/gis', target: 'https://gis.example.com/gis' },
-    { path: '/weather', target: 'http://10.0.0.5:8080', headers: { 'x-api-key': 'KEY' }, timeout: 10000 }
-],
-```
-
-A request to `http://<fuxa>/gis/rest/query?f=json` is forwarded to `https://gis.example.com/gis/rest/query?f=json`.
-FUXA credentials (cookie, authorization, x-access-token) are never forwarded. Optional per proxy: `headers`,
-`timeout` (ms, default 30000), `rejectUnauthorized: false` for self-signed certificates.
+To read an external service without CORS problems use a [proxy](#proxies).
 
 **DB**
 
@@ -182,15 +193,16 @@ The SQL runs on the server **from the saved project**: after editing a line, sav
 it in the view. Queries are read-only (SQLite opened read-only, PostgreSQL in a `READ ONLY` transaction) and
 `ATTACH` of other databases is blocked.
 
-DAQ SQLite example (values with the tag names):
+DAQ SQLite example (last values with the tag names, the tags map is attached as `map`):
 
 ```sql
-SELECT d.id, d.name AS device,
-       json_group_object(t.key, json_extract(t.value, '$.value')) AS tags
-FROM devices d, json_each(d.tagList) t
-WHERE d.id LIKE 'd\_%' ESCAPE '\' AND d.enabled = 1
-GROUP BY d.id
-ORDER BY d.name
+SELECT m.name, d.value, d.dt FROM data d JOIN map.data m ON m.mapid = d.id ORDER BY d.dt DESC LIMIT 50
+```
+
+DAQ PostgreSQL example (table `data` in the configured schema):
+
+```sql
+SELECT deviceName, tagName, value, time FROM data ORDER BY time DESC LIMIT 50
 ```
 
 #### FUXA App DB
@@ -217,16 +229,22 @@ Users, API keys and the project database (passwords and credentials) are not acc
 ```
 
 ```sql
--- one item per device
-SELECT name, type, address, status, tagList FROM devices WHERE enabled = 1 ORDER BY name
+-- one item per device, with its tags (live values and colors in the template: @tags.Temperature)
+SELECT id, name AS device, type, status, tagList AS tags FROM devices WHERE enabled = 1 ORDER BY name
 
--- one item per tag
+-- one item per tag (values at query time)
 SELECT d.name AS device, t.key AS tag, json_extract(t.value, '$.value') AS value
 FROM devices d, json_each(d.tagList) t
+
+-- the tags of the devices whose id starts with 'd_' grouped by device, keeping the whole entries (live)
+SELECT d.id, d.name AS device, json_group_object(t.key, json(t.value)) AS tags
+FROM devices d, json_each(d.tagList) t
+WHERE d.id LIKE 'd\_%' ESCAPE '\' AND d.enabled = 1
+GROUP BY d.id ORDER BY d.name
 ```
 
-To keep the live values with a grouped query, keep the whole entry: `json_group_object(t.key, json(t.value)) AS tags`
-(with `json_extract(t.value, '$.value')` only the value at query time is kept, not live).
+Only whole tag entries (objects with `id` and `value`) are live in the template: with
+`json_extract(t.value, '$.value')` only the value at query time is kept.
 
 Text values of App DB rows that look like JSON (`{...}` or `[...]`, e.g. `tagList` or your own
 `json_object(...)` columns) are returned as objects. Note: in `LIKE`, `_` is a wildcard
@@ -274,12 +292,58 @@ Several Repeaters can be placed in the same view.
 In the running view the Repeater shows a search input on top (it stays visible while the items scroll):
 only the items containing the text are shown (case insensitive, in any field or text).
 
+Example: one card per Modbus device with its state.
+
+1. Repeater data line, type DB, DAQ **FUXA App DB**:
+   `SELECT id, name AS device, status, tagList AS tags FROM devices WHERE type = 'ModbusTCP' ORDER BY name`
+2. Template view `Device card`: a rectangle as background with tag `@tags.Alarm` and ranges `0 → green`,
+   `1 → red`; an Output with tag `@device`; an Output with tag `@tags.Temperature` (format 1 decimal, unit °C);
+   a click event *Open dialog* on the rectangle with the view `Device details`, where an Output with tag
+   `@tags.Pressure` shows the live pressure of the clicked device.
+3. In the main view draw a Repeater with this data and the view `Device card`.
+
 ### Generic `tagName` view (template by URL)
 
 A control whose tag is set to `tagName` (type it in the tag field of the control) is bound to the tag given
 in the URL: `http://<fuxa>/home?viewName=<view>&tagName=<tag id>`. Chart lines with id `tagName` work the
 same way. The URL query parameters are also appended to the address of the iframes of the view. This way one
 view can be used as template for many tags.
+
+## PostgreSQL DAQ storage
+
+Editor → **Setup** → **Settings** → **DAQ storage** → type **PostgreSQL**:
+
+| Field | Meaning |
+|---|---|
+| URL | server address, e.g. `postgres://localhost:5432` |
+| Database | database name (it must exist) |
+| Schema | optional schema for the table (empty: default schema) |
+| Username / Password | credentials of the PostgreSQL user |
+
+The values of the tags with DAQ enabled are saved in the table `data` (`tagId`, `tagName`, `deviceId`,
+`deviceName`, `value`, `dt`, `time`), created on start if missing. It can be read by the Repeater (DB line).
+
+## Proxies
+
+To use an external HTTP service from the views (Repeater URL, iframe, scripts) without CORS problems, add a
+reverse proxy in `server/_appdata/settings.js` (restart the server) and use the relative path:
+
+```js
+proxies: [
+    { path: '/gis', target: 'https://gis.example.com/gis' },
+    { path: '/weather', target: 'http://10.0.0.5:8080', headers: { 'x-api-key': 'KEY' }, timeout: 10000 }
+],
+```
+
+A request to `http://<fuxa>/gis/rest/query?f=json` is forwarded to `https://gis.example.com/gis/rest/query?f=json`.
+FUXA credentials (cookie, authorization, x-access-token) are never forwarded. Optional per proxy: `headers`,
+`timeout` (ms, default 30000), `rejectUnauthorized: false` for self-signed certificates.
+
+## Create alarms for a device
+
+Editor → **Setup** → **Devices** → open the tags of a device → menu (⋮) → **Create Alarms...**: one dialog with the alarm
+settings (levels, colors, ack mode, actions) creates an alarm for every tag of the device, named
+`<tag id> [<tag name>]`.
 
 ## ChirpStack (LoRaWAN)
 FUXA-B reads ChirpStack uplinks through a standard MQTT device. To get the latest values right away
@@ -315,10 +379,11 @@ In vscode: Debug ‘Server & Client’
 ```
 
 ## 🏗 To Build
-Build the frontend for production
+Build the frontend for production (the output in `client/dist` is served by the server)
 ```
 cd ./client
-ng build --configuration=production
+npm install
+npx ng build --configuration production
 ```
 
 ## Who uses FUXA
