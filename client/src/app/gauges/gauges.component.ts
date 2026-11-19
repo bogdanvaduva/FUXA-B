@@ -460,11 +460,6 @@ export class GaugesManager {
      */
     getBindSignals(gaugeSettings: GaugeSettings, sourceDeviceTags?: Tag[]) {
         if (gaugeSettings.property) {
-            // FUXA-B: 'tagName' placeholder resolved from the view window (URL) params
-            const windowParams = gaugeSettings.property.windowParams;
-            if (windowParams?.hasOwnProperty('tagName') && gaugeSettings.property.variableId === 'tagName') {
-                gaugeSettings.property.variableId = windowParams.tagName;
-            }
             for (let i = 0; i < GaugesManager.Gauges.length; i++) {
                 if (gaugeSettings.type.startsWith(GaugesManager.Gauges[i].TypeTag)) {
                     if (gaugeSettings.type.startsWith(HtmlChartComponent.TypeTag)) {
@@ -485,8 +480,6 @@ export class GaugesManager {
                             });
                         }
                         return sigsId;
-                    } else if (gaugeSettings.type.startsWith(RepeaterComponent.TypeTag)) {
-                        return Object.keys(this.hmiService.variables);
                     } else if (typeof GaugesManager.Gauges[i]['getSignals'] === 'function') {
                         return GaugesManager.Gauges[i]['getSignals'](gaugeSettings.property);
                     } else {
@@ -578,12 +571,7 @@ export class GaugesManager {
                     if (ga.property.type === ChartViewType.realtime1 && this.memorySigGauges[sig.id]) {
                         Object.keys(this.memorySigGauges[sig.id]).forEach(k => {
                             if (k === ga.id && this.mapGauges[k]) {
-                                let _sig = sig;
-                                if (sig.id === "tagName") {
-                                    _sig = this.hmiService.variables[sig.value];
-                                    ga.property.variableId = _sig.id;
-                                }
-                                HtmlChartComponent.processValue(ga, svgele, _sig, gaugeStatus, this.mapGauges[k]);
+                                HtmlChartComponent.processValue(ga, svgele, sig, gaugeStatus, this.mapGauges[k]);
                             }
                         });
                     }
@@ -622,15 +610,6 @@ export class GaugesManager {
                             HtmlSwitchComponent.processValue(ga, svgele, sig, gaugeStatus, this.mapGauges[k]);
                         }
                     });
-                    }
-                    break;
-                } else if (ga.type.startsWith(RepeaterComponent.TypeTag)) {
-                    if (this.memorySigGauges[sig.id]) {
-                        Object.keys(this.memorySigGauges[sig.id]).forEach(k => {
-                            if (k === ga.id && this.mapGauges[k]) {
-                                RepeaterComponent.processValue(ga, svgele, sig, gaugeStatus, this.mapGauges[k]);
-                            }
-                        });
                     }
                     break;
                 } else if (ga.type.startsWith(HtmlTableComponent.TypeTag)) {
@@ -872,6 +851,7 @@ export class GaugesManager {
      * @param res reference to factory
      * @param ref reference to factory
      * @param isview in view or editor, in editor have to disable mouse activity
+     * @param parent parent that call the function, should be from a FuxaViewComponent
      */
     initElementAdded(ga: GaugeSettings, res: any, ref: any, isview: boolean, parent?: FuxaViewComponent, textTranslation?: string, sourceDeviceTags?: Tag[]) {
         if (!ga || !ga.type) {
@@ -903,7 +883,6 @@ export class GaugesManager {
             let gauge: ChartUplotComponent = HtmlChartComponent.initElement(ga, res, ref, isview, ChartRangeType);
             if (gauge) {
                 this.setChartPropety(gauge, ga.property, targetSignalsId);
-                ga.property.variableObjectProperty = gauge['variableObjectProperty'];
                 this.mapChart[ga.id] = gauge;
                 gauge.onTimeRange.subscribe(data => {
                     this.hmiService.queryDaqValues(data);
@@ -977,13 +956,6 @@ export class GaugesManager {
             this.mapGauges[ga.id] = gauge;
             return gauge;
         } else if (ga.type.startsWith(RepeaterComponent.TypeTag)) {
-            Object.values(ga.property?.repeaterDataSource || {}).forEach(val => {
-                if (val['repeaterDataId'] !== '') {
-                    let _v: Variable = new Variable(val['id'], null, this.hmiService.projectService.getDeviceFromTagId(val['id']));
-                    _v.value = '-3';
-                    this.hmiService.variables[val['id']] = _v;
-                }
-            });
             let gauge = RepeaterComponent.initElement(ga, this, this.hmiService, res, ref, isview, parent);
             this.mapGauges[ga.id] = gauge;
             return gauge;
@@ -1045,14 +1017,9 @@ export class GaugesManager {
                         let line = chart.lines[i];
                         // check for placeholder
                         let sigid = targetSignalsId?.[line.id] ?? line.id;
-                        // FUXA-B: 'tagName' line resolved from window params, optional JSON property as y value
+                        // FUXA-B: a 'tagName' line is the tag given by the view window (URL) param tagName
                         if (line.id === 'tagName') {
                             sigid = property.windowParams?.tagName ?? '';
-                            chart.lines[i].id = sigid;
-                            chart.lines[i]['yProperty'] = line.name;
-                            gauge['variableObjectProperty'] = line.name;
-                        } else if (chart.lines[i]['yProperty']) {
-                            gauge['variableObjectProperty'] = chart.lines[i]['yProperty'];
                         }
                         let sigProperty = this.hmiService.getMappedVariable(sigid, true);
                         if (sigProperty) {

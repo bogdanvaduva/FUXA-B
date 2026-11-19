@@ -20,7 +20,6 @@ import { LibImagesComponent } from '../resources/lib-images/lib-images.component
 
 import { BagPropertyComponent } from '../gauges/controls/html-bag/bag-property/bag-property.component';
 import { SliderPropertyComponent } from '../gauges/controls/slider/slider-property/slider-property.component';
-import { RepeaterPropertyComponent } from '../gauges/controls/repeater/repeater-property/repeater-property.component';
 import { HtmlInputComponent } from '../gauges/controls/html-input/html-input.component';
 import { HtmlButtonComponent } from '../gauges/controls/html-button/html-button.component';
 import { HtmlSelectComponent } from '../gauges/controls/html-select/html-select.component';
@@ -45,7 +44,6 @@ import { ResourcesService } from '../_services/resources.service';
 import { InputPropertyComponent } from '../gauges/controls/html-input/input-property/input-property.component';
 import { SettingsService } from '../_services/settings.service';
 import { OnboardingWizardComponent } from './onboarding-wizard/onboarding-wizard.component';
-import { HmiService } from '../_services/hmi.service';
 
 declare var Gauge: any;
 
@@ -1443,18 +1441,10 @@ export class EditorComponent implements OnInit, AfterViewInit, OnDestroy {
                     names: names
                 }
             });
-        }else if (dlgType === GaugeDialogType.Repeater) {
-            // dialogRef = this.dialog.open(RepeaterPropertyComponent, {
-            //     position: { top: '60px' },
-            //     data: {
-            //         settings: tempsettings, devices: Object.values(this.projectService.getDevices()),
-            //         withEvents: eventsSupported, withActions: actionsSupported, withBitmask: bitmaskSupported,
-            //         names: names
-            //     }
-            // });
+        } else if (dlgType === GaugeDialogType.Repeater) {
             this.gaugeDialog.type = dlgType;
             this.gaugeDialog.data = {
-                settings: tempsettings, views: hmi.views, repeaters:this.projectService.getRepeaters(), dlgType: dlgType, names: names
+                settings: tempsettings, views: hmi.views, repeaters: this.projectService.getRepeaters(), dlgType: dlgType, names: names
             };
             if (!this.sidePanel.opened) {
                 this.sidePanel.toggle();

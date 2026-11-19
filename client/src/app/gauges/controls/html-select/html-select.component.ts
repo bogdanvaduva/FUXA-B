@@ -65,7 +65,7 @@ export class HtmlSelectComponent extends GaugeBaseComponent {
         try {
             let select = Utils.searchTreeStartWith(svgele.node, this.prefix);
             if (select) {
-                const val = Utils.normalizeTagValue((ga ? GaugeSettings.transformObjectValue(ga.property, sig.value) : sig.value));
+                const val = Utils.normalizeTagValue(sig.value);
                 if (ga.property.variableId === sig.id) {
                     select.value = val;
 

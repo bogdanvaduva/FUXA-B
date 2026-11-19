@@ -50,8 +50,7 @@ export class SliderComponent {
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus, slider?: NgxNouisliderComponent) {
         try {
             if (slider) {
-                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
-                let val = parseFloat(cv);
+                let val = parseFloat(sig.value);
                 if (Number.isNaN(val)) {
                     // maybe boolean
                     val = Number(sig.value);

@@ -56,9 +56,8 @@ export class ShapesComponent extends GaugeBaseComponent {
 
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus) {
         try {
-            if (svgele.node && ga.property.variableId && sig.id===ga.property.variableId) {
-                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
-                let value = parseFloat(cv);
+            if (svgele.node) {
+                let value = parseFloat(sig.value);
                 if (Number.isNaN(value)) {
                     // maybe boolean
                     value = Number(sig.value);
@@ -76,12 +75,10 @@ export class ShapesComponent extends GaugeBaseComponent {
                             }
                         }
                         // check if general shape (line/path/fpath/text) to set the stroke
-                        if (propertyColor.fill) { // TO BE VERIFIED BY BOGDAN walkTreeNodeToSetAttribute
-                            svgele.node.setAttribute('fill', propertyColor.fill);
+                        if (propertyColor.fill) {
                             GaugeBaseComponent.walkTreeNodeToSetAttribute(svgele.node, 'fill', propertyColor.fill);
                         }
                         if (propertyColor.stroke) {
-                            svgele.node.setAttribute('stroke', propertyColor.stroke);
                             GaugeBaseComponent.walkTreeNodeToSetAttribute(svgele.node, 'stroke', propertyColor.stroke);
                         }
 

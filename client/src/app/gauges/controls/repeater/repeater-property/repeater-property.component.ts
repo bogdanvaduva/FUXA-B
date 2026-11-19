@@ -1,19 +1,12 @@
-import { Component, Inject, EventEmitter, OnInit, Input, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Input, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { ReplaySubject } from 'rxjs';
+import { ReplaySubject, Subject } from 'rxjs';
 import { UntypedFormControl } from '@angular/forms';
 import { takeUntil } from 'rxjs/operators';
-import { Subject } from 'rxjs';
 
-import { TranslateService } from '@ngx-translate/core';
 import { RepeaterProperty } from '../../../../_models/hmi';
-import { RepeaterData, RepeaterUtils } from '../../../../_models/repeater';
-import { ProjectService } from '../../../../_services/project.service';
-import { HmiService } from '../../../../_services/hmi.service';
-import { EndPointApi } from '../../../../_helpers/endpointapi';
+import { RepeaterData } from '../../../../_models/repeater';
 import { RepeaterConfigComponent, IDataRepeaterDataResult } from '../../../../editor/repeater-config/repeater-config.component';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 @Component({
     selector: 'app-repeater-property',
@@ -35,9 +28,7 @@ export class RepeaterPropertyComponent implements OnInit {
 
     private _onDestroy = new Subject<void>();
 
-    constructor(
-        public dialog: MatDialog,
-        private translateService: TranslateService) {
+    constructor(public dialog: MatDialog) {
     }
 
     ngOnInit() {
@@ -50,7 +41,7 @@ export class RepeaterPropertyComponent implements OnInit {
 
     private _reload() {
         if (!this.data.settings.property) {
-            this.data.settings.property = { repeaterData: null, repeaterDataPropertyToShow: null, view: null, dataSource: null };
+            this.data.settings.property = { repeaterData: null, repeaterDataPropertyToShow: null, view: null };
         }
         this.property = this.data.settings.property;
         this.loadRepeaterData();
@@ -63,7 +54,7 @@ export class RepeaterPropertyComponent implements OnInit {
 
     onRepeaterDataChanged() {
         if (!this.data.settings.property) {
-            this.data.settings.property = { repeaterData: null, repeaterDataPropertyToShow: null, view: null, dataSource: null };
+            this.data.settings.property = { repeaterData: null, repeaterDataPropertyToShow: null, view: null };
         }
         if (this.repeaterDataCtrl.value) {
             this.data.settings.property.repeaterData = this.repeaterDataCtrl.value.id;
@@ -129,141 +120,4 @@ export class RepeaterPropertyComponent implements OnInit {
             this.data.repeaters.filter(repeaterData => repeaterData.name.toLowerCase().indexOf(search) > -1)
         );
     }
-
-    openTagsToRepeaterData() {
-        let dialogRef = this.dialog.open(DialogTagRepeater, {
-            data: this.data,
-            position: { top: '60px' },
-            minWidth: '850px', width: '850px', height: '500px'
-        });
-        dialogRef.afterClosed().subscribe((result: any) => {
-            if (result) {
-                this.data.settings.property['repeaterDataSource'] = result.settings.property.repeaterDataSource;
-                this.property.repeaterDataSource = result.settings.property.repeaterDataSource;
-                this.onPropChanged.emit(this.data.settings);
-            }
-        });
-    }
 }
-
-@Component({
-    selector: 'tag-repeater-matching',
-    templateUrl: './tag-repeater.dialog.html',
-    styleUrls: ['./repeater-property.component.css']
-})
-export class DialogTagRepeater implements OnInit {
-    readonly defAllColumns = ['tag', 'tagUsed', 'tagIsObject', 'tagObjectProperty', 'repeaterDataId', 'input', 'repeaterdDataSearch', 'search', 'clear'];
-    readonly defAllRowWidth = 800;
-
-    endPointConfig: string = EndPointApi.getURL();
-    repeaterDataSource = new MatTableDataSource([]);
-    @Input() readonly = false;
-    displayedColumns = this.defAllColumns;
-    tableWidth = this.defAllRowWidth;
-    search = {};
-    search_result = {};
-    dataJSONURL: string;
-    dataJSONProperties: string[];
-    dataJSON = [];
-    tags = {};
-
-    constructor(
-        public dialogRef: MatDialogRef<DialogTagRepeater>,
-        private projectService: ProjectService,
-        private hmiService: HmiService,
-        @Inject(MAT_DIALOG_DATA) public data: any) {
-    }
-
-    ngOnInit() {
-        let _devices = this.projectService.getDevices();
-        Object.values(_devices).forEach((d:any) => {
-            if (d.tags) {
-                Object.values(d.tags).forEach((t: any) => {
-                    this.tags[t.id] = t.name;
-                    let _tmpRD = this.getRepeaterDataId(t.id);
-                    let _tmpC1 = (_tmpRD ? _tmpRD['valueWillBeShowed'] : undefined);
-                    let _tmpC2 = (_tmpRD ? _tmpRD['valueIsObject'] : undefined);
-                    let _tmpC3 = (_tmpRD ? _tmpRD['valueObjectProperty'] : undefined);
-                    let _tmpC4 = (_tmpRD ? _tmpRD['repeaterDataId'] : undefined);
-                    this.repeaterDataSource.data.push({id: t.id, valueWillBeShowed: _tmpC1, valueIsObject: _tmpC2, valueObjectProperty: _tmpC3, repeaterDataId: _tmpC4});
-                });
-            }
-        });        
-        let _repeater:any = Object.values(this.data.repeaters).find((e:any) => e.id === this.data.settings.property.repeaterData);
-        const dataLine = _repeater?.lines?.[0];
-        if (!dataLine) {
-            return;
-        }
-        this.dataJSONURL = dataLine.url;
-        this.dataJSONProperties = (dataLine.url_data_properties || '').split(",");
-
-        RepeaterUtils.getItems(dataLine, _repeater.id).subscribe({
-            next: result => this.dataJSON = result,
-            error: err => console.error(`Repeater: cannot load ${dataLine.url}`, err)
-        });
-    }
-    
-    onNoClick(): void {
-        this.dialogRef.close();
-    }
-
-    onOkClick(): void {
-        Object.entries(this.repeaterDataSource.data).forEach((entry:any) => {
-            if (this.search_result[entry[1].id]){
-                if (this.search_result[entry[1].id]!=='')
-                    this.repeaterDataSource.data[entry[0]]["repeaterDataId"] = this.search_result[entry[1].id][this.dataJSONProperties[0]];
-            }
-        });
-        this.data.settings.property['repeaterDataSource'] = this.repeaterDataSource.data;
-        this.dialogRef.close(this.data);
-    }
-
-    onClear(element: any) : void{
-        this.search_result[element.id] = {};
-        Object.entries(this.repeaterDataSource.data).forEach((entry:any) => {
-            if (entry[1]['id']===element.id)
-                this.repeaterDataSource.data[entry[0]]["repeaterDataId"] = '';
-        });
-    }
-
-    onSearch(element: any): void {
-        if (this.search) {
-            if (this.search[element.id]) {
-                this.search_result[element.id] = {};
-                Object.values(this.dataJSON).every( (e:any) =>{
-                    if (e.nume.indexOf(this.search[element.id])>0 || e.nume===this.search[element.id]) {
-                        this.search_result[element.id] = e;
-                        return false;
-                    }
-                    return true;
-                }); 
-            }
-        }
-    }
-
-    getSearchResult(element: any): string {
-        let _res = '';
-        if (this.search_result) {
-            if (this.search_result[element]) {
-                Object.values(this.dataJSONProperties).forEach( val => {
-                    if (this.search_result[element][val]) {
-                        _res += this.search_result[element][val] + ' ';
-                    }
-                });
-            }
-        }
-        return _res;
-    }
-
-    getRepeaterDataId(id: any): object {
-        let _res = {};
-        try {
-            _res = Object.values(this.data.settings.property.repeaterDataSource).find((e:any)=>e.id===id);
-        } catch (e) {
-            console.log(e);
-        }
-        return _res;
-    }
-}
-
-

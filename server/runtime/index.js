@@ -130,7 +130,6 @@ function init(_io, _api, _settings, _log, eventsMain) {
     events.on('tag-change:subscription', subscriptionTagChange);
     events.on('script-console', scriptConsoleOutput);
 
-
     io.on('connection', async (socket) => {
         logger.info(`socket.io client connected ${socket.id}`);
         socket.tagsClientSubscriptions = [];
@@ -732,7 +731,7 @@ function scriptConsoleOutput(output) {
  * @param {*} command
  * @param {*} parameters
  */
-function scriptSendCommand(command) {
+ function scriptSendCommand(command) {
     try {
         io.emit(Events.IoEventTypes.SCRIPT_COMMAND, command);
     } catch (err) {
@@ -853,6 +852,3 @@ var runtime = module.exports = {
     get apiKeys() { return apiKeys },
     localization: localization
 }
-
-
-

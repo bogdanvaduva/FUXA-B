@@ -40,7 +40,6 @@ export class ProjectService {
 
     public serverSettings: ServerSettings;
     private storage: ResourceStorageService;
-    public intervals: any [] = [];
 
     private projectOld = '';
     private ready = false;
@@ -595,9 +594,9 @@ export class ProjectService {
     }
     //#endregion
 
-    //#region Charts resource
+    //#region Repeaters resource
     /**
-     * get charts resource
+     * get the Repeater data sources
      */
     getRepeaters() {
         return (this.projectData) ? (this.projectData.repeaters) ? this.projectData.repeaters : [] : null;

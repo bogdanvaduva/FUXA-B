@@ -3,7 +3,6 @@ import { MatDialog as MatDialog } from '@angular/material/dialog';
 
 import { Tag, DevicesUtils, Device, PlaceholderDevice } from '../../../_models/device';
 import { Utils } from '../../../_helpers/utils';
-import { DeviceTagDialog } from '../../../device/device.component';
 import { BitmaskComponent } from '../../../gui-helpers/bitmask/bitmask.component';
 import { Observable, map, startWith } from 'rxjs';
 import { UntypedFormControl } from '@angular/forms';
@@ -20,6 +19,9 @@ export const _filter = (opt: DeviceTagOption[], value: string): DeviceTagOption[
     const filterValue = value?.toLowerCase();
     return opt.filter(item => item.name?.toLowerCase().includes(filterValue));
 };
+
+/** FUXA-B: tag id typed in the tag field, replaced in the view by the URL param tagName */
+export const WINDOW_PARAM_TAG = 'tagName';
 
 @Component({
     selector: 'flex-variable',
@@ -120,11 +122,10 @@ export class FlexVariableComponent implements OnInit {
             const tag = this.devices[i].tags.find(tag => tag.id === tagId);
             if (tag) {
                 return tag;
-            } else {
-                if (tagId) {
-                    return <DeviceTagOption>{id: tagId, name: tagId, device: ''};
-                }
             }
+        }
+        if (tagId === WINDOW_PARAM_TAG) {
+            return <DeviceTagOption>{ id: tagId, name: tagId, device: '' };
         }
         return null;
     }
@@ -191,7 +192,11 @@ export class FlexVariableComponent implements OnInit {
     }
 
     onChanged() {
-        if (this.tagFilter.value?.startsWith && this.tagFilter.value.startsWith(PlaceholderDevice.id)) {
+        if ((this.tagFilter.value?.id ?? this.tagFilter.value) === WINDOW_PARAM_TAG) {
+            // FUXA-B: bound in the view to the tag given by the URL param (?tagName=<tag id>)
+            this.value.variableId = WINDOW_PARAM_TAG;
+            this.value.variableRaw = null;
+        } else if (this.tagFilter.value?.startsWith && this.tagFilter.value.startsWith(PlaceholderDevice.id)) {
             this.value.variableId = this.tagFilter.value;
             this.value.variableRaw = null;
         } else if (this.tagFilter.value?.id?.startsWith && this.tagFilter.value.id.startsWith(PlaceholderDevice.id)) {
@@ -213,14 +218,6 @@ export class FlexVariableComponent implements OnInit {
         this.value.variableValue = this.variableValue;
         this.onchange.emit(this.value);   // Legacy
         this.valueChange.emit(this.value);
-    }
-
-    onDeviceTagBlur(event: any) {
-        this.value.variableId = event.currentTarget.value;
-        this.value.variableRaw = null;
-        this.value.variableValue = null;
-        this.onchange.emit(event.currentTarget.value);   // Legacy
-        this.valueChange.emit(event.currentTarget.value);
     }
 
     onBindTag() {

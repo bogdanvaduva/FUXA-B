@@ -1,13 +1,12 @@
 import { Component, ViewContainerRef, ComponentFactoryResolver } from '@angular/core';
 import { GaugeBaseComponent } from '../../gauge-base/gauge-base.component';
-import { GaugeActionsType, Event, GaugeSettings, GaugeStatus, View, Variable, GaugeEventType, GaugeEventActionType } from '../../../_models/hmi';
+import { Event, GaugeSettings, View, GaugeEventType, GaugeEventActionType } from '../../../_models/hmi';
 import { Utils } from '../../../_helpers/utils';
 import { GaugeDialogType } from '../../gauge-property/gauge-property.component';
 import { HmiService } from '../../../_services/hmi.service';
 import { EndPointApi } from '../../../_helpers/endpointapi';
 import { RepeaterUtils } from '../../../_models/repeater';
 import { GaugesManager } from '../../gauges.component';
-declare function initializeHtml5QrCode(id: any): void;
 
 @Component({
     selector: 'app-repeater',
@@ -22,15 +21,12 @@ export class RepeaterComponent extends GaugeBaseComponent {
     static TypeTag = 'svg-ext-own_ctrl-repeat';
     static LabelTag = 'Repeater';
     static prefixD = 'D-OXC_';
-    static tagsRepeaterData = {};
+    /** class of the search input in the Repeater toolbar */
+    static searchClass = 'repeater-search';
     /** ids of the tags shown live by the items while rendering (e.g. @tags.Temperature with a tagList entry) */
     static renderLiveTags: Set<string> = null;
     static hmi: HmiService = null;
 
-    static actionsType = { hide: GaugeActionsType.hide, show: GaugeActionsType.show, blink: GaugeActionsType.blink, stop: GaugeActionsType.stop,
-                        clockwise: GaugeActionsType.clockwise, anticlockwise: GaugeActionsType.anticlockwise, rotate : GaugeActionsType.rotate,
-                        move: GaugeActionsType.move};
-                    
     constructor() {
         super();
     }
@@ -51,16 +47,6 @@ export class RepeaterComponent extends GaugeBaseComponent {
         }
         let dataJSONProperties = (dataLine.url_data_properties || '').split(",");
         let dataJSONPropertyToShow = gaugeSettings.property.repeaterDataPropertyToShow;
-        let dataJSONTags = {};
-        Object.values(gaugeSettings.property.repeaterDataSource || {}).forEach(val => {
-            if (val['repeaterDataId']) {
-                if (val['repeaterDataId']!=='') {
-                    dataJSONTags[val['repeaterDataId']] = val['id'];
-                    this.tagsRepeaterData[val['id']] = val;
-                }
-            }
-        });
-        hmiService.askDeviceValues();
         this.hmi = hmiService;
         let view = gaugeSettings.property.view;
         var doc = new DOMParser();
@@ -70,64 +56,30 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 svgDivContainer.removeChild(svgDivContainer.lastChild);
             }
             svgDivContainer.style['overflow'] = 'auto';
-            // toolbar (QR reader, search input and buttons) stays at the top, only the items scroll
-            var toolbar = document.createElement("div");
-            toolbar.className = "repeater-toolbar";
-            toolbar.style.position = "sticky";
-            toolbar.style.top = "0";
-            toolbar.style.zIndex = "1";
+            // toolbar (search input) stays at the top, only the items scroll
+            const toolbar = document.createElement('div');
+            toolbar.className = 'repeater-toolbar';
+            toolbar.style.position = 'sticky';
+            toolbar.style.top = '0';
+            toolbar.style.zIndex = '1';
             const containerBackground = getComputedStyle(svgDivContainer).backgroundColor;
             toolbar.style.backgroundColor = (!containerBackground || containerBackground === 'transparent' || containerBackground === 'rgba(0, 0, 0, 0)') ? '#ffffff' : containerBackground;
             if (isview) {
                 // the control group has pointer-events:none (editor), the toolbar must be usable in the view
-                toolbar.style.pointerEvents = "auto";
+                toolbar.style.pointerEvents = 'auto';
             }
+            const input = document.createElement('input');
+            input.type = 'search';
+            input.className = this.searchClass;
+            input.placeholder = '\u{1F50D}';
+            input.style.width = '100%';
+            input.style.boxSizing = 'border-box';
+            toolbar.appendChild(input);
             svgDivContainer.appendChild(toolbar);
             this.bindSearch(svgDivContainer);
-            var divReader = document.createElement("div");
-            divReader.style.display = "table"
-            divReader.style.width = "100%";
-            divReader.id= "reader";
-            toolbar.appendChild(divReader); 
-            
-            var divInput = document.createElement("div");
-            divInput.style.display = "table"
-            divInput.style.width = "100%";
-            toolbar.appendChild(divInput);         
-            
-            var input = document.createElement("input");
-            input.type ="text";
-            input.id = "repeater_html5_qrcode_input";
-            input.setAttribute("onblur", "onChangeInput()");
-            divInput.appendChild(input);         
-            var divReaderStartButtonStart = document.createElement("button");
-            divReaderStartButtonStart.id = "repeater_html5_qrcode_start";
-            divReaderStartButtonStart.setAttribute('content', 'QR +');
-            divReaderStartButtonStart.setAttribute('class', 'repeater-html5-qrcode-start');  
-            divReaderStartButtonStart.textContent = 'QR +';
-            divInput.appendChild(divReaderStartButtonStart);
-            var divReaderStartButtonStop = document.createElement("button");
-            divReaderStartButtonStop.id = "repeater_html5_qrcode_stop";
-            divReaderStartButtonStop.setAttribute('content', 'QR -');
-            divReaderStartButtonStop.setAttribute('class', 'repeater-html5-qrcode-stop');  
-            divReaderStartButtonStop.textContent = 'QR -';
-            divInput.appendChild(divReaderStartButtonStop);
-
-            var divInputSearch = document.createElement("div");
-            divInputSearch.style.display = "table"
-            divInputSearch.style.width = "100%";
-            toolbar.appendChild(divInputSearch);         
-            var divReaderSearch = document.createElement("button");
-            divReaderSearch.id = "repeater_input_search";
-            divReaderSearch.setAttribute('content', '...');
-            divReaderSearch.setAttribute('class', 'repeater-input-search');  
-            divReaderSearch.style.width = "100%";
-            divReaderSearch.textContent = '...';
-            divInputSearch.appendChild(divReaderSearch);
 
             let v: View = this.getView(hmiService, view);
             if (!v) {
-                initializeHtml5QrCode(gaugeSettings.id);
                 return createComponent();
             }
             if (v.items?.[gaugeSettings.id]) {
@@ -136,7 +88,6 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 message.style.padding = "5px";
                 message.textContent = 'Repeater: select a different view, a Repeater cannot repeat the view it is placed in.';
                 svgDivContainer.appendChild(message);
-                initializeHtml5QrCode(gaugeSettings.id);
                 return createComponent();
             }
             // in the view, clicks on the items run the events of the template controls through the hosting view
@@ -180,7 +131,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                             this.removeRepeaters(xml);
                             this.applyFieldBindings(xml, fieldBindings, entry[1]);
                             var svgNodes = xml.getElementsByTagName("svg");
-                            this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow, dataJSONTags, hmiService.variables);
+                            this.modifyIdsOfElements(svgNodes, prop, dataJSONPropertyToShow);
                             this.applyViewStyle(svgNodes[0], v);
                             if (isview) {
                                 (<SVGElement>svgNodes[0]).style.pointerEvents = 'auto';
@@ -195,14 +146,18 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 const liveTags = Array.from(this.renderLiveTags);
                 this.renderLiveTags = null;
                 this.bindLiveTags(svgDivContainer, gaugeSettings.id, liveTags, hmiService);
+                // the items are parsed as XML: parse them again as HTML so that the HTML controls
+                // in their foreignObject (input, button, ...) are rendered (events are delegated to the container)
                 setTimeout(function() {
-                    var content = svgDivContainer.innerHTML;
-                    svgDivContainer.innerHTML= content;
-                }, 1000); 
+                    const search = (<HTMLInputElement>svgDivContainer.querySelector('.' + RepeaterComponent.searchClass))?.value;
+                    svgDivContainer.innerHTML = svgDivContainer.innerHTML;
+                    const input = <HTMLInputElement>svgDivContainer.querySelector('.' + RepeaterComponent.searchClass);
+                    if (input && search) {
+                        input.value = search;
+                    }
+                }, 1000);
             } });
-
         }
-        initializeHtml5QrCode(gaugeSettings.id);
         return createComponent();
     }
 
@@ -210,158 +165,64 @@ export class RepeaterComponent extends GaugeBaseComponent {
         return Object.entries(scriptsMap).find(s => s[1]['id'] === _script);
     }
 
-    static modifyIdsOfElements(node, properties, property, tags, variables) {
-        let _data = "";
-        let flgTagExist = '';
-        let flgTagName = false;
-        for(let j=0; j < properties[1].length; j++) {
-            if (_data !== "") {
-                _data += "&";
-            }
-            if (tags.hasOwnProperty(properties[0][1][properties[1][j]])) {
-                flgTagExist = tags[properties[0][1][properties[1][j]]];
-            }
-            if (properties[1][j]==='tagName') {
-                _data += properties[1][j] + "|"+ flgTagExist;
-                flgTagName = true;
-            } else {
-                _data += properties[1][j] + "|"+ RepeaterComponent.fieldText(properties[0][1][properties[1][j]]);
-            }
-        }
-        if (!flgTagName) {
-            _data += (_data !== "" ? "&" : "") + "tagName|" + flgTagExist;
-        }
-        let _id = properties[0][0];
-        for(let i = 0; i < node.length; i++)
+    /** set the item data (field|value pairs, used by the search) and the '@field' texts on the item elements */
+    static modifyIdsOfElements(node, properties, property) {
+        const item = properties[0][1];
+        const _data = properties[1].map(field => field + '|' + RepeaterComponent.fieldText(item?.[field])).join('&');
+        const _id = properties[0][0];
+        for (let i = 0; i < node.length; i++) {
             if (node[i].nodeType == 1) {
-                let _text = properties[0][1][property];
-                node[i].setAttribute("data", _data);
-                node[i].style.display = "flex";
-                this.recurseAndAdd(node[i], _data, _id, _text, tags, variables, properties[0][1]);
+                const _text = item?.[property];
+                node[i].setAttribute('data', _data);
+                node[i].style.display = 'flex';
+                this.recurseAndAdd(node[i], _data, _id, _text, item);
             }
+        }
     }
 
-    static recurseAndAdd(el, _data, _id, _text, tags, variables, item?: any) {
-        var children = el.childNodes;
-        for(let i=0; i < children.length; i++) {
-            if (children[i].nodeType == 1 )
-            if (!children[i].getAttribute("tagname")) {
-                if ('id' in children[i]){
-                    let id = children[i].id;
-                    if (this.viewObjectsScripts.hasOwnProperty(id.toLowerCase())){
-                        // only events running a CLIENT script are wired, other events (e.g. open a view) are skipped
-                        let scriptEntry = this.getScript(this.scripts || [], this.viewObjectsScripts[id.toLowerCase()]);
-                        let script = scriptEntry?.[1];
-                        if (script?.['mode'] === 'CLIENT') {
-                            children[i].setAttribute("onclick",script['code']);
-                        }
+    static recurseAndAdd(el, _data, _id, _text, item?: any) {
+        const children = el.childNodes;
+        for (let i = 0; i < children.length; i++) {
+            if (children[i].nodeType !== 1) {
+                continue;
+            }
+            if ('id' in children[i]) {
+                const id = children[i].id;
+                if (this.viewObjectsScripts.hasOwnProperty(id.toLowerCase())) {
+                    // only events running a CLIENT script are wired, other events (e.g. open a view) are run by bindItemEvents
+                    const scriptEntry = this.getScript(this.scripts || [], this.viewObjectsScripts[id.toLowerCase()]);
+                    const script = scriptEntry?.[1];
+                    if (script?.['mode'] === 'CLIENT') {
+                        children[i].setAttribute('onclick', script['code']);
                     }
-                    if (children[i].id !== '' && !children[i].getAttribute("tagname")) {
-                        children[i].id = children[i].id + "_" + _id;
-                    }
-                    children[i].setAttribute("data", _data);
-                    if (children[i].nodeName.toLowerCase() === "text" ||
-                        children[i].nodeName.toLowerCase() === "input" ||
-                        children[i].nodeName.toLowerCase() === "button")
-                        if (_data.indexOf(children[i].innerHTML.replace("@","")+"|") >=0 ||
-                            (children[i].innerHTML.startsWith('@') && RepeaterComponent.getItemField(item, children[i].innerHTML.substring(1)) !== undefined)) {
-                            if (children[i].innerHTML === "@tagName") {
-                                // to add a div with the tag name
-                                children[i].innerHTML = '';
-                                children[i].id = (tags[_id] ? tags[_id]: "hidden" + _id);
-                                let _tmpProp = Object.values(this.tagsRepeaterData).find( (e:any) => e.id == tags[_id]);
-                                let _tmpVal = "";
-                                if (_tmpProp) {
-                                    if (_tmpProp.hasOwnProperty("valueWillBeShowed"))
-                                        if (_tmpProp["valueWillBeShowed"]) {
-                                            let _tmp = Object.values(variables).find( (e:any) => e.id == tags[_id]);
-                                            if (_tmp["value"])
-                                                _tmpVal = (_tmpProp["valueObjectProperty"] && _tmpProp["valueObjectProperty"]!="" ? _tmpProp["valueObjectProperty"] : "") + " " + (_tmp ? (_tmp["value"] === undefined ? "" : (_tmpProp["valueIsObject"] ? JSON.parse(_tmp["value"])[_tmpProp["valueObjectProperty"]] : _tmp["value"])) : "");
-                                            _tmpVal = _tmpVal  + (_tmpVal !== "" ? " [" + Math.round(+new Date()/1000) + "]" : "");
-                                        } else {
-                                            _tmpVal = "";
-                                        }
-                                    else
-                                        _tmpVal = "";
-                                } else {
-                                    _tmpVal = "";
-                                }
-                                children[i].innerHTML = _tmpVal;
-                            } else {
-                                // @field shows the value of that field of the item (fallback: the 'property to show')
-                                const field = children[i].innerHTML.replace("@", "");
-                                const fieldValue = RepeaterComponent.resolveField(item, field, children[i]);
-                                const value = (fieldValue !== undefined && fieldValue !== null) ? fieldValue : _text;
-                                children[i].textContent = RepeaterComponent.fieldText(value);
-                            }
-                        }
-                    try {
-                        if (_data.indexOf("&tagName|&")>=0) {
-                            children[i].setAttribute("disabled","true");
-                            children[i].style.backgroundColor = "rgb(112,112,112)";
-                        }
-                    } catch (e) {}
                 }
-                this.recurseAndAdd(children[i], _data, _id, _text, tags, variables, item);
+                if (children[i].id !== '') {
+                    children[i].id = children[i].id + '_' + _id;
+                }
+                children[i].setAttribute('data', _data);
+                const nodeName = children[i].nodeName.toLowerCase();
+                const content: string = children[i].innerHTML;
+                if ((nodeName === 'text' || nodeName === 'input' || nodeName === 'button') && content?.startsWith('@')) {
+                    // @field shows the value of that field of the item (fallback: the 'property to show')
+                    const field = content.substring(1);
+                    if (_data.indexOf(field + '|') >= 0 || RepeaterComponent.getItemField(item, field) !== undefined) {
+                        const fieldValue = RepeaterComponent.resolveField(item, field, children[i]);
+                        const value = (fieldValue !== undefined && fieldValue !== null) ? fieldValue : _text;
+                        children[i].textContent = RepeaterComponent.fieldText(value);
+                    }
+                }
             }
+            this.recurseAndAdd(children[i], _data, _id, _text, item);
         }
     }
 
-    static isNode(o){
-        return (
-          typeof Node === "object" ? o instanceof Node : 
-          o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName==="string"
-        );
+    /** the item values are not bound to signals, live tags are subscribed while rendering (bindLiveTags) */
+    static getSignals(pro: any): string[] {
+        return [];
     }
 
-    static getSignals(pro: any) {
-        let res: string[] = [];
-        if (pro.variableId) {
-            res.push(pro.variableId);
-        }
-        if (pro.alarmId) {
-            res.push(pro.alarmId);
-        }
-        if (pro.actions && pro.actions.length) {
-            pro.actions.forEach(act => {
-                res.push(act.variableId);
-            });
-        }
-        return res;
-    }
-    
     static getDialogType(): GaugeDialogType {
         return GaugeDialogType.Repeater;
-    }
-
-    static getActions(type: string) {
-        return this.actionsType;
-    }
-
-    static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus, repeater?: any) {
-        try {
-            if (svgele.node) {
-                let _node = svgele.node;
-                let _h = document.getElementById(sig.id);
-                if (_h){
-                    let _val = sig.value;
-                    let _tmpProp = Object.values(this.tagsRepeaterData).find( (e:any) => e.id == sig.id);
-                    if (_tmpProp) {
-                        if (_tmpProp.hasOwnProperty("valueWillBeShowed")){
-                            if (_tmpProp["valueWillBeShowed"]) {
-                                _val = (_tmpProp["valueObjectProperty"] && _tmpProp["valueObjectProperty"]!="" ? _tmpProp["valueObjectProperty"] : "") + " " + (_tmpProp["valueIsObject"] ? JSON.parse(_val)[_tmpProp["valueObjectProperty"]] : _val);
-                                _val = _val + (_val !== "" ? " [" + Math.round(+new Date()/1000) + "]" : "");
-                            }
-                        }
-                    }
-                    if (sig.value) {
-                        _h.innerHTML = _val;
-                    }
-                }
-            }
-        } catch (err) {
-            console.error(err);
-        }
     }
 
     static getHtmlEvents(ga: GaugeSettings): Event {
@@ -391,7 +252,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
     }
 
     /**
-     * Search in the toolbar: filter the items while typing, on Enter or with the search button.
+     * Search in the toolbar: filter the items while typing or on Enter.
      * Listeners are delegated to the container because its content is rebuilt after rendering.
      */
     static bindSearch(container: HTMLElement) {
@@ -399,7 +260,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
             return;
         }
         container['repeaterSearchBound'] = true;
-        const isSearchInput = (target: EventTarget) => (<HTMLElement>target)?.id === 'repeater_html5_qrcode_input';
+        const isSearchInput = (target: EventTarget) => (<HTMLElement>target)?.classList?.contains(RepeaterComponent.searchClass);
         container.addEventListener('input', (event) => {
             if (isSearchInput(event.target)) {
                 RepeaterComponent.filterItems(container);
@@ -412,11 +273,6 @@ export class RepeaterComponent extends GaugeBaseComponent {
                     event.preventDefault();
                     RepeaterComponent.filterItems(container);
                 }
-            }
-        });
-        container.addEventListener('click', (event) => {
-            if ((<HTMLElement>event.target)?.closest?.('#repeater_input_search')) {
-                RepeaterComponent.filterItems(container);
             }
         });
     }
@@ -466,7 +322,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
 
     /** show only the items with a value containing the search text (case insensitive), all with empty search */
     static filterItems(container: HTMLElement) {
-        const input = <HTMLInputElement>container.querySelector('#repeater_html5_qrcode_input');
+        const input = <HTMLInputElement>container.querySelector('.' + RepeaterComponent.searchClass);
         const search = (input?.value || '').trim().toLowerCase();
         Array.from(container.children).forEach((item: HTMLElement) => {
             if (item.nodeName.toLowerCase() !== 'svg') {
@@ -478,7 +334,6 @@ export class RepeaterComponent extends GaugeBaseComponent {
         });
     }
 
-    /** controls of the repeated view bound to an item field: tag set to '@field' (e.g. an Output with tag @country) */
     /** map the item fields to placeholders: { country: 'Italy' } -> { '@country': 'Italy' }, a plain value -> { '@value': value } */
     static getPlaceholderValues(item: any): { [placeholder: string]: any } {
         const values = {};
@@ -492,11 +347,12 @@ export class RepeaterComponent extends GaugeBaseComponent {
         return values;
     }
 
+    /** controls of the repeated view bound to an item field: tag set to '@field' (e.g. an Output with tag @country) */
     static getFieldBindings(view: View): { id: string, field: string }[] {
         return Object.values(view.items || {})
             .filter(item => typeof item?.property?.variableId === 'string' && item.property.variableId.startsWith('@'))
             .map(item => ({ id: item.id, field: item.property.variableId.substring(1) }))
-            .filter(binding => binding.field && binding.field !== 'tagName');
+            .filter(binding => binding.field);
     }
 
     /** show the item field value in the text of the bound controls */
@@ -615,5 +471,4 @@ export class RepeaterComponent extends GaugeBaseComponent {
         }
         return null;
     }
-
 }

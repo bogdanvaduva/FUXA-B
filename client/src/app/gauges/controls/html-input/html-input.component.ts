@@ -67,8 +67,7 @@ export class HtmlInputComponent extends GaugeBaseComponent {
             if (svgele.node && svgele.node.children && svgele.node.children.length >= 1) {
                 let input = Utils.searchTreeStartWith(svgele.node, this.prefix);
                 if (input) {
-                    let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
-                    let val = parseFloat(cv);
+                    let val = parseFloat(sig.value);
                     let unit = null;
                     let digit = null;
                     let datetime = '';
@@ -112,7 +111,7 @@ export class HtmlInputComponent extends GaugeBaseComponent {
                     }
                     if (ga.property?.variableId == sig.id) {
                         // Do not update value if input is in focus!
-                    if (ga.property?.options?.updated && ga.property.options.updated && !(document.hasFocus && input.id == document.activeElement.id)) {
+                        if (ga.property?.options?.updated && !(document.hasFocus && input.id == document.activeElement.id)) {
                             if (datetime) {
                                 input.value = datetime;
                             } else {
@@ -280,7 +279,6 @@ export class HtmlInputComponent extends GaugeBaseComponent {
                 // Adjust the width to better fit the surrounding svg rect
                 input.style.margin = '1px 1px';
             }
-
             if (ele) {
                 // Input element is npt precisely aligned to the center of the surrounding rectangle. Compensate it with the padding.
                 let fobj = ele.getElementsByTagName('foreignObject');

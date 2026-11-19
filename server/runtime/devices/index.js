@@ -599,4 +599,3 @@ var devices = module.exports = {
     setDeviceProperty: setDeviceProperty,
     getHistoricalTags: getHistoricalTags
 }
-

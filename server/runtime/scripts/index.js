@@ -252,43 +252,6 @@ function ScriptsManager(_runtime) {
                 reject(err);
             });
         });
-        // return new Promise(function (resolve, reject) {
-        //     schedulingMap = {};
-        //     try {
-        //         nodeSchedule.gracefulShutdown();
-        //     } catch (e) {
-        //         logger.error(e);
-        //     }
-        //     runtime.project.getScripts().then((scripts) => {
-        //         if (scripts) {
-        //             var lr = scriptModule.loadScripts(scripts);
-        //             Object.values(scripts).forEach((script) => {
-        //                 if (script.scheduling) {
-        //                     const scriptSchedule = new ScriptSchedule(script);
-        //                     if (script.scheduling.interval && script.mode != 'CLIENT') {
-        //                         schedulingMap[script.name] = scriptSchedule;
-        //                     } else if (script.scheduling.mode === ScriptSchedulingMode.scheduling) {
-        //                         try {
-        //                             scriptSchedule.getScheduleRules().forEach((scheduleRule) => {
-        //                                 logger.info(`Load script-schedule ${script.name} - ${JSON.stringify(scheduleRule)}`);
-        //                                 nodeSchedule.scheduleJob(scheduleRule, function() {
-        //                                     scriptModule.runScriptWithoutParameter(script);
-        //                                 });
-        //                             });
-        //                         } catch (er) {
-        //                             logger.error(er);
-        //                         }
-        //                     }
-        //                 }
-        //             });
-        //             resolve(lr.messages);
-        //         } else {
-        //             resolve();
-        //         }
-        //     }).catch(function (err) {
-        //         reject(err);
-        //     });
-        // });
     }
 
     var _getSystemFunctions = function () {

@@ -82,7 +82,6 @@ export class HmiService {
         this.authService.currentUser$.subscribe((userProfile: UserProfile) => {
             this.initSocket(userProfile?.token);
         });
-
     }
 
     /**
@@ -365,7 +364,6 @@ export class HmiService {
         this.socket.on(IoEventTypes.RECIPE_CANCELED, (message) => {
             this.onRecipeCanceled.emit(message);
         });
-
         this.askDeviceValues();
         this.askAlarmsStatus();
     }
@@ -779,8 +777,6 @@ export class HmiService {
             console.warn('Server NOT reachable → do NOT reload');
         }
     }
-
-
 }
 
 class ViewSignalGaugeMap {
@@ -825,7 +821,6 @@ class ViewSignalGaugeMap {
         });
         return result;
     }
-
 }
 
 export enum IoEventTypes {

@@ -5,23 +5,6 @@
         {{'msg.alarm-remove' | translate}} '{{data.alarm.name}}' ?
     </div>
     <div mat-dialog-content>
-        <div style="display: block;width: 660px; padding-bottom: 20px;">
-            <div class="container">
-                <div class="my-form-field">
-                    <span>{{'gauges.property-variable-isobject' | translate}}</span>
-                    <div class="my-form-field-variable-isobject">
-                        <input [(ngModel)]="data.variableValueIsObject" type="checkbox">
-                    </div>
-                </div>
-                <div class="my-form-field">&nbsp;</div>
-                <div class="my-form-field">
-                    <span>{{'gauges.property-variable-object-property' | translate}}</span>
-                    <div class="my-form-field-variable-isobject">
-                        <input [(ngModel)]="data.variableValueObjectProperty">
-                    </div>
-                </div>      
-            </div>
-        </div>
         <mat-autocomplete #textAuto="matAutocomplete">
             <mat-option *ngFor="let option of existtexts" [value]="option">{{option}}</mat-option>
         </mat-autocomplete>

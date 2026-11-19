@@ -387,8 +387,7 @@ export class HtmlButtonComponent extends GaugeBaseComponent {
                     button.textContent = sig.value;
                     return;
                 }
-                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value): sig.value);
-                let val = parseFloat(cv);
+                let val = parseFloat(sig.value);
                 if (Number.isNaN(val)) {
                     // maybe boolean
                     val = Number(sig.value);

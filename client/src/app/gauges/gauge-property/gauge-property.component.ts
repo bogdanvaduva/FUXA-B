@@ -51,13 +51,6 @@ export class GaugePropertyComponent implements AfterViewInit {
         this.property = JSON.parse(JSON.stringify(this.data.settings.property));
         if (!this.property) {
             this.property = new GaugeProperty();
-        } else {
-            if (!this.property.variableValueObjectProperty) {
-                this.property.variableValueObjectProperty = '';
-            }
-            if (!this.property.variableValueIsObject) {
-                this.property.variableValueIsObject = false;
-            }              
         }
     }
 

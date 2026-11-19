@@ -245,8 +245,6 @@ Create a view with the size of one item (e.g. a card) and add the controls showi
   (or `@tags.Temperature.value`). Other fields of the entry (`@tags.Temperature.type`) are static.
   Fields with JSON text (e.g. from PostgreSQL or a URL source) are decoded, so the paths work on them too.
 - **Text**: a text whose content is `@<field>` is replaced with the item field value.
-- **`@tagName`**: a text with content `@tagName` shows the live value of the tag linked to the item
-  (see *Link tags to items* below).
 - **Events**: the events of the template controls work for each item. *Open view / dialog / card* events get
   the item fields as placeholder values (`@country` → item.country, objects as JSON), so the opened view can
   show them in controls bound to `@country`. CLIENT scripts are run on click.
@@ -266,30 +264,18 @@ In the view, draw a **Repeater** (editor toolbar) and set its properties:
 | Repeater data | the data source (or create a new one) |
 | Property to show | item field used as fallback text for `@` texts without a value |
 | View | the template view |
-| Tags to repeater data | link FUXA tags to items (see below) |
 
 Several Repeaters can be placed in the same view.
 
-In the running view the Repeater shows a toolbar on top (it stays visible while the items scroll):
-
-- **Search input**: shows only the items containing the text (case insensitive, in any field or text).
-- **QR + / QR -**: start / stop the camera QR reader, the scanned text is put in the search input
-  (with several Repeaters in a view, the QR reader fills the search of the first one).
-
-### Link tags to items (`@tagName`)
-
-**Tags to repeater data** lists the project tags. For a tag:
-
-1. enter a text and press **search** to find the item, the item is linked by the value of its first data property;
-2. **Used**: show the tag value in the `@tagName` text of that item (with the time of the update);
-3. **Is object** + **Object property**: the tag value is JSON, show only that property;
-4. **clear** removes the link.
+In the running view the Repeater shows a search input on top (it stays visible while the items scroll):
+only the items containing the text are shown (case insensitive, in any field or text).
 
 ### Generic `tagName` view (template by URL)
 
-A control of any view whose tag is set to `tagName` is bound to the tag given in the URL:
-`http://<fuxa>/home?viewName=<view>&tagName=<tag id>`. Every query parameter of the URL is also available to
-the view as `windowParams`. This way one view can be used as template for many tags.
+A control whose tag is set to `tagName` (type it in the tag field of the control) is bound to the tag given
+in the URL: `http://<fuxa>/home?viewName=<view>&tagName=<tag id>`. Chart lines with id `tagName` work the
+same way. The URL query parameters are also appended to the address of the iframes of the view. This way one
+view can be used as template for many tags.
 
 ## ChirpStack (LoRaWAN)
 FUXA-B reads ChirpStack uplinks through a standard MQTT device. To get the latest values right away

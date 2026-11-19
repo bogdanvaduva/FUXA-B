@@ -72,78 +72,7 @@
 
     <script src="assets/lib/svg/svg.min.js"></script>
     <script src="assets/lib/svg/raphael.min.js"></script>
-    <script src="assets/lib/html5-qrcode/html5-qrcode.min.js"></script>
-    <script>
-        var html5QrCode = null;
 
-        function initializeHtml5QrCode(id) {
-            try {
-                document.getElementById("repeater_html5_qrcode_start").setAttribute("onclick", "startQrCode()");
-                document.getElementById("repeater_html5_qrcode_stop").setAttribute("onclick", "stopQrCode()");
-                document.getElementById("repeater_input_search").setAttribute("onclick", "searchRepeater()");
-                document.getElementById("repeater_input_search").setAttribute("data", id);
-                html5QrCode = new Html5Qrcode(/* element id */ "reader");
-                const fileinput = document.getElementById('repeater_html5_qrcode_input_file');
-                if (fileinput) {
-                    fileinput.addEventListener('change', e => {
-                        if (e.target['files'].length == 0) {
-                            // No file selected, ignore 
-                            return;
-                        }
-    
-                        const imageFile = e.target['files'][0];
-                        // Scan QR Code
-                        html5QrCode.scanFile(imageFile, true)
-                        .then(decodedText => {
-                            // success, use decodedText
-                            console.log(decodedText);
-                        })
-                        .catch(err => {
-                            // failure, handle it.
-                            console.log(`Error scanning file. Reason: ${err}`)
-                        });
-                    });
-                }
-            } catch (e) {}
-        }
-    
-        function startQrCode() {
-            try {
-                // If you want to prefer back camera
-                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-                html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback, qrCodeErrorCallback);
-            } catch(e) {}
-        }
-    
-        function stopQrCode() {
-            try {
-                html5QrCode.stop().then((ignore) => {
-                    // QR Code scanning is stopped.
-                    }).catch((err) => {
-                    // Stop failed, handle it.
-                    });
-            } catch(e) {}
-        }
-    
-        function qrCodeSuccessCallback(decodedText, decodedResult) {
-            /* handle success: set the search text, the Repeater filters its items on input */
-            var input = document.getElementById("repeater_html5_qrcode_input");
-            input.value = decodedText;
-            input.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-    
-        function qrCodeErrorCallback(error) {
-            /* handle success */
-            console.log(error);
-        }
-    
-        function onChangeInput() {
-        }
-    
-        function searchRepeater() {
-            // search is handled by the Repeater component (filters while typing, on Enter and with this button)
-        }
-    </script>
 </head>
 <!-- 3. Display the application -->
 

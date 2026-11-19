@@ -32,7 +32,7 @@ export class HtmlIframeComponent extends GaugeBaseComponent {
 
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable) {
         try {
-            if (ga.property.variableId && sig.value && svgele?.node?.children?.length >= 1) {
+            if (sig.value && svgele?.node?.children?.length >= 1) {
                 const parentIframe = Utils.searchTreeStartWith(svgele.node, this.prefixD);
                 const iframe = parentIframe.querySelector('iframe');
                 const src = iframe.getAttribute('src');
@@ -54,7 +54,6 @@ export class HtmlIframeComponent extends GaugeBaseComponent {
             if (svgIframeContainer) {
                 svgIframeContainer.innerHTML = '';
                 let iframe = document.createElement('iframe');
-                
                 iframe.setAttribute('name', gaugeSettings.name);
                 iframe.style['width'] = '100%';
                 iframe.style['height'] = '100%';
@@ -68,10 +67,10 @@ export class HtmlIframeComponent extends GaugeBaseComponent {
                 iframe.setAttribute('title', 'iframe');
                 if (gaugeSettings.property && gaugeSettings.property.address && isview) {
                     if (Utils.isValidUrl(gaugeSettings.property.address)) {
-                        var url = new URL(gaugeSettings.property.address);
-                        Object.entries(gaugeSettings.property['windowParams'] || {}).forEach(entry =>{
-                            let [key, value] = entry;
-                            url.searchParams.append(key, value.toString());
+                        // FUXA-B: the URL (query) params of the view are passed to the iframe (e.g. tagName)
+                        const url = new URL(gaugeSettings.property.address);
+                        Object.entries(gaugeSettings.property['windowParams'] || {}).forEach(([key, value]) => {
+                            url.searchParams.append(key, String(value ?? ''));
                         });
                         iframe.setAttribute('src', url.toString());
                     } else {

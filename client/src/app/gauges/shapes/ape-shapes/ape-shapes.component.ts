@@ -70,8 +70,7 @@ export class ApeShapesComponent extends GaugeBaseComponent {
     static processValue(ga: GaugeSettings, svgele: any, sig: Variable, gaugeStatus: GaugeStatus) {
         try {
             if (svgele.node) {
-                let cv = (ga ? GaugeSettings.transformObjectValue(ga.property,sig.value) : sig.value);
-                let value = parseFloat(cv);
+                let value = parseFloat(sig.value);
                 if (Number.isNaN(value)) {
                     // maybe boolean
                     value = Number(sig.value);

@@ -45,7 +45,7 @@ import { ScriptSchedulingComponent } from './scripts/script-scheduling/script-sc
 import { ScriptPermissionComponent } from './scripts/script-permission/script-permission.component';
 import { LanguageTextListComponent } from './language/language-text-list/language-text-list.component';
 import { LabComponent } from './lab/lab.component';
-import { DeviceComponent, DeviceTagDialog, DeviceAlarmDialog } from './device/device.component';
+import { DeviceComponent, DeviceAlarmDialog } from './device/device.component';
 import { DevicePropertyComponent } from './device/device-property/device-property.component';
 import { DeviceEnipmoduleComponent } from './device/device-enipmodule/device-enipmodule.component';
 import { TagOptionsComponent } from './device/tag-options/tag-options.component';
@@ -150,7 +150,7 @@ import { GraphBaseComponent } from './gauges/controls/html-graph/graph-base/grap
 import { NgChartsModule } from 'ng2-charts';
 import { IframePropertyComponent } from './gauges/controls/html-iframe/iframe-property/iframe-property.component';
 import { RepeaterComponent } from './gauges/controls/repeater/repeater.component';
-import { RepeaterPropertyComponent, DialogTagRepeater } from './gauges/controls/repeater/repeater-property/repeater-property.component';
+import { RepeaterPropertyComponent } from './gauges/controls/repeater/repeater-property/repeater-property.component';
 import { TablePropertyComponent } from './gauges/controls/html-table/table-property/table-property.component';
 import { TableCustomizerComponent } from './gauges/controls/html-table/table-customizer/table-customizer.component';
 import { DataTableComponent } from './gauges/controls/html-table/data-table/data-table.component';
@@ -288,7 +288,6 @@ export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
         TagPropertyEditADSclientComponent,
         TagPropertyEditGpioComponent,
         TagPropertyEditMelsecComponent,
-        DeviceTagDialog,
         DeviceAlarmDialog,
         TagOptionsComponent,
         TopicPropertyComponent,
@@ -425,7 +424,6 @@ export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
         PanelPropertyComponent,
         RepeaterComponent,
         RepeaterPropertyComponent,
-        DialogTagRepeater,
         WebcamPlayerComponent,
         WebcamPlayerDialogComponent,
         ResizeDirective,
