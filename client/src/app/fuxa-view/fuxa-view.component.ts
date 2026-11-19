@@ -35,6 +35,7 @@ import { WebcamPlayerDialogComponent, WebcamPlayerDialogData } from '../gui-help
 import { DevicesUtils, PlaceholderDevice, Tag } from '../_models/device';
 import { LanguageService } from '../_services/language.service';
 import { EventUtils } from '../_helpers/event-utils';
+import { RepeaterUtils } from '../_models/repeater';
 
 declare var SVG: any;
 
@@ -546,6 +547,12 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
                 target.variableValue = tag.value;
                 return;
             }
+        }
+        // a path into a JSON placeholder value with tag entries (e.g. '@tags.Temperature' passed by a Repeater item)
+        // is bound to that tag: live value with the control settings (format, ranges, actions)
+        const placeholderTagId = RepeaterUtils.getPlaceholderTagId(this.placeholderValues, target.variableId);
+        if (placeholderTagId) {
+            target.variableId = placeholderTagId;
         }
     }
 

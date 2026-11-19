@@ -243,12 +243,16 @@ Create a view with the size of one item (e.g. a card) and add the controls showi
   `devices.tagList`), the control shows the current value of that tag and is updated live. With
   `SELECT d.id, d.name AS device, d.tagList AS tags FROM devices d` use `@tags.Temperature`
   (or `@tags.Temperature.value`). Other fields of the entry (`@tags.Temperature.type`) are static.
+  Fields with JSON text (e.g. from PostgreSQL or a URL source) are decoded, so the paths work on them too.
 - **Text**: a text whose content is `@<field>` is replaced with the item field value.
 - **`@tagName`**: a text with content `@tagName` shows the live value of the tag linked to the item
   (see *Link tags to items* below).
 - **Events**: the events of the template controls work for each item. *Open view / dialog / card* events get
   the item fields as placeholder values (`@country` → item.country, objects as JSON), so the opened view can
   show them in controls bound to `@country`. CLIENT scripts are run on click.
+- **Tags in the opened view**: an object field is passed as JSON (`@tags`). In the opened view a control bound
+  to a path of it that is a tag entry, e.g. `@tags.Temperature`, is decoded and bound to that tag: it shows
+  the live value like a control bound directly to the tag (format, ranges, actions and events included).
 
 The template view must not contain the Repeater itself (a Repeater cannot repeat the view it is placed in).
 

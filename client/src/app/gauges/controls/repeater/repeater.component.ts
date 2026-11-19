@@ -508,19 +508,12 @@ export class RepeaterComponent extends GaugeBaseComponent {
      * is shown live: the element is marked with the tag id and updated on every value change
      */
     static resolveField(item: any, field: string, element: Element): any {
-        const value = RepeaterComponent.getItemField(item, field);
-        let tagId: string = null;
-        let current = value;
-        if (RepeaterComponent.isTagEntry(value)) {
-            tagId = value.id;
-            current = value.value;
-        } else if (field.endsWith('.value')) {
-            const parent = RepeaterComponent.getItemField(item, field.substring(0, field.length - '.value'.length));
-            if (RepeaterComponent.isTagEntry(parent)) {
-                tagId = parent.id;
-            }
-        }
+        let current = RepeaterUtils.decodeJson(RepeaterUtils.getField(item, field));
+        const tagId = RepeaterUtils.getFieldTagId(item, field);
         if (tagId) {
+            if (RepeaterUtils.isTagEntry(current)) {
+                current = current.value;
+            }
             element.setAttribute('data-repeater-tag', tagId);
             RepeaterComponent.renderLiveTags?.add(tagId);
             const variable = RepeaterComponent.hmi?.variables?.[tagId];
@@ -529,10 +522,6 @@ export class RepeaterComponent extends GaugeBaseComponent {
             }
         }
         return current;
-    }
-
-    static isTagEntry(value: any): boolean {
-        return value !== null && typeof value === 'object' && !Array.isArray(value) && typeof value.id === 'string' && 'value' in value;
     }
 
     /** subscribe the tags shown live by the items and update their elements on value change */
@@ -564,25 +553,9 @@ export class RepeaterComponent extends GaugeBaseComponent {
         container['repeaterLiveTags'] = subscription;
     }
 
-    /** value of an item field, also nested with a dotted path: 'tagList.Temperature.value' */
+    /** value of an item field, also nested with a dotted path: 'tagList.Temperature.value' (JSON text decoded) */
     static getItemField(item: any, field: string): any {
-        if (item === null || typeof item !== 'object' || !field) {
-            return undefined;
-        }
-        if (item[field] !== undefined) {
-            return item[field];
-        }
-        const dot = field.indexOf('.');
-        if (dot > 0) {
-            // the first part can also contain dots (e.g. tag names), try the longest key first
-            for (let i = field.lastIndexOf('.'); i > 0; i = field.lastIndexOf('.', i - 1)) {
-                const head = field.substring(0, i);
-                if (item[head] !== undefined) {
-                    return RepeaterComponent.getItemField(item[head], field.substring(i + 1));
-                }
-            }
-        }
-        return undefined;
+        return RepeaterUtils.getField(item, field);
     }
 
     /** text of a field value, objects as JSON */

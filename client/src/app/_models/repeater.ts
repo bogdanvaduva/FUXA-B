@@ -142,6 +142,73 @@ export class RepeaterUtils {
         }, {}));
     }
 
+    /** a JSON text (object or array) decoded, other values as they are */
+    static decodeJson(value: any): any {
+        if (typeof value === 'string' && /^\s*[\[{]/.test(value)) {
+            try {
+                return JSON.parse(value);
+            } catch (err) { }
+        }
+        return value;
+    }
+
+    /**
+     * value of a field, also nested with a dotted path: 'tags.Temperature.value'.
+     * JSON text values on the path are decoded, keys can contain dots (the longest key is tried first)
+     */
+    static getField(item: any, field: string): any {
+        item = RepeaterUtils.decodeJson(item);
+        if (item === null || typeof item !== 'object' || !field) {
+            return undefined;
+        }
+        if (item[field] !== undefined) {
+            return item[field];
+        }
+        for (let i = field.lastIndexOf('.'); i > 0; i = field.lastIndexOf('.', i - 1)) {
+            const head = field.substring(0, i);
+            if (item[head] !== undefined) {
+                return RepeaterUtils.getField(item[head], field.substring(i + 1));
+            }
+        }
+        return undefined;
+    }
+
+    /** a tag entry: object with the tag id and value (e.g. the entries of the App DB devices.tagList) */
+    static isTagEntry(value: any): boolean {
+        return value !== null && typeof value === 'object' && !Array.isArray(value) && typeof value.id === 'string' && 'value' in value;
+    }
+
+    /**
+     * id of the tag at the field: the field is a tag entry ('tags.Temperature') or its value ('tags.Temperature.value'),
+     * null for other fields
+     */
+    static getFieldTagId(item: any, field: string): string {
+        const value = RepeaterUtils.decodeJson(RepeaterUtils.getField(item, field));
+        if (RepeaterUtils.isTagEntry(value)) {
+            return value.id;
+        }
+        if (field?.endsWith('.value')) {
+            const parent = RepeaterUtils.decodeJson(RepeaterUtils.getField(item, field.substring(0, field.length - '.value'.length)));
+            if (RepeaterUtils.isTagEntry(parent)) {
+                return parent.id;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * tag id for a placeholder path of the values passed to a view (e.g. by a Repeater item click):
+     * '@tags.Temperature' with { '@tags': '{"Temperature":{"id":"t1","value":..}}' } -> 't1'
+     */
+    static getPlaceholderTagId(placeholderValues: { [placeholder: string]: any }, variableId: string): string {
+        if (!placeholderValues || typeof variableId !== 'string' || !variableId.startsWith('@') || variableId.indexOf('.') < 0) {
+            return null;
+        }
+        const values = {};
+        Object.keys(placeholderValues).forEach(key => values[key.startsWith('@') ? key.substring(1) : key] = placeholderValues[key]);
+        return RepeaterUtils.getFieldTagId(values, variableId.substring(1));
+    }
+
     /** the DAQ storages that can run SQL queries */
     static getDaqNodes(): Observable<RepeaterDaqNode[]> {
         const http = new HttpClient(new HttpXhrBackend({ build: () => new XMLHttpRequest() }));
