@@ -518,7 +518,8 @@ export class RepeaterComponent extends GaugeBaseComponent {
                     }
                 });
             });
-            return new XMLSerializer().serializeToString(xml);
+            // an emptied container would be written as '<DIV/>', the view (HTML parser) would not close it
+            return Utils.fixSelfClosingHtml(new XMLSerializer().serializeToString(xml));
         } catch (err) {
             console.error('Repeater: cannot clean the view content', err);
             return svgContent;

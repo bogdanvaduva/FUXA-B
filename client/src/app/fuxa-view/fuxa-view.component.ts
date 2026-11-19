@@ -257,7 +257,7 @@ export class FuxaViewComponent implements OnInit, AfterViewInit, OnDestroy {
                     console.warn(`View '${view.name || view.id}' has no SVG content. Render skipped.`);
                     return;
                 } else {
-                    this.dataContainer.nativeElement.innerHTML = view.svgcontent.replace('<title>Layer 1</title>', '');
+                    this.dataContainer.nativeElement.innerHTML = Utils.fixSelfClosingHtml(view.svgcontent.replace('<title>Layer 1</title>', ''));
                 }
                 if (view.profile?.bkcolor && (this.child || legacyProfile)) {
                     this.dataContainer.nativeElement.style.backgroundColor = view.profile.bkcolor;
