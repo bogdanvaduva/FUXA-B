@@ -244,6 +244,10 @@ Create a view with the size of one item (e.g. a card) and add the controls showi
   `SELECT d.id, d.name AS device, d.tagList AS tags FROM devices d` use `@tags.Temperature`
   (or `@tags.Temperature.value`). Other fields of the entry (`@tags.Temperature.type`) are static.
   Fields with JSON text (e.g. from PostgreSQL or a URL source) are decoded, so the paths work on them too.
+- **Colors by tag value**: a control of the template bound to a tag entry (tag field `@tags.Temperature`, also
+  in its actions) works in every item like in a view: Value with ranges (text color), Shapes / Semaphore /
+  Progress with ranges (fill and stroke colors), actions (hide, show, blink, ...). E.g. draw a rectangle as item
+  background, set its tag to `@tags.Alarm` and its ranges `0 → green`, `1 → red`.
 - **Text**: a text whose content is `@<field>` is replaced with the item field value.
 - **Events**: the events of the template controls work for each item. *Open view / dialog / card* events get
   the item fields as placeholder values (`@country` → item.country, objects as JSON), so the opened view can

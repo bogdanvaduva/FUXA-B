@@ -1,12 +1,24 @@
 import { Component, ViewContainerRef, ComponentFactoryResolver } from '@angular/core';
 import { GaugeBaseComponent } from '../../gauge-base/gauge-base.component';
-import { Event, GaugeSettings, View, GaugeEventType, GaugeEventActionType } from '../../../_models/hmi';
+import { Event, GaugeSettings, GaugeStatus, View, GaugeEventType, GaugeEventActionType, Variable } from '../../../_models/hmi';
 import { Utils } from '../../../_helpers/utils';
 import { GaugeDialogType } from '../../gauge-property/gauge-property.component';
 import { HmiService } from '../../../_services/hmi.service';
 import { EndPointApi } from '../../../_helpers/endpointapi';
 import { RepeaterUtils } from '../../../_models/repeater';
 import { GaugesManager } from '../../gauges.component';
+
+declare var SVG: any;
+
+/** a control of an item bound to tags of the item (e.g. a shape with tag @tags.Temperature), updated like in a view */
+interface RepeaterGaugeBinding {
+    /** id of the control in the item ('<template id>_<item key>') */
+    id: string;
+    /** settings of the template control with the '@' paths replaced by the tag ids */
+    settings: GaugeSettings;
+    status: GaugeStatus;
+    tags: string[];
+}
 
 @Component({
     selector: 'app-repeater',
@@ -118,6 +130,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                     svgDivContainer['repeaterContext'].items = jsonObj;
                 }
                 const fieldBindings = this.getFieldBindings(v);
+                const gaugeBindings: RepeaterGaugeBinding[] = [];
                 this.renderLiveTags = new Set<string>();
                 Object.entries(jsonObj || {}).forEach(entry => {
                     if (svgDivContainer) {
@@ -137,12 +150,15 @@ export class RepeaterComponent extends GaugeBaseComponent {
                                 (<SVGElement>svgNodes[0]).style.pointerEvents = 'auto';
                             }
                             svgNodes[0].setAttribute('data-repeater-item', entry[0]);
+                            gaugeBindings.push(...this.getGaugeBindings(v, entry[0], entry[1]));
                             svgDivContainer.appendChild(svgNodes[0]);
                         } catch (err) {
                             console.error(`Repeater: cannot render item ${entry[0]}`, err);
                         }
                     }
                 });
+                gaugeBindings.forEach(binding => binding.tags.forEach(tagId => this.renderLiveTags.add(tagId)));
+                svgDivContainer['repeaterGaugeBindings'] = gaugeBindings;
                 const liveTags = Array.from(this.renderLiveTags);
                 this.renderLiveTags = null;
                 this.bindLiveTags(svgDivContainer, gaugeSettings.id, liveTags, hmiService);
@@ -155,6 +171,9 @@ export class RepeaterComponent extends GaugeBaseComponent {
                     if (input && search) {
                         input.value = search;
                     }
+                    // current values (colors, ranges, actions) of the controls bound to tags
+                    RepeaterComponent.updateGauges(svgDivContainer, liveTags.map(id => hmiService.variables[id]).filter(v => v && v.value !== undefined));
+                    RepeaterComponent.filterItems(svgDivContainer);
                 }, 1000);
             } });
         }
@@ -413,8 +432,64 @@ export class RepeaterComponent extends GaugeBaseComponent {
                     element.textContent = text;
                 }
             });
+            // after the raw text: the controls show the value with their settings (format, colors, ranges, actions)
+            RepeaterComponent.updateGauges(container, [sig]);
         });
         container['repeaterLiveTags'] = subscription;
+    }
+
+    /**
+     * controls of the template view bound to tag entries of the item ('@tags.Temperature', also in the actions):
+     * a copy of their settings with the tag ids, to update them like the controls of a view
+     */
+    static getGaugeBindings(view: View, itemKey: string, item: any): RepeaterGaugeBinding[] {
+        const bindings: RepeaterGaugeBinding[] = [];
+        Object.values(view.items || {}).forEach((settings: GaugeSettings) => {
+            if (!settings?.property || settings.type?.startsWith(RepeaterComponent.TypeTag)) {
+                return;
+            }
+            const tags: string[] = [];
+            const toTag = (variableId: string): string => {
+                if (typeof variableId !== 'string' || !variableId.startsWith('@')) {
+                    return variableId;
+                }
+                const tagId = RepeaterUtils.getFieldTagId(item, variableId.substring(1));
+                if (tagId) {
+                    tags.push(tagId);
+                }
+                return tagId || variableId;
+            };
+            const property = JSON.parse(JSON.stringify(settings.property));
+            property.variableId = toTag(property.variableId);
+            (property.actions || []).forEach(action => action.variableId = toTag(action.variableId));
+            if (tags.length) {
+                const id = settings.id + '_' + itemKey;
+                bindings.push({ id, settings: <GaugeSettings>{ ...settings, id, property }, status: new GaugeStatus(), tags });
+            }
+        });
+        return bindings;
+    }
+
+    /** process the values with the controls of the items bound to them */
+    static updateGauges(container: HTMLElement, signals: Variable[]) {
+        const bindings: RepeaterGaugeBinding[] = container['repeaterGaugeBindings'];
+        const gaugeManager: GaugesManager = container['repeaterContext']?.gaugeManager;
+        if (!bindings?.length || !gaugeManager || !signals.length) {
+            return;
+        }
+        signals.forEach(sig => {
+            bindings.filter(binding => binding.tags.includes(sig.id)).forEach(binding => {
+                const element = container.querySelector(`[id="${CSS.escape(binding.id)}"]`);
+                if (!element) {
+                    return;
+                }
+                try {
+                    gaugeManager.processValue(binding.settings, SVG.adopt(element), sig, binding.status);
+                } catch (err) {
+                    console.error(`Repeater: cannot update ${binding.id}`, err);
+                }
+            });
+        });
     }
 
     /** value of an item field, also nested with a dotted path: 'tagList.Temperature.value' (JSON text decoded) */
