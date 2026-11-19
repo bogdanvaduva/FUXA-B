@@ -153,7 +153,15 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 } catch (err) {}
             });
             this.scripts = hmiService.projectService.getScripts();
+            // only the last load renders: a Repeater initialized again before the data arrived would add the items twice
+            const loadId = (svgDivContainer['repeaterLoadId'] || 0) + 1;
+            svgDivContainer['repeaterLoadId'] = loadId;
             RepeaterUtils.getItems(dataLine, _repeater.id).subscribe({ error: (err) => console.error(`Repeater: cannot load ${RepeaterUtils.isDb(dataLine) ? 'the DB data' : dataLine.url}`, err), next: result => {
+                if (svgDivContainer['repeaterLoadId'] !== loadId) {
+                    return;
+                }
+                // remove the items of a previous render, the toolbar stays
+                Array.from(svgDivContainer.children as HTMLCollectionOf<Element>).filter((child: Element) => child.nodeName.toLowerCase() === 'svg').forEach((child: Element) => child.remove());
                 let jsonObj = result;
                 if (svgDivContainer['repeaterContext']) {
                     svgDivContainer['repeaterContext'].items = jsonObj;
