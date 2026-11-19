@@ -209,7 +209,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 _data += properties[1][j] + "|"+ flgTagExist;
                 flgTagName = true;
             } else {
-                _data += properties[1][j] + "|"+ properties[0][1][properties[1][j]];
+                _data += properties[1][j] + "|"+ RepeaterComponent.fieldText(properties[0][1][properties[1][j]]);
             }
         }
         if (!flgTagName) {
@@ -247,7 +247,8 @@ export class RepeaterComponent extends GaugeBaseComponent {
                     if (children[i].nodeName.toLowerCase() === "text" ||
                         children[i].nodeName.toLowerCase() === "input" ||
                         children[i].nodeName.toLowerCase() === "button")
-                        if (_data.indexOf(children[i].innerHTML.replace("@","")+"|") >=0) {
+                        if (_data.indexOf(children[i].innerHTML.replace("@","")+"|") >=0 ||
+                            (children[i].innerHTML.startsWith('@') && RepeaterComponent.getItemField(item, children[i].innerHTML.substring(1)) !== undefined)) {
                             if (children[i].innerHTML === "@tagName") {
                                 // to add a div with the tag name
                                 children[i].innerHTML = '';
@@ -273,8 +274,9 @@ export class RepeaterComponent extends GaugeBaseComponent {
                             } else {
                                 // @field shows the value of that field of the item (fallback: the 'property to show')
                                 const field = children[i].innerHTML.replace("@", "");
-                                const value = (item && item[field] !== undefined && item[field] !== null) ? item[field] : _text;
-                                children[i].textContent = value === undefined || value === null ? '' : String(value);
+                                const fieldValue = RepeaterComponent.getItemField(item, field);
+                                const value = (fieldValue !== undefined && fieldValue !== null) ? fieldValue : _text;
+                                children[i].textContent = RepeaterComponent.fieldText(value);
                             }
                         }
                     try {
@@ -487,10 +489,38 @@ export class RepeaterComponent extends GaugeBaseComponent {
             const element = xml.querySelector(`[id="${binding.id}"]`);
             const text = element?.nodeName.toLowerCase() === 'text' ? element : element?.querySelector('text');
             if (text && item) {
-                const value = item[binding.field];
-                text.textContent = value === undefined || value === null ? '' : String(value);
+                text.textContent = RepeaterComponent.fieldText(RepeaterComponent.getItemField(item, binding.field));
             }
         });
+    }
+
+    /** value of an item field, also nested with a dotted path: 'tagList.Temperature.value' */
+    static getItemField(item: any, field: string): any {
+        if (item === null || typeof item !== 'object' || !field) {
+            return undefined;
+        }
+        if (item[field] !== undefined) {
+            return item[field];
+        }
+        const dot = field.indexOf('.');
+        if (dot > 0) {
+            // the first part can also contain dots (e.g. tag names), try the longest key first
+            for (let i = field.lastIndexOf('.'); i > 0; i = field.lastIndexOf('.', i - 1)) {
+                const head = field.substring(0, i);
+                if (item[head] !== undefined) {
+                    return RepeaterComponent.getItemField(item[head], field.substring(i + 1));
+                }
+            }
+        }
+        return undefined;
+    }
+
+    /** text of a field value, objects as JSON */
+    static fieldText(value: any): string {
+        if (value === undefined || value === null) {
+            return '';
+        }
+        return typeof value === 'object' ? JSON.stringify(value) : String(value);
     }
 
     /** remove the Repeater controls (with their toolbar and rendered items) from a parsed view */

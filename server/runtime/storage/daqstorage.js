@@ -199,7 +199,7 @@ function _queryAppDb(sql) {
             }
             const run = () => db.all(sql, (err, rows) => {
                 db.close();
-                err ? reject(err) : resolve(rows);
+                err ? reject(err) : resolve(_parseJsonValues(rows));
             });
             const fail = (err) => {
                 db.close();
@@ -232,15 +232,50 @@ function _fillAppDevices(db) {
     try {
         status = runtime?.devices?.getDevicesStatus() || {};
     } catch (err) { }
+    let values = {};
+    try {
+        values = runtime?.devices?.getDevicesValues() || {};
+    } catch (err) { }
     const rows = Object.values(devices).map(dev => [
         dev.id, dev.name, dev.type, dev.enabled ? 1 : 0, dev.polling ?? null,
         dev.property?.address ?? null, dev.property?.port ?? null, dev.property?.slaveid ?? null,
         Object.keys(dev.tags || {}).length,
-        (typeof status[dev.id] === 'string' ? status[dev.id] : status[dev.id]?.status) ?? null
+        (typeof status[dev.id] === 'string' ? status[dev.id] : status[dev.id]?.status) ?? null,
+        JSON.stringify(_deviceTagList(dev, values[dev.id] || {}))
     ]);
     const exec = (sql, params = []) => new Promise((resolve, reject) => db.run(sql, params, err => err ? reject(err) : resolve()));
-    return exec('CREATE TEMP TABLE devices (id TEXT, name TEXT, type TEXT, enabled INTEGER, polling INTEGER, address TEXT, port TEXT, slaveid TEXT, tags INTEGER, status TEXT)')
-        .then(() => rows.reduce((p, row) => p.then(() => exec('INSERT INTO temp.devices VALUES (?,?,?,?,?,?,?,?,?,?)', row)), Promise.resolve()));
+    return exec('CREATE TEMP TABLE devices (id TEXT, name TEXT, type TEXT, enabled INTEGER, polling INTEGER, address TEXT, port TEXT, slaveid TEXT, tags INTEGER, status TEXT, tagList TEXT)')
+        .then(() => rows.reduce((p, row) => p.then(() => exec('INSERT INTO temp.devices VALUES (?,?,?,?,?,?,?,?,?,?,?)', row)), Promise.resolve()));
+}
+
+/**
+ * Tags of a device as object keyed by tag name: { <name>: { id, name, label, type, address, value, timestamp } }
+ */
+function _deviceTagList(dev, values) {
+    const list = {};
+    Object.values(dev.tags || {}).forEach(tag => {
+        const current = values[tag.id];
+        list[tag.name || tag.id] = {
+            id: tag.id, name: tag.name, label: tag.label ?? null, type: tag.type ?? null,
+            address: tag.address ?? null, value: current?.value ?? null, timestamp: current?.timestamp ?? null
+        };
+    });
+    return list;
+}
+
+/**
+ * JSON text values of the App DB rows (e.g. devices.tagList, json_object(...)) returned as objects
+ */
+function _parseJsonValues(rows) {
+    (rows || []).forEach(row => Object.keys(row).forEach(key => {
+        const value = row[key];
+        if (typeof value === 'string' && /^\s*[\[{]/.test(value)) {
+            try {
+                row[key] = JSON.parse(value);
+            } catch (err) { }
+        }
+    }));
+    return rows;
 }
 
 function querySql(id, sql) {
