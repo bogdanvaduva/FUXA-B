@@ -180,7 +180,7 @@ function getSqlNodes() {
  * alarms.fuxap.db (tables alarms, chronicle) as main, with the existing ones of
  * notifications.fuxap.db, recipes.db and scheduler.db attached as 'notifications', 'recipes', 'scheduler'.
  * plus the temporary table 'devices' with the devices of the running project (without credentials):
- * id, name, type, enabled, polling, address, port, slaveid, tags (count), status.
+ * id, name, type, enabled, polling, address, port, slaveid, tags (count), status, tagList (JSON object of the tags by name).
  * users, apikeys and project are not exposed (passwords, credentials), other ATTACH are blocked
  */
 function _queryAppDb(sql) {

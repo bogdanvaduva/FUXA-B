@@ -132,6 +132,149 @@ npm run package
 
 After following these steps, you will have a standalone Electron application for FUXA. The application can be found in the ./app directory.
 
+## Repeater
+
+The Repeater is a control that draws one copy of a view for every item of a list (a "template" view repeated
+per item). The list comes from a **Repeater data** source: a URL returning JSON or CSV, or an SQL query on a
+DAQ storage or on the FUXA App DB. Typical uses: one card per device, per sensor of a GIS service, per row of a
+database table.
+
+### 1. Create the Repeater data
+
+Editor → **Setup** → **Repeater data** → add a data source (name) and a **line** in it. The Repeater uses the
+first line of the source. A line has a **Type**:
+
+**URL**
+
+| Field | Meaning |
+|---|---|
+| URL | `https://...` used as is (a GitHub `.../blob/...` file page is mapped to the raw file). A relative path (`/gis/rest/...`) goes to the FUXA server, e.g. to a proxy configured in `settings.js` (see below) |
+| Data type | `JSON` (default) or `CSV` |
+| Data properties | comma separated item fields to use, e.g. `name,city,value`. Empty: every field of the item |
+| Data path | JSON only, dotted path to the items inside the response, e.g. `data` or `result.items`. Empty: the whole JSON |
+
+- JSON: the items are the array (or the values of the object) found at the data path.
+- CSV: the first row is the header, every following row is an item keyed by the header. The delimiter
+  (`,` `;` or tab) is detected from the header, quoted fields (RFC 4180) are supported.
+
+To read an external service without CORS problems, add a reverse proxy in `server/_appdata/settings.js`
+and use the relative path in the URL field:
+
+```js
+proxies: [
+    { path: '/gis', target: 'https://gis.example.com/gis' },
+    { path: '/weather', target: 'http://10.0.0.5:8080', headers: { 'x-api-key': 'KEY' }, timeout: 10000 }
+],
+```
+
+A request to `http://<fuxa>/gis/rest/query?f=json` is forwarded to `https://gis.example.com/gis/rest/query?f=json`.
+FUXA credentials (cookie, authorization, x-access-token) are never forwarded. Optional per proxy: `headers`,
+`timeout` (ms, default 30000), `rejectUnauthorized: false` for self-signed certificates.
+
+**DB**
+
+| Field | Meaning |
+|---|---|
+| DAQ | the storage the query runs on: the DAQ SQLite databases (one per device), PostgreSQL if it is the DAQ storage, or **FUXA App DB** |
+| SQL | a read-only query, every row is an item and every column a field |
+
+The SQL runs on the server **from the saved project**: after editing a line, save the project before testing
+it in the view. Queries are read-only (SQLite opened read-only, PostgreSQL in a `READ ONLY` transaction) and
+`ATTACH` of other databases is blocked.
+
+DAQ SQLite example (values with the tag names):
+
+```sql
+SELECT m.name, d.value, d.dt FROM data d JOIN map.data m ON m.mapid = d.id ORDER BY d.dt DESC LIMIT 50
+```
+
+#### FUXA App DB
+
+The **FUXA App DB** entry reads the FUXA application data (`alarms.fuxap.db`, plus the existing optional ones):
+
+| Table | Content |
+|---|---|
+| `alarms`, `chronicle` | active alarms and alarm history |
+| `notifications.<table>` | notifications (if `notifications.fuxap.db` exists) |
+| `recipes.recipes` | recipes (if `recipes.db` exists) |
+| `scheduler.schedulers` | scheduler (if `scheduler.db` exists) |
+| `devices` | the devices of the running project (built on every query) |
+
+Users, API keys and the project database (passwords and credentials) are not accessible.
+
+`devices` columns: `id`, `name`, `type`, `enabled` (1/0), `polling`, `address`, `port`, `slaveid`,
+`tags` (number of tags), `status` (e.g. `connect-ok`), `tagList`.
+
+`tagList` is an object with the tags of the device keyed by tag name, with the current values:
+
+```json
+{ "Temperature": { "id": "t1", "name": "Temperature", "label": null, "type": "Float32", "address": 1, "value": 21.5, "timestamp": 1732000000000 } }
+```
+
+```sql
+-- one item per device
+SELECT name, type, address, status, tagList FROM devices WHERE enabled = 1 ORDER BY name
+
+-- one item per tag
+SELECT d.name AS device, t.key AS tag, json_extract(t.value, '$.value') AS value
+FROM devices d, json_each(d.tagList) t
+```
+
+Text values of App DB rows that look like JSON (`{...}` or `[...]`, e.g. `tagList` or your own
+`json_object(...)` columns) are returned as objects. Note: in `LIKE`, `_` is a wildcard
+(use `LIKE 'd\_%' ESCAPE '\'` for a literal underscore).
+
+### 2. Create the template view
+
+Create a view with the size of one item (e.g. a card) and add the controls showing the item fields:
+
+- **Output / value controls**: set the tag of the control to `@<field>`, e.g. `@name`. Nested fields use a
+  dotted path: `@tagList.Temperature.value`, `@tagList.Run.Status.value` (tag names with dots work too).
+  An object field without path (`@tagList`) is shown as JSON.
+- **Text**: a text whose content is `@<field>` is replaced with the item field value.
+- **`@tagName`**: a text with content `@tagName` shows the live value of the tag linked to the item
+  (see *Link tags to items* below).
+- **Events**: the events of the template controls work for each item. *Open view / dialog / card* events get
+  the item fields as placeholder values (`@country` → item.country, objects as JSON), so the opened view can
+  show them in controls bound to `@country`. CLIENT scripts are run on click.
+
+The template view must not contain the Repeater itself (a Repeater cannot repeat the view it is placed in).
+
+### 3. Place the Repeater
+
+In the view, draw a **Repeater** (editor toolbar) and set its properties:
+
+| Property | Meaning |
+|---|---|
+| Name | name of the control |
+| Repeater data | the data source (or create a new one) |
+| Property to show | item field used as fallback text for `@` texts without a value |
+| View | the template view |
+| Tags to repeater data | link FUXA tags to items (see below) |
+
+Several Repeaters can be placed in the same view.
+
+In the running view the Repeater shows a toolbar on top (it stays visible while the items scroll):
+
+- **Search input**: shows only the items containing the text (case insensitive, in any field or text).
+- **QR + / QR -**: start / stop the camera QR reader, the scanned text is put in the search input
+  (with several Repeaters in a view, the QR reader fills the search of the first one).
+
+### Link tags to items (`@tagName`)
+
+**Tags to repeater data** lists the project tags. For a tag:
+
+1. enter a text and press **search** to find the item, the item is linked by the value of its first data property;
+2. **Used**: show the tag value in the `@tagName` text of that item (with the time of the update);
+3. **Is object** + **Object property**: the tag value is JSON, show only that property;
+4. **clear** removes the link.
+
+### Generic `tagName` view (template by URL)
+
+A control of any view whose tag is set to `tagName` is bound to the tag given in the URL:
+`http://<fuxa>/home?viewName=<view>&tagName=<tag id>`. Every query parameter of the URL is also available to
+the view as `windowParams`. This way one view can be used as template for many tags.
+
 ## ChirpStack (LoRaWAN)
 FUXA-B reads ChirpStack uplinks through a standard MQTT device. To get the latest values right away
 (instead of waiting for each sensor to transmit again), run the companion service in
