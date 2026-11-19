@@ -18,6 +18,8 @@ interface RepeaterGaugeBinding {
     settings: GaugeSettings;
     status: GaugeStatus;
     tags: string[];
+    /** element processed last time, a new one (content rebuilt) restarts the status (e.g. blink timer) */
+    node?: Element;
 }
 
 @Component({
@@ -123,7 +125,8 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 if (svgDivContainer['repeaterLoadId'] !== loadId) {
                     return;
                 }
-                // remove the items of a previous render, the toolbar stays
+                // remove the items of a previous render (and stop their blink timers), the toolbar stays
+                this.clearGaugeBindings(svgDivContainer);
                 Array.from(svgDivContainer.children as HTMLCollectionOf<Element>).filter((child: Element) => child.nodeName.toLowerCase() === 'svg').forEach((child: Element) => child.remove());
                 let jsonObj = result;
                 if (svgDivContainer['repeaterContext']) {
@@ -157,24 +160,27 @@ export class RepeaterComponent extends GaugeBaseComponent {
                         }
                     }
                 });
+                // the items are parsed as XML: parse them again as HTML so that the HTML controls
+                // in their foreignObject (input, button, ...) are rendered (events are delegated to the container).
+                // Done before binding the controls, a later rebuild would leave them (e.g. a blink timer) on removed elements
+                const search = (<HTMLInputElement>svgDivContainer.querySelector('.' + RepeaterComponent.searchClass))?.value;
+                const focused = document.activeElement?.classList?.contains(RepeaterComponent.searchClass) && svgDivContainer.contains(document.activeElement);
+                svgDivContainer.innerHTML = svgDivContainer.innerHTML;
+                const searchInput = <HTMLInputElement>svgDivContainer.querySelector('.' + RepeaterComponent.searchClass);
+                if (searchInput && search) {
+                    searchInput.value = search;
+                }
+                if (searchInput && focused) {
+                    searchInput.focus();
+                }
+                this.filterItems(svgDivContainer);
                 gaugeBindings.forEach(binding => binding.tags.forEach(tagId => this.renderLiveTags.add(tagId)));
                 svgDivContainer['repeaterGaugeBindings'] = gaugeBindings;
                 const liveTags = Array.from(this.renderLiveTags);
                 this.renderLiveTags = null;
                 this.bindLiveTags(svgDivContainer, gaugeSettings.id, liveTags, hmiService);
-                // the items are parsed as XML: parse them again as HTML so that the HTML controls
-                // in their foreignObject (input, button, ...) are rendered (events are delegated to the container)
-                setTimeout(function() {
-                    const search = (<HTMLInputElement>svgDivContainer.querySelector('.' + RepeaterComponent.searchClass))?.value;
-                    svgDivContainer.innerHTML = svgDivContainer.innerHTML;
-                    const input = <HTMLInputElement>svgDivContainer.querySelector('.' + RepeaterComponent.searchClass);
-                    if (input && search) {
-                        input.value = search;
-                    }
-                    // current values (colors, ranges, actions) of the controls bound to tags
-                    RepeaterComponent.updateGauges(svgDivContainer, liveTags.map(id => hmiService.variables[id]).filter(v => v && v.value !== undefined));
-                    RepeaterComponent.filterItems(svgDivContainer);
-                }, 1000);
+                // current values (colors, ranges, actions) of the controls bound to tags
+                this.updateGauges(svgDivContainer, liveTags.map(id => hmiService.variables[id]).filter(v => v && v.value !== undefined));
             } });
         }
         return createComponent();
@@ -419,6 +425,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
         const subscription = hmiService.onVariableChanged.subscribe(sig => {
             if (!container.isConnected) {
                 // the view was closed
+                RepeaterComponent.clearGaugeBindings(container);
                 subscription.unsubscribe();
                 hmiService.setExtraTagsSubscription('repeater-' + repeaterId, []);
                 return;
@@ -470,6 +477,21 @@ export class RepeaterComponent extends GaugeBaseComponent {
         return bindings;
     }
 
+    /** stop the actions (blink timers) of the controls of the rendered items */
+    static clearGaugeBindings(container: HTMLElement) {
+        (<RepeaterGaugeBinding[]>container['repeaterGaugeBindings'] || []).forEach(binding => RepeaterComponent.clearStatus(binding));
+        container['repeaterGaugeBindings'] = [];
+    }
+
+    static clearStatus(binding: RepeaterGaugeBinding) {
+        if (binding.status.actionRef?.timer) {
+            clearInterval(binding.status.actionRef.timer);
+            clearTimeout(binding.status.actionRef.timer);
+        }
+        binding.status = new GaugeStatus();
+        binding.node = null;
+    }
+
     /** process the values with the controls of the items bound to them */
     static updateGauges(container: HTMLElement, signals: Variable[]) {
         const bindings: RepeaterGaugeBinding[] = container['repeaterGaugeBindings'];
@@ -483,6 +505,11 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 if (!element) {
                     return;
                 }
+                if (binding.node && binding.node !== element) {
+                    // the content was rebuilt: restart the actions on the new element
+                    RepeaterComponent.clearStatus(binding);
+                }
+                binding.node = element;
                 try {
                     gaugeManager.processValue(binding.settings, SVG.adopt(element), sig, binding.status);
                 } catch (err) {
