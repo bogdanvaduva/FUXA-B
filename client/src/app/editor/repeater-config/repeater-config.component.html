@@ -28,10 +28,12 @@
                 <mat-list-item class="list-item list-header">
                     <span class="list-item-remove"></span>
                     <span class="list-item-name">{{'repeater.config-line-name' | translate}}</span>
-                    <span class="list-item-url">{{'repeater.config-line-url' | translate}}</span>
-                    <span class="list-item-url-data-type">{{'repeater.config-line-url-data-type' | translate}}</span>
-                    <span class="list-item-url-data-path">{{'repeater.config-line-data-path' | translate}}</span>
-                    <span class="list-item-url-data-properties">{{'repeater.config-line-url-data-properties' | translate}}</span>
+                    <span class="list-item-url" [class.list-item-sql]="isDbSelected()">{{(isDbSelected() ? 'repeater.config-line-sql' : 'repeater.config-line-url') | translate}}</span>
+                    <span class="list-item-url-data-type">{{(isDbSelected() ? 'repeater.config-line-type' : 'repeater.config-line-url-data-type') | translate}}</span>
+                    <ng-container *ngIf="!isDbSelected()">
+                        <span class="list-item-url-data-path">{{'repeater.config-line-data-path' | translate}}</span>
+                        <span class="list-item-url-data-properties">{{'repeater.config-line-url-data-properties' | translate}}</span>
+                    </ng-container>
                 </mat-list-item>
                 <div class="list-panel">
                     <mat-list-item *ngFor="let line of selectedRepeaterData.lines" class="list-item list-item-hover" (click)="editRepeaterDataLine(line)">
@@ -39,18 +41,20 @@
                         <div class="list-item-text list-item-name">
                             <span>{{line.name}}</span>
                         </div>
-                        <div class="list-item-text list-item-url">
+                        <div class="list-item-text list-item-url" [class.list-item-sql]="isDbSelected()">
                             <span>{{isDb(line) ? line.sql : line.url}}</span>
                         </div>
                         <div class="list-item-text list-item-url-data-type">
                             <span>{{isDb(line) ? 'DB' : (isCsv(line) ? 'CSV' : 'JSON')}}</span>
                         </div>
-                        <div class="list-item-text list-item-url-data-path">
-                            <span>{{isCsv(line) || isDb(line) ? '' : line.url_data_path}}</span>
-                        </div>
-                        <div class="list-item-text list-item-url-data-properties">
-                            <span>{{isDb(line) ? '' : line.url_data_properties}}</span>
-                        </div>
+                        <ng-container *ngIf="!isDbSelected()">
+                            <div class="list-item-text list-item-url-data-path">
+                                <span>{{isCsv(line) || isDb(line) ? '' : line.url_data_path}}</span>
+                            </div>
+                            <div class="list-item-text list-item-url-data-properties">
+                                <span>{{isDb(line) ? '' : line.url_data_properties}}</span>
+                            </div>
+                        </ng-container>
                     </mat-list-item>
                 </div>
             </mat-list>

@@ -74,6 +74,12 @@ export class RepeaterConfigComponent implements OnInit {
         return RepeaterUtils.isCsv(line);
     }
 
+    /** the selected Repeater data has DB lines: the list shows SQL and Type, without the URL columns */
+    isDbSelected(): boolean {
+        const lines = this.selectedRepeaterData?.lines || [];
+        return lines.length > 0 && lines.every(line => RepeaterUtils.isDb(line));
+    }
+
     isDb(line: RepeaterDataLine): boolean {
         return RepeaterUtils.isDb(line);
     }
