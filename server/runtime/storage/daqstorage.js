@@ -162,19 +162,67 @@ function checkRetention() {
 /**
  * Return the DAQ storages that can run SQL queries: SQLite one pro device, PostgreSQL only one
  */
+const APP_DB_ID = '@app';
+
 function getSqlNodes() {
     const devices = runtime?.project?.getDevices() || {};
-    return Object.keys(daqDB).filter(id => typeof daqDB[id].query === 'function').map(id => ({
+    const nodes = Object.keys(daqDB).filter(id => typeof daqDB[id].query === 'function').map(id => ({
         id: id,
         name: devices[id]?.name || id,
         type: _getDbType()
     }));
+    nodes.push({ id: APP_DB_ID, name: 'FUXA App DB', type: 'SQLite' });
+    return nodes;
+}
+
+/**
+ * Read-only query on the FUXA application databases:
+ * alarms.fuxap.db (tables alarms, chronicle) as main, with the existing ones of
+ * notifications.fuxap.db, recipes.db and scheduler.db attached as 'notifications', 'recipes', 'scheduler'.
+ * users, apikeys and project are not exposed (passwords, credentials)
+ */
+function _queryAppDb(sql) {
+    const sqlite3 = require('sqlite3').verbose();
+    const alarmsFile = path.join(settings.workDir, 'alarms.fuxap.db');
+    const attach = [['notifications', 'notifications.fuxap.db'], ['recipes', 'recipes.db'], ['scheduler', 'scheduler.db']]
+        .map(([name, file]) => [name, path.join(settings.workDir, file)])
+        .filter(([, file]) => fs.existsSync(file));
+    return new Promise((resolve, reject) => {
+        if (!fs.existsSync(alarmsFile)) {
+            return reject(new Error('FUXA App DB (alarms.fuxap.db) not found'));
+        }
+        const db = new sqlite3.Database(alarmsFile, sqlite3.OPEN_READONLY, (err) => {
+            if (err) {
+                return reject(err);
+            }
+            const run = () => db.all(sql, (err, rows) => {
+                db.close();
+                err ? reject(err) : resolve(rows);
+            });
+            const next = (i) => {
+                if (i >= attach.length) {
+                    return run();
+                }
+                db.run(`ATTACH DATABASE ? AS ${attach[i][0]}`, [attach[i][1]], (err) => {
+                    if (err) {
+                        db.close();
+                        return reject(err);
+                    }
+                    next(i + 1);
+                });
+            };
+            next(0);
+        });
+    });
 }
 
 /**
  * Run a read-only SQL query on the DAQ storage with the given id
  */
 function querySql(id, sql) {
+    if (id === APP_DB_ID) {
+        return _queryAppDb(sql);
+    }
     const node = daqDB[id];
     if (!node || typeof node.query !== 'function') {
         return Promise.reject(new Error(`DAQ storage '${id}' not found or without SQL support`));
