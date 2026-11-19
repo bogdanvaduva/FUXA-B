@@ -23,6 +23,9 @@ export class RepeaterComponent extends GaugeBaseComponent {
     static LabelTag = 'Repeater';
     static prefixD = 'D-OXC_';
     static tagsRepeaterData = {};
+    /** ids of the tags shown live by the items while rendering (e.g. @tags.Temperature with a tagList entry) */
+    static renderLiveTags: Set<string> = null;
+    static hmi: HmiService = null;
 
     static actionsType = { hide: GaugeActionsType.hide, show: GaugeActionsType.show, blink: GaugeActionsType.blink, stop: GaugeActionsType.stop,
                         clockwise: GaugeActionsType.clockwise, anticlockwise: GaugeActionsType.anticlockwise, rotate : GaugeActionsType.rotate,
@@ -58,6 +61,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
             }
         });
         hmiService.askDeviceValues();
+        this.hmi = hmiService;
         let view = gaugeSettings.property.view;
         var doc = new DOMParser();
         if (ele) {
@@ -155,6 +159,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                     svgDivContainer['repeaterContext'].items = jsonObj;
                 }
                 const fieldBindings = this.getFieldBindings(v);
+                this.renderLiveTags = new Set<string>();
                 Object.entries(jsonObj || {}).forEach(entry => {
                     if (svgDivContainer) {
                         try {
@@ -179,6 +184,9 @@ export class RepeaterComponent extends GaugeBaseComponent {
                         }
                     }
                 });
+                const liveTags = Array.from(this.renderLiveTags);
+                this.renderLiveTags = null;
+                this.bindLiveTags(svgDivContainer, gaugeSettings.id, liveTags, hmiService);
                 setTimeout(function() {
                     var content = svgDivContainer.innerHTML;
                     svgDivContainer.innerHTML= content;
@@ -274,7 +282,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
                             } else {
                                 // @field shows the value of that field of the item (fallback: the 'property to show')
                                 const field = children[i].innerHTML.replace("@", "");
-                                const fieldValue = RepeaterComponent.getItemField(item, field);
+                                const fieldValue = RepeaterComponent.resolveField(item, field, children[i]);
                                 const value = (fieldValue !== undefined && fieldValue !== null) ? fieldValue : _text;
                                 children[i].textContent = RepeaterComponent.fieldText(value);
                             }
@@ -489,9 +497,71 @@ export class RepeaterComponent extends GaugeBaseComponent {
             const element = xml.querySelector(`[id="${binding.id}"]`);
             const text = element?.nodeName.toLowerCase() === 'text' ? element : element?.querySelector('text');
             if (text && item) {
-                text.textContent = RepeaterComponent.fieldText(RepeaterComponent.getItemField(item, binding.field));
+                text.textContent = RepeaterComponent.fieldText(RepeaterComponent.resolveField(item, binding.field, text));
             }
         });
+    }
+
+    /**
+     * value of an item field to show in an element. A field that is a tag entry (object with id and value,
+     * e.g. @tags.Temperature with tags from devices.tagList) or its value (@tagList.Temperature.value)
+     * is shown live: the element is marked with the tag id and updated on every value change
+     */
+    static resolveField(item: any, field: string, element: Element): any {
+        const value = RepeaterComponent.getItemField(item, field);
+        let tagId: string = null;
+        let current = value;
+        if (RepeaterComponent.isTagEntry(value)) {
+            tagId = value.id;
+            current = value.value;
+        } else if (field.endsWith('.value')) {
+            const parent = RepeaterComponent.getItemField(item, field.substring(0, field.length - '.value'.length));
+            if (RepeaterComponent.isTagEntry(parent)) {
+                tagId = parent.id;
+            }
+        }
+        if (tagId) {
+            element.setAttribute('data-repeater-tag', tagId);
+            RepeaterComponent.renderLiveTags?.add(tagId);
+            const variable = RepeaterComponent.hmi?.variables?.[tagId];
+            if (variable && variable.value !== undefined && variable.value !== null) {
+                current = variable.value;
+            }
+        }
+        return current;
+    }
+
+    static isTagEntry(value: any): boolean {
+        return value !== null && typeof value === 'object' && !Array.isArray(value) && typeof value.id === 'string' && 'value' in value;
+    }
+
+    /** subscribe the tags shown live by the items and update their elements on value change */
+    static bindLiveTags(container: HTMLElement, repeaterId: string, tagIds: string[], hmiService: HmiService) {
+        container['repeaterLiveTags']?.unsubscribe();
+        container['repeaterLiveTags'] = null;
+        hmiService.setExtraTagsSubscription('repeater-' + repeaterId, tagIds);
+        if (!tagIds.length) {
+            return;
+        }
+        const ids = new Set(tagIds);
+        const subscription = hmiService.onVariableChanged.subscribe(sig => {
+            if (!container.isConnected) {
+                // the view was closed
+                subscription.unsubscribe();
+                hmiService.setExtraTagsSubscription('repeater-' + repeaterId, []);
+                return;
+            }
+            if (!ids.has(sig?.id)) {
+                return;
+            }
+            const text = RepeaterComponent.fieldText(sig.value);
+            container.querySelectorAll(`[data-repeater-tag="${CSS.escape(sig.id)}"]`).forEach(element => {
+                if (element.textContent !== text) {
+                    element.textContent = text;
+                }
+            });
+        });
+        container['repeaterLiveTags'] = subscription;
     }
 
     /** value of an item field, also nested with a dotted path: 'tagList.Temperature.value' */

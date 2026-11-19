@@ -148,7 +148,7 @@ first line of the source. A line has a **Type**:
 
 | Field | Meaning |
 |---|---|
-| URL | `https://...` used as is (a GitHub `.../blob/...` file page is mapped to the raw file). A relative path (`/gis/rest/...`) goes to the FUXA server, e.g. to a proxy configured in `settings.js` (see below) |
+| URL | `https://raw.githubusercontent.com/sharmadhiraj/free-json-datasets/refs/heads/master/docs/climate-weather/countries_by_average_annual_precipitation.json` used as is (a GitHub `.../blob/...` file page is mapped to the raw file). A relative path (`/gis/rest/...`) goes to the FUXA server, e.g. to a proxy configured in `settings.js` (see below) |
 | Data type | `JSON` (default) or `CSV` |
 | Data properties | comma separated item fields to use, e.g. `name,city,value`. Empty: every field of the item |
 | Data path | JSON only, dotted path to the items inside the response, e.g. `data` or `result.items`. Empty: the whole JSON |
@@ -185,7 +185,12 @@ it in the view. Queries are read-only (SQLite opened read-only, PostgreSQL in a 
 DAQ SQLite example (values with the tag names):
 
 ```sql
-SELECT m.name, d.value, d.dt FROM data d JOIN map.data m ON m.mapid = d.id ORDER BY d.dt DESC LIMIT 50
+SELECT d.id, d.name AS device,
+       json_group_object(t.key, json_extract(t.value, '$.value')) AS tags
+FROM devices d, json_each(d.tagList) t
+WHERE d.id LIKE 'd\_%' ESCAPE '\' AND d.enabled = 1
+GROUP BY d.id
+ORDER BY d.name
 ```
 
 #### FUXA App DB
@@ -220,6 +225,9 @@ SELECT d.name AS device, t.key AS tag, json_extract(t.value, '$.value') AS value
 FROM devices d, json_each(d.tagList) t
 ```
 
+To keep the live values with a grouped query, keep the whole entry: `json_group_object(t.key, json(t.value)) AS tags`
+(with `json_extract(t.value, '$.value')` only the value at query time is kept, not live).
+
 Text values of App DB rows that look like JSON (`{...}` or `[...]`, e.g. `tagList` or your own
 `json_object(...)` columns) are returned as objects. Note: in `LIKE`, `_` is a wildcard
 (use `LIKE 'd\_%' ESCAPE '\'` for a literal underscore).
@@ -231,6 +239,10 @@ Create a view with the size of one item (e.g. a card) and add the controls showi
 - **Output / value controls**: set the tag of the control to `@<field>`, e.g. `@name`. Nested fields use a
   dotted path: `@tagList.Temperature.value`, `@tagList.Run.Status.value` (tag names with dots work too).
   An object field without path (`@tagList`) is shown as JSON.
+- **Live tag values**: when the bound field is a tag entry (an object with `id` and `value`, as the entries of
+  `devices.tagList`), the control shows the current value of that tag and is updated live. With
+  `SELECT d.id, d.name AS device, d.tagList AS tags FROM devices d` use `@tags.Temperature`
+  (or `@tags.Temperature.value`). Other fields of the entry (`@tags.Temperature.type`) are static.
 - **Text**: a text whose content is `@<field>` is replaced with the item field value.
 - **`@tagName`**: a text with content `@tagName` shows the live value of the tag linked to the item
   (see *Link tags to items* below).
