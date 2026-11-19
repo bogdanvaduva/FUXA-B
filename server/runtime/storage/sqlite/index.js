@@ -299,6 +299,8 @@ function DaqNode(_settings, _log, _id, _currentStorate) {
                         db.close();
                         return reject(err);
                     }
+                    // no further ATTACH from the query (e.g. users.fuxap.db)
+                    db.configure('limit', sqlite3.LIMIT_ATTACHED, 1);
                     db.all(sql, function (err, rows) {
                         db.close();
                         if (err) {

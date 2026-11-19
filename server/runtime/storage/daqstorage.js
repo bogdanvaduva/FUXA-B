@@ -179,7 +179,9 @@ function getSqlNodes() {
  * Read-only query on the FUXA application databases:
  * alarms.fuxap.db (tables alarms, chronicle) as main, with the existing ones of
  * notifications.fuxap.db, recipes.db and scheduler.db attached as 'notifications', 'recipes', 'scheduler'.
- * users, apikeys and project are not exposed (passwords, credentials)
+ * plus the temporary table 'devices' with the devices of the running project (without credentials):
+ * id, name, type, enabled, polling, address, port, slaveid, tags (count), status.
+ * users, apikeys and project are not exposed (passwords, credentials), other ATTACH are blocked
  */
 function _queryAppDb(sql) {
     const sqlite3 = require('sqlite3').verbose();
@@ -199,14 +201,19 @@ function _queryAppDb(sql) {
                 db.close();
                 err ? reject(err) : resolve(rows);
             });
+            const fail = (err) => {
+                db.close();
+                reject(err);
+            };
             const next = (i) => {
                 if (i >= attach.length) {
-                    return run();
+                    // no further ATTACH from the query (e.g. users.fuxap.db)
+                    db.configure('limit', sqlite3.LIMIT_ATTACHED, attach.length);
+                    return _fillAppDevices(db).then(run).catch(fail);
                 }
                 db.run(`ATTACH DATABASE ? AS ${attach[i][0]}`, [attach[i][1]], (err) => {
                     if (err) {
-                        db.close();
-                        return reject(err);
+                        return fail(err);
                     }
                     next(i + 1);
                 });
@@ -219,6 +226,23 @@ function _queryAppDb(sql) {
 /**
  * Run a read-only SQL query on the DAQ storage with the given id
  */
+function _fillAppDevices(db) {
+    const devices = runtime?.project?.getDevices() || {};
+    let status = {};
+    try {
+        status = runtime?.devices?.getDevicesStatus() || {};
+    } catch (err) { }
+    const rows = Object.values(devices).map(dev => [
+        dev.id, dev.name, dev.type, dev.enabled ? 1 : 0, dev.polling ?? null,
+        dev.property?.address ?? null, dev.property?.port ?? null, dev.property?.slaveid ?? null,
+        Object.keys(dev.tags || {}).length,
+        (typeof status[dev.id] === 'string' ? status[dev.id] : status[dev.id]?.status) ?? null
+    ]);
+    const exec = (sql, params = []) => new Promise((resolve, reject) => db.run(sql, params, err => err ? reject(err) : resolve()));
+    return exec('CREATE TEMP TABLE devices (id TEXT, name TEXT, type TEXT, enabled INTEGER, polling INTEGER, address TEXT, port TEXT, slaveid TEXT, tags INTEGER, status TEXT)')
+        .then(() => rows.reduce((p, row) => p.then(() => exec('INSERT INTO temp.devices VALUES (?,?,?,?,?,?,?,?,?,?)', row)), Promise.resolve()));
+}
+
 function querySql(id, sql) {
     if (id === APP_DB_ID) {
         return _queryAppDb(sql);
