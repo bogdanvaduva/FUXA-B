@@ -10,7 +10,7 @@ import { filter, Subject, takeUntil } from 'rxjs';
 import { MapsLocation, MapsLocationSourceType, MAPSLOCATION_PREFIX } from '../../_models/maps';
 import { RepeaterUtils } from '../../_models/repeater';
 import { RepeaterComponent } from '../../gauges/controls/repeater/repeater.component';
-import { MapsLocationPropertyComponent } from '../maps-location-property/maps-location-property.component';
+import { MapsLocationPropertyComponent, MapsLocationPropertyData, MapsLocationPropertyResult } from '../maps-location-property/maps-location-property.component';
 import { Utils } from '../../_helpers/utils';
 import { TranslateService } from '@ngx-translate/core';
 import { ToastrService } from 'ngx-toastr';
@@ -590,16 +590,18 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
         let dialogRef = this.dialog.open(MapsLocationPropertyComponent, {
             position: { top: '60px' },
             disableClose: true,
-            data: location,
+            data: <MapsLocationPropertyData>{ location, mapViewId: this.view.id },
         });
-        dialogRef.afterClosed().subscribe(result => {
+        dialogRef.afterClosed().subscribe((result: MapsLocationPropertyResult) => {
             if (result) {
-                this.projectService.setMapsLocation(result, location).subscribe(() => {
-                    if (!this.locations.find(loc => loc.id === location.id)) {
-                        this.insertLocations(location);
-                    } else {
-                        this.loadMapsResources();
+                this.projectService.setMapsLocation(result.location, location).subscribe(async () => {
+                    // the Maps views chosen in the dialog (this one preselected) show the location
+                    await this.projectService.setMapsLocationViews(result.location.id, result.mapViewIds);
+                    const saved = this.projectService.getViews()?.find(v => v.id === this.view.id);
+                    if (saved && saved !== this.view) {
+                        this.view.svgcontent = saved.svgcontent;
                     }
+                    this.loadMapsResources();
                 });
             }
         });

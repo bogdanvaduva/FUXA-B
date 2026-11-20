@@ -28,6 +28,9 @@ export class MapsLocationPropertyComponent implements OnInit {
     /** fields of the items of the selected Repeater data (suggestions for the field inputs) */
     itemFields: string[] = [];
     itemFieldsError = '';
+    /** FUXA-B: the Maps views (to choose where the location is shown) */
+    mapViews: View[] = [];
+    private defaultMapViewId: string;
     @ViewChild('flexActionsStandalone', { static: false }) flexActionsStandalone: FlexActionsStandaloneComponent;
 
     constructor(
@@ -36,13 +39,20 @@ export class MapsLocationPropertyComponent implements OnInit {
         private translateService: TranslateService,
         private projectService: ProjectService,
         private cdr: ChangeDetectorRef,
-        @Inject(MAT_DIALOG_DATA) public data: MapsLocation) {
-            this.location = this.data ?? new MapsLocation(Utils.getGUID(MAPSLOCATION_PREFIX));
+        @Inject(MAT_DIALOG_DATA) public data: MapsLocation | MapsLocationPropertyData) {
+            const dialogData = <MapsLocationPropertyData>this.data;
+            this.location = (dialogData?.location ?? <MapsLocation>this.data) ?? new MapsLocation(Utils.getGUID(MAPSLOCATION_PREFIX));
+            this.defaultMapViewId = dialogData?.mapViewId;
     }
 
     ngOnInit() {
         this.views = this.projectService.getViews()?.filter(view => view.type !== ViewType.maps);
         this.repeaters = this.projectService.getRepeaters() || [];
+        this.mapViews = this.projectService.getViews()?.filter(view => view.type === ViewType.maps) || [];
+        const mapViewIds = this.projectService.getMapsLocationViews(this.location.id);
+        if (this.defaultMapViewId && !mapViewIds.includes(this.defaultMapViewId)) {
+            mapViewIds.push(this.defaultMapViewId);
+        }
         this.actions = Utils.clone(this.location.actions || []);
         this.formGroup = this.fb.group({
             name: [this.location.name, Validators.required],
@@ -66,7 +76,8 @@ export class MapsLocationPropertyComponent implements OnInit {
             longitudeField: [this.location.longitudeField],
             nameField: [this.location.nameField],
             tagField: [this.location.tagField],
-            refreshInterval: [this.location.refreshInterval]
+            refreshInterval: [this.location.refreshInterval],
+            mapViewIds: [mapViewIds]
         });
         this.formGroup.controls.name.addValidators(this.isValidName());
         this.formGroup.controls.repeaterData.valueChanges.subscribe(id => this.loadItemFields(id));
@@ -117,12 +128,12 @@ export class MapsLocationPropertyComponent implements OnInit {
 
     onOkClick(): void {
         const actions = this.flexActionsStandalone?.getActions() || [];
-        const value = this.formGroup.getRawValue();
+        const { mapViewIds, ...value } = this.formGroup.getRawValue();
         if (value.refreshInterval !== null && value.refreshInterval !== undefined && value.refreshInterval !== '') {
             value.refreshInterval = Number(value.refreshInterval) || 0;
         }
         this.location = {...this.location, ...value, actions };
-        this.dialogRef.close(this.location);
+        this.dialogRef.close(<MapsLocationPropertyResult>{ location: this.location, mapViewIds: mapViewIds || [] });
     }
 
     isValidName(): ValidatorFn {
@@ -176,4 +187,16 @@ export class MapsLocationPropertyComponent implements OnInit {
         ga.range = new GaugeRangeProperty();
         this.actions.push(ga);
     }
+}
+
+/** FUXA-B: the location to edit and the Maps view where it is added (preselected) */
+export interface MapsLocationPropertyData {
+    location: MapsLocation;
+    mapViewId?: string;
+}
+
+/** FUXA-B: the edited location and the Maps views that show it */
+export interface MapsLocationPropertyResult {
+    location: MapsLocation;
+    mapViewIds: string[];
 }

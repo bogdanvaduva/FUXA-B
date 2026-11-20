@@ -854,6 +854,37 @@ export class ProjectService {
         });
     }
 
+    /** FUXA-B: ids of the Maps views showing the location (a Maps view keeps the ids of its locations in svgcontent) */
+    getMapsLocationViews(locationId: string): string[] {
+        return (this.projectData?.hmi?.views || [])
+            .filter(view => view.type === ViewType.maps && this.getMapsViewLocationIds(view).includes(locationId))
+            .map(view => view.id);
+    }
+
+    /** FUXA-B: show the location in the given Maps views only, the changed views are saved */
+    async setMapsLocationViews(locationId: string, mapViewIds: string[]): Promise<void> {
+        const views = (this.projectData?.hmi?.views || []).filter(view => view.type === ViewType.maps);
+        for (const view of views) {
+            const ids = this.getMapsViewLocationIds(view);
+            const shown = ids.includes(locationId);
+            const toShow = mapViewIds.includes(view.id);
+            if (shown !== toShow) {
+                const newIds = toShow ? [...ids, locationId] : ids.filter(id => id !== locationId);
+                view.svgcontent = JSON.stringify(newIds);
+                await this.setViewAsync(view);
+            }
+        }
+    }
+
+    private getMapsViewLocationIds(view: View): string[] {
+        try {
+            const ids = view.svgcontent ? JSON.parse(view.svgcontent) : [];
+            return Array.isArray(ids) ? ids : [];
+        } catch (err) {
+            return [];
+        }
+    }
+
     /**
      * remove the maps location from project
      */

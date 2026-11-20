@@ -18,6 +18,12 @@
                             </mat-select>
                         </div>
                     </div>
+                    <div class="my-form-field item-block mt5">
+                        <span>{{'maps.location-property-maps' | translate}}</span>
+                        <mat-select formControlName="mapViewIds" multiple>
+                            <mat-option *ngFor="let view of mapViews" [value]="view.id">{{ view.name }}</mat-option>
+                        </mat-select>
+                    </div>
                     <div *ngIf="!isDynamic()" class="form-input-dual mt5">
                         <div class="my-form-field inbk">
                             <span>{{'maps.location-property-latitude' | translate}}</span>

@@ -8,7 +8,7 @@ import { ViewType } from '../../_models/hmi';
 import { ProjectService } from '../../_services/project.service';
 import { Subject, takeUntil } from 'rxjs';
 import { MatSort } from '@angular/material/sort';
-import { MapsLocationPropertyComponent } from '../maps-location-property/maps-location-property.component';
+import { MapsLocationPropertyComponent, MapsLocationPropertyResult } from '../maps-location-property/maps-location-property.component';
 
 @Component({
     selector: 'app-maps-location-list',
@@ -107,9 +107,10 @@ export class MapsLocationListComponent implements OnInit, AfterViewInit, OnDestr
             disableClose: true,
             data: location,
 		});
-		dialogRef.afterClosed().subscribe(result => {
+		dialogRef.afterClosed().subscribe((result: MapsLocationPropertyResult) => {
 			if (result) {
-                this.projectService.setMapsLocation(result, location).subscribe(() => {
+                this.projectService.setMapsLocation(result.location, location).subscribe(async () => {
+                    await this.projectService.setMapsLocationViews(result.location.id, result.mapViewIds);
                     this.loadLocations();
                 });
 			}

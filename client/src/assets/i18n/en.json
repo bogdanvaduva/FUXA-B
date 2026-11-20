@@ -1774,6 +1774,7 @@
     "maps.location-property-card": "Card",
     "maps.location-property-view": "View",
     "maps.location-property-url": "URL",
+    "maps.location-property-maps": "Maps (shown in)",
     "maps.location-property-source": "Source",
     "maps.location-property-source-static": "Static (fixed position)",
     "maps.location-property-source-dynamic": "Dynamic (Repeater data)",
