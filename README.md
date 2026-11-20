@@ -7,7 +7,7 @@ individual designs for your machines and real-time data display. It follows the 
 - **Repeater**: a control that repeats a template view for every item of a list (URL with JSON/CSV, SQL on the
   DAQ storage or on the FUXA App DB), with live tag values and colors per item. See [Repeater](#repeater).
 - **Dynamic map locations**: one map marker per item of a Repeater data source, with its tag value and actions.
-  See [Map locations from Repeater data](#map-locations-from-repeater-data).
+  See [Maps and locations](#maps-and-locations).
 - **PostgreSQL** as DAQ storage (data historian). See [PostgreSQL DAQ storage](#postgresql-daq-storage).
 - **Reverse proxies** to use external HTTP services from the views without CORS. See [Proxies](#proxies).
 - **Template views by URL**: a control bound to `tagName` shows the tag given in the URL
@@ -304,10 +304,68 @@ Example: one card per Modbus device with its state.
    `@tags.Pressure` shows the live pressure of the clicked device.
 3. In the main view draw a Repeater with this data and the view `Device card`.
 
-### Map locations from Repeater data
+### Generic `tagName` view (template by URL)
 
-A location of a **Maps** view can be **static** (one marker at its latitude/longitude, as in FUXA) or
-**dynamic**: one marker for every item of a Repeater data source. Location settings → **Source** → *Dynamic*:
+A control whose tag is set to `tagName` (type it in the tag field of the control) is bound to the tag given
+in the URL: `http://<fuxa>/home?viewName=<view>&tagName=<tag id>`. Chart lines with id `tagName` work the
+same way. The URL query parameters are also appended to the address of the iframes of the view. This way one
+view can be used as template for many tags.
+
+## Maps and locations
+
+A **Maps** view shows an OpenStreetMap map with **locations** (markers). The map tiles are loaded from
+`tile.openstreetmap.org`, the browser needs internet access for the map background.
+
+### Add a map view
+
+Editor → **Views** → **+** (Add View) → type **Maps**. Then on the map (editor, right click):
+
+| Menu | Meaning |
+|---|---|
+| Add Location | new location at the clicked point (this map preselected in its *Maps (shown in)*) |
+| Edit Location / Remove Location | on a marker: edit the location or remove it from this map |
+| Import Location | show in this map locations already defined (e.g. in other maps) |
+| Set as start Location | the map opens here, with the current zoom |
+| Close all popups | close the open cards |
+
+Add the map view to the navigation (Setup → **Layout**) or set it as start view to use it at runtime.
+
+### Location settings
+
+**General**
+
+| Field | Meaning |
+|---|---|
+| Name | unique name of the location (required) |
+| Source | **Static** (one marker at latitude/longitude) or **Dynamic** (one marker per item of a Repeater data source, see below) |
+| Maps (shown in) | the map views that show the location: select one or more, deselect to remove it from a map |
+| Latitude / Longitude | static: the position of the marker |
+| Card | view opened as popup on the marker click |
+| View | view opened (navigation) from the marker menu |
+| URL | link opened from the marker menu |
+| Description | free text |
+
+**Marker**: icon (or image), name, value of a tag, background and color.
+**Actions**: show, hide or color the marker by the value of a tag (with a value range).
+
+### Locations list
+
+Setup → **Locations** lists all the locations of the project:
+
+| Column | Meaning |
+|---|---|
+| Name | name of the location |
+| Maps | the map views that show the location (empty: in no map, choose them in *Maps (shown in)*) |
+| Card | the view opened as popup |
+| Description | the description |
+
+A location can be in several maps; editing it changes it in all of them.
+
+### Dynamic locations (Repeater data)
+
+
+A dynamic location shows one marker for every item of a [Repeater data](#1-create-the-repeater-data) source.
+Location settings → **Source** → *Dynamic*:
 
 | Field | Meaning |
 |---|---|
@@ -328,13 +386,6 @@ colors, show name / value). For every marker:
 
 Example: a DB line `SELECT id, name, lat, lng, tagList AS tags FROM ...` with latitude field `lat`,
 longitude field `lng`, name field `name`, tag field `tags.Alarm`.
-
-### Generic `tagName` view (template by URL)
-
-A control whose tag is set to `tagName` (type it in the tag field of the control) is bound to the tag given
-in the URL: `http://<fuxa>/home?viewName=<view>&tagName=<tag id>`. Chart lines with id `tagName` work the
-same way. The URL query parameters are also appended to the address of the iframes of the view. This way one
-view can be used as template for many tags.
 
 ## PostgreSQL DAQ storage
 
