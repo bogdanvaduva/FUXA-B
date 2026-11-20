@@ -6,6 +6,8 @@ individual designs for your machines and real-time data display. It follows the 
 
 - **Repeater**: a control that repeats a template view for every item of a list (URL with JSON/CSV, SQL on the
   DAQ storage or on the FUXA App DB), with live tag values and colors per item. See [Repeater](#repeater).
+- **Dynamic map locations**: one map marker per item of a Repeater data source, with its tag value and actions.
+  See [Map locations from Repeater data](#map-locations-from-repeater-data).
 - **PostgreSQL** as DAQ storage (data historian). See [PostgreSQL DAQ storage](#postgresql-daq-storage).
 - **Reverse proxies** to use external HTTP services from the views without CORS. See [Proxies](#proxies).
 - **Template views by URL**: a control bound to `tagName` shows the tag given in the URL
@@ -301,6 +303,31 @@ Example: one card per Modbus device with its state.
    a click event *Open dialog* on the rectangle with the view `Device details`, where an Output with tag
    `@tags.Pressure` shows the live pressure of the clicked device.
 3. In the main view draw a Repeater with this data and the view `Device card`.
+
+### Map locations from Repeater data
+
+A location of a **Maps** view can be **static** (one marker at its latitude/longitude, as in FUXA) or
+**dynamic**: one marker for every item of a Repeater data source. Location settings → **Source** → *Dynamic*:
+
+| Field | Meaning |
+|---|---|
+| Repeater data | the data source of the markers |
+| Refresh (seconds) | reload the data (moving objects), empty or 0: load once |
+| Latitude / Longitude field | item fields with the position (dotted paths allowed, e.g. `position.lat`) |
+| Name field | item field shown as marker name (default: the location name) |
+| Tag field | item field with the tag of the marker: a tag entry (`tags.Alarm` from `tagList`), a tag id or a tag name |
+
+The field inputs suggest the fields of the first item. All the markers use the style of the location (icon,
+colors, show name / value). For every marker:
+
+- **Show Value** shows the live value of the item tag;
+- **Actions** without a tag use the item tag (e.g. color red when `Alarm` is 1), an action tag `@field` uses the
+  tag of that item field, other tags are the same for all the markers;
+- the **Card** gets the item fields as placeholders (`@name`, `@tags.Temperature` bound to the tag);
+- in the **URL** `{field}` is replaced with the item field (e.g. `https://example.com/device/{id}`).
+
+Example: a DB line `SELECT id, name, lat, lng, tagList AS tags FROM ...` with latitude field `lat`,
+longitude field `lng`, name field `name`, tag field `tags.Alarm`.
 
 ### Generic `tagName` view (template by URL)
 

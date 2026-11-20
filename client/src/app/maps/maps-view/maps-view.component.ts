@@ -7,7 +7,9 @@ import { MatMenuTrigger as MatMenuTrigger } from '@angular/material/menu';
 import { MatDialog as MatDialog } from '@angular/material/dialog';
 import { GaugeAction, GaugeRangeProperty, Hmi, View, ViewProperty } from '../../_models/hmi';
 import { filter, Subject, takeUntil } from 'rxjs';
-import { MapsLocation, MAPSLOCATION_PREFIX } from '../../_models/maps';
+import { MapsLocation, MapsLocationSourceType, MAPSLOCATION_PREFIX } from '../../_models/maps';
+import { RepeaterUtils } from '../../_models/repeater';
+import { RepeaterComponent } from '../../gauges/controls/repeater/repeater.component';
 import { MapsLocationPropertyComponent } from '../maps-location-property/maps-location-property.component';
 import { Utils } from '../../_helpers/utils';
 import { TranslateService } from '@ngx-translate/core';
@@ -17,14 +19,27 @@ import { MapsFabButtonMenuComponent } from './maps-fab-button-menu/maps-fab-butt
 import { HmiService } from '../../_services/hmi.service';
 
 interface MarkerBinding {
-    nodeIds: string[];
+    /** value elements of the markers bound to the tag, owner is the location id */
+    nodes: { id: string; owner: string }[];
     domNodes: HTMLElement[];
     actions: {
         action: GaugeAction;
         marker: L.Marker;
         element?: HTMLElement | null;
+        owner: string;
     }[];
 };
+
+/** a marker of a location: the static position or an item of the Repeater data of a dynamic location */
+interface MarkerPoint {
+    latitude: number;
+    longitude: number;
+    name: string;
+    tagId?: string;
+    /** dynamic: the item and its key in the Repeater data */
+    item?: any;
+    key?: string;
+}
 
 @Component({
     selector: 'app-maps-view',
@@ -53,6 +68,11 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
     private locations: MapsLocation[] = [];
     lastClickMapLocation?: MapsLocation;
     private markerItemsMap = new Map<string, MarkerBinding>();
+    /** markers of every location (id), a dynamic location has one marker per item */
+    private markersByLocation = new Map<string, L.Marker[]>();
+    private dynamicTimers: any[] = [];
+    /** incremented on every load, the data of a previous load is ignored */
+    private loadToken = 0;
 
     private openPopups = [];
     private currentPopup: L.Popup | null = null;
@@ -103,6 +123,7 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
     }
 
     ngOnDestroy() {
+        this.clearDynamicTimers();
         this.destroy$.next(null);
         this.destroy$.complete();
     }
@@ -124,68 +145,24 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
         this.hmi = this.projectService.getHmi();
         this.locations = this.view?.svgcontent ? this.projectService.getMapsLocations(JSON.parse(this.view.svgcontent)) : [];
         this.clearMarker();
-        const newIcon = L.icon({
-            iconUrl: 'assets/images/marker-icon.png',
-            shadowUrl: 'assets/images/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 45],
-            popupAnchor: [0, -34]
-        });
+        this.clearDynamicTimers();
+        const token = ++this.loadToken;
         this.locations.forEach(loc => {
-            const valueHtmlId = Utils.getShortGUID('m_');
-            const color = loc.markerColor ?? '#000000';
-            const background = loc.markerBackground ?? '#ffffff';
-            const icon = loc.markerIcon ? loc.markerIcon : '';
-            const image = loc.markerImage ? loc.markerImage : '';
-            const nameHtml = loc.showMarkerName
-                                ? `<div class="bubble-text"
-                                        style="color: var(--bubble-fg);">${loc.name}</div>`
-                                : '';
-            const iconHtml = loc.showMarkerIcon
-                                ? image
-                                    ? `<img class="bubble-image" src="${image}" alt="">`
-                                    : `<span class="material-icons bubble-icon"
-                                            style="color: var(--bubble-fg);">${icon}</span>`
-                                : '';
-            const valueHtml = loc.markerTagValueId && loc.showMarkerValue
-                                ? `<div class="bubble-value" id="${valueHtmlId}">##.##</div>`
-                                : '';
-            const markerHtml = `
-            <div class="fuxa-bubble-marker"
-                 style="--bubble-color:${color};
-                        --bubble-bg:${background};
-                        --bubble-fg:${color};">
-
-                <div class="bubble-content bubble-column">
-                    ${iconHtml}
-                    ${nameHtml}
-                    ${valueHtml}
-                </div>
-            </div>`;
-            const marker = L.marker([loc.latitude, loc.longitude], {
-                icon: L.divIcon({
-                    className: 'fuxa-bubble-icon',
-                    html: markerHtml,
-                    iconSize: undefined,  // lasciamo che si adatti
-                    iconAnchor: [0, 0]    // correggiamo via CSS con transform
-                })
-            }).addTo(this.map);
-            marker['locationId'] = loc.id;
-            if (!iconHtml && !valueHtml && !nameHtml) {
-                this.openMarkerTooltip(marker, loc);
-                marker.setIcon(newIcon);
-            } else if (valueHtml) {
-                this.addMarkerItemId(loc.markerTagValueId!, valueHtmlId);
+            if (loc.sourceType === MapsLocationSourceType.dynamic) {
+                this.loadDynamicLocation(loc, token);
+                if (loc.refreshInterval > 0) {
+                    this.dynamicTimers.push(setInterval(() => this.loadDynamicLocation(loc, token), loc.refreshInterval * 1000));
+                }
+            } else {
+                this.addMarker(loc, {
+                    latitude: loc.latitude,
+                    longitude: loc.longitude,
+                    name: loc.name,
+                    tagId: loc.markerTagValueId
+                });
             }
-            marker.on('click', () => {
-                this.onClickMarker(loc, marker);
-            });
-            marker.on('contextmenu', (event) => {
-                this.showContextMenu(event, marker);
-            });
-
-            this.collectActionTags(loc.actions, marker);
         });
+        this.map.off('popupopen').off('popupclose');
         this.map.on('popupopen', (e) => {
             this.openPopups.push(e.popup);
         });
@@ -199,6 +176,157 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
         if (!this.editMode) {
             this.subscribeMarkerTags();
         }
+    }
+
+    /** add the marker of a location at the point, with its value and actions bound to the point tag */
+    private addMarker(loc: MapsLocation, point: MarkerPoint): L.Marker {
+        const valueHtmlId = Utils.getShortGUID('m_');
+        const color = loc.markerColor ?? '#000000';
+        const background = loc.markerBackground ?? '#ffffff';
+        const icon = loc.markerIcon ? loc.markerIcon : '';
+        const image = loc.markerImage ? loc.markerImage : '';
+        const nameHtml = loc.showMarkerName
+                            ? `<div class="bubble-text"
+                                    style="color: var(--bubble-fg);">${Utils.escapeHtml(point.name ?? '')}</div>`
+                            : '';
+        const iconHtml = loc.showMarkerIcon
+                            ? image
+                                ? `<img class="bubble-image" src="${image}" alt="">`
+                                : `<span class="material-icons bubble-icon"
+                                        style="color: var(--bubble-fg);">${icon}</span>`
+                            : '';
+        const valueHtml = point.tagId && loc.showMarkerValue
+                            ? `<div class="bubble-value" id="${valueHtmlId}">${Utils.escapeHtml(this.getCurrentValue(point) ?? '##.##')}</div>`
+                            : '';
+        const markerHtml = `
+        <div class="fuxa-bubble-marker"
+             style="--bubble-color:${color};
+                    --bubble-bg:${background};
+                    --bubble-fg:${color};">
+
+            <div class="bubble-content bubble-column">
+                ${iconHtml}
+                ${nameHtml}
+                ${valueHtml}
+            </div>
+        </div>`;
+        const marker = L.marker([point.latitude, point.longitude], {
+            icon: L.divIcon({
+                className: 'fuxa-bubble-icon',
+                html: markerHtml,
+                iconSize: undefined,  // lasciamo che si adatti
+                iconAnchor: [0, 0]    // correggiamo via CSS con transform
+            })
+        }).addTo(this.map);
+        marker['locationId'] = loc.id;
+        marker['mapPoint'] = point;
+        if (!iconHtml && !valueHtml && !nameHtml) {
+            this.openMarkerTooltip(marker, point.name);
+            marker.setIcon(this.defaultIcon());
+        } else if (valueHtml) {
+            this.addMarkerItemId(point.tagId!, valueHtmlId, loc.id);
+        }
+        marker.on('click', () => {
+            this.onClickMarker(loc, marker);
+        });
+        marker.on('contextmenu', (event) => {
+            this.showContextMenu(event, marker);
+        });
+        this.collectActionTags(loc.actions, marker, loc.id, point);
+        if (!this.markersByLocation.has(loc.id)) {
+            this.markersByLocation.set(loc.id, []);
+        }
+        this.markersByLocation.get(loc.id).push(marker);
+        return marker;
+    }
+
+    private defaultIcon(): L.Icon {
+        return L.icon({
+            iconUrl: 'assets/images/marker-icon.png',
+            shadowUrl: 'assets/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 45],
+            popupAnchor: [0, -34]
+        });
+    }
+
+    /**
+     * FUXA-B: one marker for every item of the Repeater data of the location, at the latitude/longitude fields
+     * of the item, with the name and the tag of the item (value and actions)
+     */
+    private loadDynamicLocation(loc: MapsLocation, token: number) {
+        const repeater = this.projectService.getRepeater(loc.repeaterData);
+        const line = repeater?.lines?.[0];
+        if (!line) {
+            return;
+        }
+        RepeaterUtils.getItems(line, repeater.id).subscribe({
+            next: items => {
+                if (token !== this.loadToken || !this.map) {
+                    return;
+                }
+                this.removeLocationMarkers(loc.id);
+                Object.entries(items || {}).forEach(([key, item]) => {
+                    const latitude = Number(RepeaterUtils.decodeJson(RepeaterUtils.getField(item, loc.latitudeField)));
+                    const longitude = Number(RepeaterUtils.decodeJson(RepeaterUtils.getField(item, loc.longitudeField)));
+                    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+                        return;
+                    }
+                    const name = RepeaterComponent.fieldText(RepeaterUtils.getField(item, loc.nameField)) || loc.name;
+                    const tagId = this.resolveTagId(RepeaterUtils.getField(item, loc.tagField));
+                    this.addMarker(loc, { latitude, longitude, name, tagId, item, key });
+                });
+                if (!this.editMode) {
+                    this.subscribeMarkerTags();
+                }
+            },
+            error: err => console.error(`Maps: cannot load the data of the location ${loc.name}`, err)
+        });
+    }
+
+    /** tag id of an item field: a tag entry ({ id, value }), a tag id or a tag name */
+    private resolveTagId(value: any): string {
+        value = RepeaterUtils.decodeJson(value);
+        if (RepeaterUtils.isTagEntry(value)) {
+            return value.id;
+        }
+        if (typeof value !== 'string' || !value) {
+            return null;
+        }
+        const tags = Object.values(this.projectService.getDevices() || {}).flatMap((device: any) => Object.values(device.tags || {})) as any[];
+        return (tags.find(tag => tag.id === value) || tags.find(tag => tag.name === value))?.id ?? null;
+    }
+
+    /** current value of the tag of the point (the item tag entry value until a live value arrives) */
+    private getCurrentValue(point: MarkerPoint): any {
+        const variable = point.tagId ? this.hmiService.variables?.[point.tagId] : null;
+        if (variable && variable.value !== undefined && variable.value !== null) {
+            return variable.value;
+        }
+        if (point.item) {
+            const entry = Object.values(point.item).map(v => RepeaterUtils.decodeJson(v)).find(v => RepeaterUtils.isTagEntry(v) && v.id === point.tagId);
+            return entry?.value ?? null;
+        }
+        return null;
+    }
+
+    /** remove the markers of a location (e.g. to show the reloaded data of a dynamic location) */
+    private removeLocationMarkers(locationId: string) {
+        (this.markersByLocation.get(locationId) || []).forEach(marker => this.map.removeLayer(marker));
+        this.markersByLocation.delete(locationId);
+        this.markerItemsMap.forEach((binding, tagId) => {
+            binding.nodes = binding.nodes.filter(node => node.owner !== locationId);
+            binding.actions = binding.actions.filter(action => action.owner !== locationId);
+            binding.domNodes = [];
+            if (!binding.nodes.length && !binding.actions.length) {
+                this.markerItemsMap.delete(tagId);
+            }
+        });
+    }
+
+    private clearDynamicTimers() {
+        this.dynamicTimers.forEach(timer => clearInterval(timer));
+        this.dynamicTimers = [];
     }
 
     initWatch() {
@@ -215,9 +343,9 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
         const entry = this.markerItemsMap.get(tagId);
         if (!entry) return;
 
-        if (entry.domNodes.length === 0) {
-            entry.domNodes = entry.nodeIds
-                .map(id => document.getElementById(id) as HTMLElement)
+        if (entry.domNodes.length !== entry.nodes.length) {
+            entry.domNodes = entry.nodes
+                .map(node => document.getElementById(node.id) as HTMLElement)
                 .filter(el => !!el);
         }
 
@@ -229,15 +357,15 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
         this.processActions(entry, newValue);
     }
 
-    private addMarkerItemId(variableId: string, nodeId: string) {
+    private addMarkerItemId(variableId: string, nodeId: string, owner: string) {
         if (!this.markerItemsMap.has(variableId)) {
-            this.markerItemsMap.set(variableId, { nodeIds: [], domNodes: [], actions: [] });
+            this.markerItemsMap.set(variableId, { nodes: [], domNodes: [], actions: [] });
         }
-        this.markerItemsMap.get(variableId)!.nodeIds.push(nodeId);
+        this.markerItemsMap.get(variableId)!.nodes.push({ id: nodeId, owner });
     }
 
-    private openMarkerTooltip(marker: L.Marker, location: MapsLocation) {
-        marker.bindTooltip(`${location.name}`, {
+    private openMarkerTooltip(marker: L.Marker, name: string) {
+        marker.bindTooltip(Utils.escapeHtml(`${name ?? ''}`), {
             permanent: false,
             direction: 'top',
             offset: [2, -35],
@@ -293,6 +421,7 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
         container.appendChild((componentRef.hostView as any).rootNodes[0]);
         container.style.width = '40px';
         var buttons = [];
+        const point: MarkerPoint = marker?.['mapPoint'];
         if (location.viewId) {
             buttons.push({
                 icon: 'chat_bubble_outline', action: () => {
@@ -313,7 +442,7 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
             buttons.push({
                 icon: 'open_in_new', action: () => {
                     this.map.closePopup(this.currentPopup);
-                    window.open(location.url, '_blank');
+                    window.open(this.getUrl(location, point), '_blank');
                 }
             });
         }
@@ -324,7 +453,7 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
             autoClose: false,
             closeOnClick: true,
             offset: L.point(0, 0),
-        }).setLatLng([location.latitude, location.longitude])
+        }).setLatLng(marker.getLatLng())
             .setContent(container)
             .openOn(this.map);
         this.currentPopup.on('remove', () => {
@@ -334,7 +463,8 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
 
     createCardPopup(location: MapsLocation, marker?: L.Marker) {
         setTimeout(() => {
-            let viewIdToBind = 'map' + location?.viewId;
+            const point: MarkerPoint = marker?.['mapPoint'];
+            let viewIdToBind = 'map' + location?.viewId + (point?.key !== undefined ? '_' + point.key : '');
             if (!location?.viewId || document.getElementById(viewIdToBind)) {
                 return;
             }
@@ -346,6 +476,10 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
             componentRef.instance.hmi = this.hmi;
             componentRef.instance.view = this.hmi.views.find(view => view.id === location.viewId);
             componentRef.instance.child = true;
+            if (point?.item) {
+                // FUXA-B: the item fields as placeholder values of the card ('@name', '@tags.Temperature' bound to the tag)
+                componentRef.instance.placeholderValues = RepeaterComponent.getPlaceholderValues(point.item);
+            }
             container.setAttribute('id', viewIdToBind);
             this.appRef.attachView(componentRef.hostView);
             container.appendChild((componentRef.hostView as any).rootNodes[0]);
@@ -356,7 +490,7 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
                 autoClose: false,
                 closeOnClick: false,
                 offset: L.point(0, -20)
-            }).setLatLng([location.latitude, location.longitude])
+            }).setLatLng(marker ? marker.getLatLng() : [location.latitude, location.longitude])
                 .setContent(container)
                 .openOn(this.map);
             this.currentPopup.on('remove', () => {
@@ -433,8 +567,18 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
         return definedCount >= 1;
     }
 
+    /** URL of the location, '{field}' replaced with the item field of a dynamic location */
+    private getUrl(location: MapsLocation, point?: MarkerPoint): string {
+        if (!point?.item || !location.url) {
+            return location.url;
+        }
+        return location.url.replace(/\{([^{}]+)\}/g, (match, field) =>
+            encodeURIComponent(RepeaterComponent.fieldText(RepeaterUtils.getField(point.item, field.trim()))));
+    }
+
     private clearMarker() {
         this.markerItemsMap.clear();
+        this.markersByLocation.clear();
         this.map.eachLayer(layer => {
             if (layer instanceof L.Marker) {
                 this.map.removeLayer(layer);
@@ -476,21 +620,38 @@ export class MapsViewComponent implements AfterViewInit, OnDestroy {
         }
     }
 
-    private collectActionTags(actions: GaugeAction[] | undefined, marker: L.Marker) {
+    /**
+     * bind the actions of the location to their tags. For a marker of a dynamic location an action without tag
+     * uses the tag of the item, an action with '@field' the tag of that item field
+     */
+    private collectActionTags(actions: GaugeAction[] | undefined, marker: L.Marker, owner: string, point: MarkerPoint) {
         if (!actions?.length) {
             return;
         }
         actions.forEach(action => {
-            if (action.variableId) {
-                if (!this.markerItemsMap.has(action.variableId)) {
-                    this.markerItemsMap.set(action.variableId, { nodeIds: [], domNodes: [], actions: [] });
+            let variableId = action.variableId;
+            if (point.item) {
+                if (!variableId) {
+                    variableId = point.tagId;
+                } else if (variableId.startsWith('@')) {
+                    variableId = this.resolveTagId(RepeaterUtils.getField(point.item, variableId.substring(1)));
                 }
-                const entry = this.markerItemsMap.get(action.variableId)!;
+            }
+            if (variableId) {
+                if (!this.markerItemsMap.has(variableId)) {
+                    this.markerItemsMap.set(variableId, { nodes: [], domNodes: [], actions: [] });
+                }
+                const entry = this.markerItemsMap.get(variableId)!;
                 entry.actions.push({
                     action,
                     marker,
-                    element: marker.getElement && marker.getElement()
+                    element: marker.getElement && marker.getElement(),
+                    owner
                 });
+                const current = this.hmiService.variables?.[variableId]?.value;
+                if (current !== undefined && current !== null && !this.editMode) {
+                    this.processActions({ nodes: [], domNodes: [], actions: [entry.actions[entry.actions.length - 1]] }, current);
+                }
             }
         });
     }

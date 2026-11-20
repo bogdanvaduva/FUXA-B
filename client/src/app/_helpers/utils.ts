@@ -210,6 +210,11 @@ export class Utils {
         return svgContent?.replace(/<(div|span|p|button|label|textarea)(\s[^<>]*?)?\s*\/>/gi, (m, tag, attrs) => `<${tag}${attrs || ''}></${tag}>`) ?? svgContent;
     }
 
+    /** text safe to insert in HTML (e.g. names from external data in a map marker) */
+    static escapeHtml(value: any): string {
+        return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
     static getShortGUID(prefix: string = '', splitter: string = '-'): string {
         var uuid = '', i, random;
         for (i = 0; i < 12; i++) {
