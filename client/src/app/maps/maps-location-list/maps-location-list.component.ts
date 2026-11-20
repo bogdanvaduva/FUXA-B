@@ -4,6 +4,7 @@ import { MatDialog as MatDialog} from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../gui-helpers/confirm-dialog/confirm-dialog.component';
 import { TranslateService } from '@ngx-translate/core';
 import { MapsLocation } from '../../_models/maps';
+import { ViewType } from '../../_models/hmi';
 import { ProjectService } from '../../_services/project.service';
 import { Subject, takeUntil } from 'rxjs';
 import { MatSort } from '@angular/material/sort';
@@ -16,11 +17,12 @@ import { MapsLocationPropertyComponent } from '../maps-location-property/maps-lo
 })
 export class MapsLocationListComponent implements OnInit, AfterViewInit, OnDestroy {
 
-    displayedColumns = ['select', 'name', 'view', 'description', 'remove'];
+    displayedColumns = ['select', 'name', 'maps', 'view', 'description', 'remove'];
     dataSource = new MatTableDataSource([]);
 
 	locations: MapsLocation[];
     viewNameMap: { [key: string]: string } = {};
+    locationMaps: { [locationId: string]: string[] } = {};
     private destroy$ = new Subject<void>();
 
     @ViewChild(MatTable, {static: true}) table: MatTable<any>;
@@ -77,7 +79,21 @@ export class MapsLocationListComponent implements OnInit, AfterViewInit, OnDestr
         return this.viewNameMap[viewId];
     }
 
+    /** FUXA-B: names of the Maps views showing the location */
+    getMapsNames(locationId: string): string {
+        return (this.locationMaps[locationId] || []).join(', ');
+    }
+
     private loadLocations() {
+        // a Maps view keeps the ids of its locations in svgcontent
+        this.locationMaps = {};
+        this.projectService.getViews().filter(view => view.type === ViewType.maps).forEach(view => {
+            let ids: string[] = [];
+            try {
+                ids = view.svgcontent ? JSON.parse(view.svgcontent) : [];
+            } catch (err) { }
+            (Array.isArray(ids) ? ids : []).forEach(id => (this.locationMaps[id] ??= []).push(view.name));
+        });
         this.viewNameMap = this.projectService.getViews().reduce((acc, obj) => {
             acc[obj.id] = obj.name;
             return acc;
