@@ -363,7 +363,6 @@ A location can be in several maps; editing it changes it in all of them.
 
 ### Dynamic locations (Repeater data)
 
-
 A dynamic location shows one marker for every item of a [Repeater data](#1-create-the-repeater-data) source.
 Location settings → **Source** → *Dynamic*:
 
