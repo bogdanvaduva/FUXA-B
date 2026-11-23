@@ -19,6 +19,8 @@
 ### Fixed
 - `GET /api/settings` returned the PostgreSQL project storage password; it is removed (only `storage.type` for
   non-admin users). The OIDC client secret is never returned.
+- The settings written to the log on start (`daqstorage: settings - ...`) contained the JWT secret, the SMTP,
+  DAQ and PostgreSQL passwords and the OIDC client secret; they are removed (one sanitizer for the API and the log).
 
 ### Changed
 - The project storage is a pluggable backend (`server/runtime/project/storage`, selected like the DAQ

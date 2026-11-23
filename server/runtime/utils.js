@@ -139,6 +139,41 @@ var utils = module.exports = {
         return endTime - startTime;
     },
 
+    /**
+     * Copy of the settings without secrets (JWT secret, TLS material, passwords, credentials, client secrets)
+     * used for /api/settings and the logs
+     */
+    getSanitizedSettings: function (settings) {
+        const tosend = JSON.parse(JSON.stringify(settings || {}));
+        delete tosend.secretCode;
+        // TLS options may contain private key and certificate material.
+        delete tosend.https;
+        if (tosend.smtp) {
+            delete tosend.smtp.password;
+        }
+        if (tosend.daqstore?.credentials) {
+            delete tosend.daqstore.credentials;
+        }
+        if (tosend.storage?.postgres) {
+            delete tosend.storage.postgres.password;
+        }
+        if (tosend.oidc) {
+            delete tosend.oidc.clientSecret;
+        }
+        return tosend;
+    },
+
+    /**
+     * Copy of the settings for the logs: getSanitizedSettings without connection strings that can contain passwords
+     */
+    getLoggableSettings: function (settings) {
+        const tolog = module.exports.getSanitizedSettings(settings);
+        if (tolog.daqstore) {
+            delete tolog.daqstore.configurationString;
+        }
+        return tolog;
+    },
+
     isEmptyObject: function (value) {
         return !value || (Object.keys(value).length === 0 && value.constructor === Object);
     },

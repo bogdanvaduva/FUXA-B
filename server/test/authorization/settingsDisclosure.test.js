@@ -92,4 +92,18 @@ describe('Security - settings disclosure', () => {
             configurationString: 'http::addr=questdb.internal:9000;username=daq-user;password=daq-secret;'
         });
     });
+
+    it('does not write secrets to the log when the DAQ storage starts', () => {
+        const daqstorage = require('../../runtime/storage/daqstorage');
+        const settings = Object.assign(makeSettings(), { oidc: { enabled: true, clientId: 'fuxa', clientSecret: 'oidc-secret' } });
+        const lines = [];
+        const logger = { info: (msg) => lines.push(msg), warn: () => {}, error: () => {}, debug: () => {} };
+        daqstorage.init(settings, logger, {});
+        const text = lines.join(' | ');
+        expect(text).to.contain('daqstorage: settings');
+        for (const secret of ['jwt-secret', 'tls-private-key', 'smtp-secret', 'daq-secret', 'pg-secret', 'oidc-secret']) {
+            expect(text, secret).to.not.contain(secret);
+        }
+        expect(settings.oidc.clientSecret).to.equal('oidc-secret');
+    });
 });

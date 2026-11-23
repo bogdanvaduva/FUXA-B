@@ -29,7 +29,7 @@ function init(_settings, _log, _runtime) {
     logger = _log;
     runtime = _runtime;
     logger.info("daqstorage: init successful!", true);
-    logger.info("daqstorage: settings - " + JSON.stringify(settings), true);
+    logger.info("daqstorage: settings - " + JSON.stringify(utils.getLoggableSettings(settings)), true);
     currentStorateDB = CurrentStorage.create(_settings, _log);
 }
 

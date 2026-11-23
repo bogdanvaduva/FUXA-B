@@ -265,23 +265,7 @@ function getPublicSettings(settings) {
 }
 
 function getSanitizedSettings(settings) {
-    const tosend = JSON.parse(JSON.stringify(settings));
-    delete tosend.secretCode;
-    // TLS options may contain private key and certificate material.
-    delete tosend.https;
-    if (tosend.smtp) {
-        delete tosend.smtp.password;
-    }
-    if (tosend.daqstore?.credentials) {
-        delete tosend.daqstore.credentials;
-    }
-    if (tosend.storage?.postgres) {
-        delete tosend.storage.postgres.password;
-    }
-    if (tosend.oidc) {
-        delete tosend.oidc.clientSecret;
-    }
-    return tosend;
+    return utils.getSanitizedSettings(settings);
 }
 
 function mergeUserSettings(settings) {
