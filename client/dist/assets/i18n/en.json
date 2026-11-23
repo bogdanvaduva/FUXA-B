@@ -122,6 +122,7 @@
     "dlg.linkproperty-title": "Make Hyperlink",
     "dlg.linkproperty-url": "Hyperlink URL",
     "dlg.login-title": "Sign in...",
+    "dlg.login-sso": "Sign in with {{value}}",
     "dlg.logout-btn": "Sign out",
     "dlg.ok": "OK",
     "dlg.cancel": "CANCEL",
