@@ -6,9 +6,11 @@
 'use strict';
 
 const SqliteStorage = require('./sqlite');
+const PostgresStorage = require('./postgres');
 
 const StorageTypeEnum = {
     sqlite: 'sqlite',
+    postgres: 'postgres',
 };
 
 function getStorageType(settings) {
@@ -20,6 +22,8 @@ function getStorage(settings) {
     switch (type) {
         case StorageTypeEnum.sqlite:
             return SqliteStorage;
+        case StorageTypeEnum.postgres:
+            return PostgresStorage;
         default:
             throw new Error(`Unknown project storage type '${type}' (settings.storage.type)`);
     }

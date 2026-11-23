@@ -42,6 +42,26 @@ module.exports = {
     // Default: '_db'
     dbDir: '_db',
 
+    // Project storage (views, devices, scripts, alarms, ...)
+    // type: 'sqlite' (file _appdata/project.fuxap.db) | 'postgres' (database in storage.postgres)
+    // The users, alarm history and DAQ databases are not moved by this setting.
+    // To copy an existing project to PostgreSQL: npm run migrate-storage (see docs/storage-migration.md)
+    // Default: 'sqlite'
+    storage: {
+        type: 'sqlite',
+        postgres: {
+            host: 'localhost',
+            port: 5432,
+            database: 'fuxa',
+            user: 'fuxa',
+            password: '',
+            ssl: false,             // true or the node-postgres ssl options ({ rejectUnauthorized: false, ca: ... })
+            maxPoolSize: 10,
+            // schema: 'fuxa',      // default 'public', created if not exist
+            // connectionTimeout: 10000
+        }
+    },
+
     // DAQ Enabled
     // Default: true
     daqEnabled: true,
