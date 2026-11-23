@@ -9,6 +9,16 @@
   See [docs/storage-migration.md](docs/storage-migration.md).
 - `npm run migrate-storage -- --from sqlite --to postgres`: copies an existing SQLite project to PostgreSQL
   in one transaction (read-only source, refuses a non-empty target without `--force`, `--verify`).
+- Single sign-on with OpenID Connect (`settings.oidc`, disabled by default): "Sign in with SSO" in the login
+  dialog, authorization code flow with PKCE, state and nonce, ID token signature checked with the IdP keys.
+  The identity (`sub`) is mapped to a FUXA user (new `oidc_sub` column in `users.fuxap.db`, added only when
+  OIDC is enabled), FUXA issues its own token through the refresh cookie flow. Requires `secureEnabled` and
+  `enableRefreshCookieAuth`; FUXA does not start with an invalid OIDC configuration.
+  See [docs/oidc-security.md](docs/oidc-security.md).
+
+### Fixed
+- `GET /api/settings` returned the PostgreSQL project storage password; it is removed (only `storage.type` for
+  non-admin users). The OIDC client secret is never returned.
 
 ### Changed
 - The project storage is a pluggable backend (`server/runtime/project/storage`, selected like the DAQ

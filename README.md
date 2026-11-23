@@ -415,6 +415,32 @@ storage: {
 To copy the existing project first: `cd server && npm run migrate-storage -- --from sqlite --to postgres --verify`
 (see [docs/storage-migration.md](docs/storage-migration.md)). The users, alarm history and DAQ databases are not moved.
 
+## Single sign-on (OpenID Connect)
+
+Sign in with an external identity provider (Keycloak, Microsoft Entra ID, Okta, Auth0, ...): the login dialog
+shows **Sign in with &lt;displayName&gt;**. FUXA validates the IdP response (PKCE, state, nonce, ID token signature),
+maps the identity to a FUXA user (created on the first login with `defaultRole`, or from the IdP groups with
+`groupsMapping`) and issues its own token: permissions work as for local users, and the local login stays available.
+
+In `server/_appdata/settings.js` (requires `secureEnabled: true` and `enableRefreshCookieAuth: true`, restart the server):
+
+```js
+oidc: {
+    enabled: true,
+    displayName: 'Company SSO',
+    issuer: 'https://idp.example.com/realms/fuxa',
+    clientId: 'fuxa',
+    clientSecret: '<client secret>',
+    redirectUri: 'https://fuxa.example.com/api/auth/oidc/callback',
+    groupsClaim: 'groups',
+    groupsMapping: { 'fuxa-engineers': 'engineer', 'fuxa-admins': 'admin' },
+    defaultRole: 'operator'
+},
+```
+
+FUXA does not start if `oidc.enabled` is true and the configuration is not valid. Change the default `admin` password
+when the local login stays enabled. See [docs/oidc-security.md](docs/oidc-security.md).
+
 ## Proxies
 
 To use an external HTTP service from the views (Repeater URL, iframe, scripts) without CORS problems, add a

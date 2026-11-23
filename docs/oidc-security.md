@@ -110,13 +110,20 @@ versions ignore the column. To remove it: `DROP INDEX idx_users_oidc_sub; ALTER 
 | **state** and **nonce** | random per login, kept on the server, single use, expire after 10 minutes, bound to the browser with the `fuxa_oidc_state` HttpOnly SameSite=Lax cookie; a callback without the same state in the query, the cookie and the server is refused |
 | **ID token validation** | signature verified with the IdP JWKS (`enableNonRepudiationChecks`), `iss`, `aud`, `azp`, `exp`, `iat`, `nonce` checked by `openid-client`, `clockTolerance` |
 | **No `Host` / `Referer` trust** | the callback URL is built from `oidc.redirectUri`, the redirect after login from `BASE_PATH` + `postLoginRedirect` (a validated relative path); request headers are never used to build URLs or to authenticate |
-| **Client secret** | only in the server settings; removed from `/api/settings`, never logged |
+| **Client secret** | only in the server settings; removed from `/api/settings`; the OIDC code never logs it (see the known issue below) |
 | **`sub` is the identity** | users are looked up by `sub`; the username is only used to name a new user |
 | **No silent account takeover** | an IdP username equal to an existing local user (e.g. `admin`) is refused unless `linkExistingUsers` |
 | **Rate limit** | `/api/auth/oidc/login` and `/callback` use the `authRateLimitWindowMs` / `authRateLimitMax` limit of the sign-in |
 | **TLS** | issuer and redirect URI must be `https`; `http` is accepted only for `localhost` (development) |
 | **Audit log** | `oidc-login: success sub=... username=...` and `oidc-login: failed reason=... sub=...` in the FUXA log, plus the `access:login` event; no token, code or claim set is logged |
 | **Fail closed** | FUXA does not start if `oidc.enabled` is `true` and `secureEnabled`, `enableRefreshCookieAuth` or a required OIDC setting is missing or invalid. If `secureEnabled` or `enableRefreshCookieAuth` are disabled later from the editor, the OIDC routes stop working. If the IdP cannot be reached the SSO login fails, the local login keeps working. |
+
+### Known issue: settings in the DAQ log line
+
+`server/runtime/storage/daqstorage.js` writes the whole settings object to the FUXA log on start
+(`daqstorage: settings - {...}`), including `secretCode`, the SMTP password and, with OIDC,
+`oidc.clientSecret`. This line predates OIDC and is outside the scope of this change; until it is
+fixed, protect the `_logs` folder like the settings file.
 
 ### Local administrator
 

@@ -33,3 +33,20 @@ storage: {
 ```
 
 To copy an existing project to PostgreSQL see [Project storage migration](storage-migration.md).
+
+### Single sign-on (OpenID Connect)
+Sign in with an external identity provider (Keycloak, Entra ID, Okta, ...). Requires `secureEnabled: true` and `enableRefreshCookieAuth: true`.
+
+```
+oidc: {
+    enabled: true,
+    displayName: 'Company SSO',
+    issuer: 'https://idp.example.com/realms/fuxa',
+    clientId: 'fuxa',
+    clientSecret: '<client secret>',
+    redirectUri: 'https://fuxa.example.com/api/auth/oidc/callback',
+    defaultRole: 'operator',
+},
+```
+
+All the options, the user mapping and the security notes: [OpenID Connect single sign-on](oidc-security.md).

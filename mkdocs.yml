@@ -47,6 +47,7 @@ nav:
       - WebSockets: HowTo-WebSockets.md
   - Settings:
       - Settings: Settings.md
+      - Single sign-on (OIDC): oidc-security.md
       - Project storage migration: storage-migration.md
       - Project storage schema: storage-schema.md
   - Tips and Tricks: Tips-and-Tricks.md
