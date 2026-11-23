@@ -39,6 +39,12 @@ function _all(sql, params = []) {
     });
 }
 
+const OIDC_INDEX_SQL = 'CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oidc_sub ON users(oidc_sub) WHERE oidc_sub IS NOT NULL';
+
+function _isOidcEnabled() {
+    return !!(settings && settings.oidc && settings.oidc.enabled === true);
+}
+
 /**
  * Init and bind the database resource
  * @param {*} _settings
@@ -75,9 +81,18 @@ function _bind() {
             } else {
                 const columnsToAdd = [{ name: 'fullname', type: 'TEXT' },
                 { name: 'info', type: 'TEXT' }];
+                if (_isOidcEnabled()) {
+                    // OpenID Connect identity (subject) of the user, additive
+                    columnsToAdd.push({ name: 'oidc_sub', type: 'TEXT' });
+                }
                 _checkUpdate(columnsToAdd).then(() => {
+                    return _isOidcEnabled() ? _run(OIDC_INDEX_SQL) : null;
+                }).then(() => {
                     resolve(dbfileExist);
-                }).catch(() => {
+                }).catch((err) => {
+                    if (err) {
+                        logger.error(`usrstorage._checkUpdate error! ${err}`);
+                    }
                     resolve(dbfileExist);
                 });
             }
@@ -280,6 +295,56 @@ async function removeRoles(roles) {
 }
 
 /**
+ * Return the user linked to the OpenID Connect subject (or undefined)
+ * @param {*} sub
+ */
+function getUserByOidcSub(sub) {
+    return _all("SELECT username, fullname, password, groups, info FROM users WHERE oidc_sub = ?", [sub]).then(rows => rows[0]);
+}
+
+/**
+ * Return the OpenID Connect subject linked to the user (or null)
+ * @param {*} username
+ */
+function getOidcSub(username) {
+    return _all("SELECT oidc_sub FROM users WHERE username = ?", [username]).then(rows => rows.length ? rows[0].oidc_sub : null);
+}
+
+/**
+ * Link the OpenID Connect subject to an existing user without a link
+ * Reject if the user does not exist or is already linked
+ * @param {*} username
+ * @param {*} sub
+ */
+function linkOidcSub(username, sub) {
+    return _run("UPDATE users SET oidc_sub = ? WHERE username = ? AND oidc_sub IS NULL", [sub, username]).then(result => {
+        if (!result.changes) {
+            throw new Error(`user '${username}' not found or already linked`);
+        }
+    });
+}
+
+/**
+ * Create a user linked to the OpenID Connect subject, without password
+ * Reject if the username or the subject already exist (never replace a user)
+ * @param {*} user { username, fullname, groups, info, oidcSub }
+ */
+function createOidcUser(user) {
+    return _run("INSERT INTO users (username, fullname, password, groups, info, oidc_sub) VALUES(?, ?, NULL, ?, ?, ?)",
+        [user.username, user.fullname, user.groups, user.info, user.oidcSub]);
+}
+
+/**
+ * Update groups and info of a user linked to the OpenID Connect subject
+ * @param {*} sub
+ * @param {*} groups
+ * @param {*} info
+ */
+function setOidcUserPermissions(sub, groups, info) {
+    return _run("UPDATE users SET groups = ?, info = ? WHERE oidc_sub = ?", [groups, info, sub]);
+}
+
+/**
  * Close the database
  */
 function close() {
@@ -297,5 +362,10 @@ module.exports = {
     removeUser: removeUser,
     getRoles: getRoles,
     setRoles: setRoles,
-    removeRoles: removeRoles
+    removeRoles: removeRoles,
+    getUserByOidcSub: getUserByOidcSub,
+    getOidcSub: getOidcSub,
+    linkOidcSub: linkOidcSub,
+    createOidcUser: createOidcUser,
+    setOidcUserPermissions: setOidcUserPermissions
 };

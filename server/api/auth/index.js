@@ -132,6 +132,18 @@ module.exports = {
             refreshTokenExpiresIn = _refreshTokenExpires;
         }
     },
+    /**
+     * Start the session of a user authenticated by another login method (OpenID Connect):
+     * the same refresh cookie as the sign-in, the client gets the FUXA token with /api/refresh
+     * Return false if the refresh cookie flow is disabled
+     */
+    setLoginSession: function (res, user) {
+        if (!enableRefreshCookieAuth) {
+            return false;
+        }
+        setRefreshCookie(res, buildRefreshToken(user));
+        return true;
+    },
     app: function () {
         var authApp = express();
         authApp.use(function (req, res, next) {

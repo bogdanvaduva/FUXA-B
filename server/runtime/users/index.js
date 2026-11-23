@@ -197,6 +197,54 @@ function getUserCache(username) {
     return usersMap.get(username);
 }
 
+/**
+ * OpenID Connect: user linked to the subject (or undefined)
+ */
+function getUserByOidcSub(sub) {
+    return usrstorage.getUserByOidcSub(sub);
+}
+
+/**
+ * OpenID Connect: subject linked to the user (or null)
+ */
+function getOidcSub(username) {
+    return usrstorage.getOidcSub(username);
+}
+
+/**
+ * OpenID Connect: link the subject to an existing user
+ */
+function linkOidcSub(username, sub) {
+    return usrstorage.linkOidcSub(username, sub);
+}
+
+/**
+ * OpenID Connect: create the user (without password) and add it to the permission cache
+ * @param {*} user { username, fullname, groups, info, oidcSub }
+ */
+function createOidcUser(user) {
+    return usrstorage.createOidcUser(user).then(() => {
+        usersMap.set(user.username, { info: _parseInfo(user.info), groups: user.groups });
+    });
+}
+
+/**
+ * OpenID Connect: update groups and info of the linked user and the permission cache
+ */
+function setOidcUserPermissions(username, sub, groups, info) {
+    return usrstorage.setOidcUserPermissions(sub, groups, info).then(() => {
+        usersMap.set(username, { info: _parseInfo(info), groups: groups });
+    });
+}
+
+function _parseInfo(info) {
+    try {
+        return JSON.parse(info);
+    } catch (e) {
+        return null;
+    }
+}
+
 function _loadUsers() {
     getUsers().then(users => {
         for (var id = 0; id < users.length; id++) {
@@ -221,5 +269,10 @@ module.exports = {
     setRoles: setRoles,
     removeRoles: removeRoles,
     findOne: findOne,
-    getUserCache: getUserCache
+    getUserCache: getUserCache,
+    getUserByOidcSub: getUserByOidcSub,
+    getOidcSub: getOidcSub,
+    linkOidcSub: linkOidcSub,
+    createOidcUser: createOidcUser,
+    setOidcUserPermissions: setOidcUserPermissions
 };

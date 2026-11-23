@@ -11,6 +11,7 @@ const rateLimit = require("express-rate-limit");
 
 var prjApi = require('./projects');
 var authApi = require('./auth');
+var oidcApi = require('./auth/oidc');
 var usersApi = require('./users');
 var apiKeysApi = require('./apikeys');
 var alarmsApi = require('./alarms');
@@ -76,6 +77,8 @@ function init(_server, _runtime) {
             apiApp.use(alarmsApi.app());
             authApi.init(runtime, authJwt.secretCode, authJwt.tokenExpiresIn, runtime.settings.enableRefreshCookieAuth, runtime.settings.refreshTokenExpiresIn);
             apiApp.use(authApi.app());
+            oidcApi.init(runtime, authApi);
+            apiApp.use(oidcApi.app());
             pluginsApi.init(runtime, authMiddleware, verifyGroups);
             apiApp.use(pluginsApi.app());
             diagnoseApi.init(runtime, authMiddleware, verifyGroups);
@@ -254,6 +257,10 @@ function getPublicSettings(settings) {
         // project storage connection: type only
         tosend.storage = { type: tosend.storage.type };
     }
+    if (tosend.oidc) {
+        // the login dialog uses /api/auth/oidc/metadata
+        tosend.oidc = { enabled: tosend.oidc.enabled === true };
+    }
     return tosend;
 }
 
@@ -270,6 +277,9 @@ function getSanitizedSettings(settings) {
     }
     if (tosend.storage?.postgres) {
         delete tosend.storage.postgres.password;
+    }
+    if (tosend.oidc) {
+        delete tosend.oidc.clientSecret;
     }
     return tosend;
 }

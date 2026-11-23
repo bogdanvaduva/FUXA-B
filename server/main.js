@@ -226,6 +226,14 @@ if (!fs.existsSync(settings.logDir)) {
 }
 
 logger.init(settings);
+
+// OpenID Connect: fail closed, do not start with an enabled but invalid configuration
+const oidcErrors = require('./api/auth/oidc/config').validate(settings);
+if (oidcErrors.length) {
+    oidcErrors.forEach(err => logger.error('oidc: ' + err));
+    logger.error('OpenID Connect (settings.oidc) is enabled but not valid: FUXA does not start. Fix the settings or set oidc.enabled: false.');
+    process.exit(1);
+}
 const version = FUXA.version();
 if (version.indexOf('beta') > 0) {
     logger.warn('FUXA-B V.' + version);
