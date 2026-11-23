@@ -216,7 +216,7 @@ To read an external service without CORS problems use a [proxy](#proxies).
 
 | Field | Meaning |
 |---|---|
-| DAQ | the storage the query runs on: the DAQ SQLite databases (one per device), PostgreSQL if it is the DAQ storage, or **FUXA App DB** |
+| DAQ | the storage the query runs on: the DAQ SQLite databases (one per device), PostgreSQL if it is the DAQ storage, **FUXA App DB**, **FUXA Project DB** or **FUXA Project DB (PostgreSQL)** |
 | SQL | a read-only query, every row is an item and every column a field |
 
 The SQL runs on the server **from the saved project**: after editing a line, save the project before testing
@@ -279,6 +279,29 @@ Only whole tag entries (objects with `id` and `value`) are live in the template:
 Text values of App DB rows that look like JSON (`{...}` or `[...]`, e.g. `tagList` or your own
 `json_object(...)` columns) are returned as objects. Note: in `LIKE`, `_` is a wildcard
 (use `LIKE 'd\_%' ESCAPE '\'` for a literal underscore).
+
+#### FUXA Project DB
+
+The **FUXA Project DB** entry queries the project of the storage selected in **Setup → Settings → Project storage**
+(SQLite or PostgreSQL), with SQLite syntax. Its tables are the project storage tables: `general`, `views`,
+`devices`, `texts`, `alarms`, `recipes`, `notifications`, `scripts`, `reports`, `locations`, `arMarkers`, each with
+the columns `name` and `value` (the JSON of the item, returned as object).
+
+The content is what the viewer of the Repeater gets from the project: views filtered by permission, and never the
+credentials (device passwords and user names, tokens, server script code, notification and report receivers), also
+for admins. `devicesSecurity` is not available.
+
+```sql
+-- one item per view
+SELECT name AS id, json_extract(value, '$.name') AS title FROM views ORDER BY title
+
+-- one item per alarm with its tag
+SELECT name, json_extract(value, '$.property.variableId') AS tag FROM alarms
+```
+
+With the PostgreSQL project storage, **FUXA Project DB (PostgreSQL)** queries the other tables of that database
+(your own data, PostgreSQL syntax) with a separate read-only login: set `storage.postgres.reader` in the settings,
+see [Repeater queries on the project database](docs/storage-migration.md#repeater-queries-on-the-project-database).
 
 ### 2. Create the template view
 

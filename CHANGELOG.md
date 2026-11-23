@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.7-3209 - 2026-11-23
+
+### Added
+- Repeater **FUXA Project DB**: a DB line can query the project of the selected project storage (SQLite or
+  PostgreSQL) as SQL tables (`views`, `devices`, `alarms`, ..., columns `name`, `value`). The rows are the project as
+  the viewer gets it (views filtered by permission) without credentials, with the same sanitizer as `/api/project`,
+  also for admins; `devicesSecurity` is never available. Read-only, in a temporary in-memory database.
+- Repeater **FUXA Project DB (PostgreSQL)**: with the PostgreSQL project storage, read-only queries on the other
+  tables of that database with a separate login (`storage.postgres.reader`). Refused when that login is superuser
+  or can read the FUXA project tables; one statement per query, read-only transaction, statement timeout.
+
+### Fixed
+- The Repeater DB lines could query only the DAQ storages and the local SQLite FUXA App DB, not the project
+  database selected in Setup → Settings → Project storage.
+
 ## 1.3.7-3206 - 2026-11-23
 
 Merged with the upstream FUXA **1.3.6** release (security fixes: device property requests and device

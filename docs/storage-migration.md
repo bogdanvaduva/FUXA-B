@@ -117,6 +117,41 @@ From the editor (**Project storage** → **SQLite** → **Switch and copy projec
 `storage.type` back to `'sqlite'` and restarting: the project, with the changes made on PostgreSQL,
 is copied back to `project.fuxap.db` (the previous file is saved as a backup).
 
+## Repeater queries on the project database
+
+A Repeater **DB** line can query the project database selected here:
+
+- **FUXA Project DB** (any storage): the project tables (`general`, `views`, `devices`, `texts`, `alarms`,
+  `recipes`, `notifications`, `scripts`, `reports`, `locations`, `arMarkers`, columns `name` and `value` with the
+  JSON) read from the selected storage, SQLite syntax (`json_extract`, `json_each`). They hold the project as the
+  viewer of the Repeater gets it: views filtered by permission, without credentials (device passwords and user
+  names, tokens, server script code, notification and report receivers), also for admins. `devicesSecurity` is
+  not available.
+- **FUXA Project DB (PostgreSQL)**: with the PostgreSQL storage, the other tables of the same database (your
+  own data), PostgreSQL syntax. It is listed only when `storage.postgres.reader` is set: a separate login, used
+  only for these queries, in a read-only transaction (one statement, `statementTimeout` default 30 s).
+
+Create the reader login with access only to your tables:
+
+```sql
+CREATE ROLE fuxa_reader LOGIN PASSWORD '...';
+GRANT USAGE ON SCHEMA plant TO fuxa_reader;
+GRANT SELECT ON plant.items, plant.sites TO fuxa_reader;
+```
+
+```js
+storage: {
+    type: 'postgres',
+    postgres: { /* ... */, reader: { user: 'fuxa_reader', password: '...' } }
+},
+```
+
+FUXA refuses to run the query when the reader login, or a role it is member of, is superuser, is one of
+`pg_read_all_data`, `pg_read_server_files`, `pg_write_server_files`, `pg_execute_server_program`, or can read
+a table with the name of a project table (in any schema, also the `prjstorage_backup_*` copies). Do not grant it
+views or functions that read the project tables: they run with the privileges of their owner. The reader password
+is never returned by the API nor written to the log.
+
 ## Tables
 
 See [Project storage schema](storage-schema.md).
