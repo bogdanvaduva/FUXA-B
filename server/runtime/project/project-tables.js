@@ -1,14 +1,22 @@
 /**
- *  Project data as the rows of the project storage tables (same layout as setProject saves them),
- *  used by the Repeater 'FUXA Project DB' to query the project with SQL
- *  { <table>: [{ name, value: <JSON text> }] }, devicesSecurity is never included
+ *  Project data as SQL tables, used by the Repeater 'FUXA Project DB' to query the project with SQL.
+ *  The tables are the ones of the project storage (same rows as setProject saves them) plus 'tags'
+ *  (the tags of all devices). Every row has the columns:
+ *   - id: the key of the row in the project storage (device id, view id, alarm name, 'layout', ...)
+ *   - name: the name of the item (or the key when the item has none)
+ *   - value: the whole item as JSON text
+ *   - one column for each top level property of the items (type, enabled, property, tags, ...),
+ *     objects and arrays as JSON text, booleans as 1/0
+ *  devicesSecurity is never included
  */
 
 'use strict';
 
 const { TableType } = require('./storage/tables');
 
-// project key -> table, the row name is the value of the item key
+const TAGS_TABLE = 'tags';
+
+// project key -> table, the row id is the value of the item key
 const LIST_TABLES = {
     texts: { table: TableType.TEXTS, key: 'name' },
     alarms: { table: TableType.ALARMS, key: 'name' },
@@ -20,16 +28,40 @@ const LIST_TABLES = {
 };
 
 /**
- * The tables exposed for queries (all the project tables except devicesSecurity)
+ * The tables exposed for queries (all the project tables except devicesSecurity, plus tags)
  */
-const QUERY_TABLES = Object.values(TableType).filter(table => table !== TableType.DEVICESSECURITY);
+const QUERY_TABLES = Object.values(TableType).filter(table => table !== TableType.DEVICESSECURITY).concat(TAGS_TABLE);
 
-function _row(name, value) {
-    return { name: (name === undefined || name === null) ? null : String(name), value: (value === undefined) ? null : JSON.stringify(value) };
+const RESERVED = ['id', 'name', 'value'];
+
+function _row(id, item, extra) {
+    const row = {
+        id: (id === undefined || id === null) ? null : String(id),
+        name: (item && typeof item === 'object' && !Array.isArray(item) && typeof item.name === 'string') ? item.name : ((id === undefined || id === null) ? null : String(id)),
+        value: (item === undefined) ? null : item,
+    };
+    Object.assign(row, extra || {});
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+        Object.keys(item).forEach(key => {
+            if (!RESERVED.includes(key) && !(key in row)) {
+                row[key] = item[key];
+            }
+        });
+    }
+    return row;
+}
+
+function _addDevice(tables, id, device, withTags) {
+    tables[TableType.DEVICES].push(_row(id, device));
+    Object.values((withTags !== false && device.tags) || {}).forEach(tag => {
+        if (tag && typeof tag === 'object') {
+            tables[TAGS_TABLE].push(_row(tag.id, tag, { deviceId: device.id ?? id, deviceName: device.name ?? null }));
+        }
+    });
 }
 
 /**
- * Convert the project to table rows
+ * Convert the project to table rows { <table>: [{ id, name, value, <item properties> }] }
  * @param {*} project the project data (already filtered/sanitized for the requester)
  */
 function toTables(project) {
@@ -41,9 +73,10 @@ function toTables(project) {
     Object.keys(project).forEach(key => {
         const value = project[key];
         if (key === 'devices') {
-            Object.values(value || {}).forEach(device => device && tables[TableType.DEVICES].push(_row(device.id, device)));
+            Object.values(value || {}).forEach(device => device && _addDevice(tables, device.id, device));
         } else if (key === 'server') {
-            tables[TableType.DEVICES].push(_row('server', value));
+            // the server is also in devices (same id): its tags only once
+            value && _addDevice(tables, 'server', value, !(project.devices && project.devices[value.id]));
         } else if (key === 'hmi') {
             Object.keys(value || {}).forEach(hk => {
                 if (hk === 'views') {

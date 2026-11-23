@@ -289,6 +289,40 @@ function _parseJsonValues(rows) {
  * Read-only query on the given tables { <table>: [{ name, value }] } loaded in a temporary in-memory
  * SQLite database (columns name, value), no ATTACH: nothing else is readable
  */
+/**
+ * The columns of a table for queryTables: id, name, value and the other row keys (valid SQL names, a key that
+ * differs only in case from a previous one is skipped as SQLite column names are case insensitive)
+ */
+function _tableColumns(rows) {
+    const columns = ['id', 'name', 'value'];
+    const seen = new Set(columns);
+    rows.forEach(row => Object.keys(row || {}).forEach(key => {
+        if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) && !seen.has(key.toLowerCase())) {
+            seen.add(key.toLowerCase());
+            columns.push(key);
+        }
+    }));
+    return columns;
+}
+
+function _sqlValue(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    if (typeof value === 'boolean') {
+        return value ? 1 : 0;
+    }
+    if (typeof value === 'object') {
+        return JSON.stringify(value);
+    }
+    return value;
+}
+
+/**
+ * Run a read-only SQL query on tables in a temporary in-memory SQLite database
+ * @param {*} tables { <table>: [{ <column>: <value> }] }, objects are stored as JSON text
+ * @param {*} sql the query
+ */
 function queryTables(tables, sql) {
     const sqlite3 = require('sqlite3').verbose();
     return new Promise((resolve, reject) => {
@@ -307,9 +341,11 @@ function queryTables(tables, sql) {
                     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) {
                         return;
                     }
-                    db.run(`CREATE TABLE ${table} (name TEXT, value TEXT)`);
-                    const insert = db.prepare(`INSERT INTO ${table} (name, value) VALUES (?, ?)`);
-                    (tables[table] || []).forEach(row => insert.run(row.name, row.value));
+                    const rows = tables[table] || [];
+                    const columns = _tableColumns(rows);
+                    db.run(`CREATE TABLE ${table} (${columns.map(c => `"${c}"`).join(', ')})`);
+                    const insert = db.prepare(`INSERT INTO ${table} (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`);
+                    rows.forEach(row => insert.run(columns.map(c => _sqlValue(row[c]))));
                     insert.finalize();
                 });
                 db.run('COMMIT', (err) => {

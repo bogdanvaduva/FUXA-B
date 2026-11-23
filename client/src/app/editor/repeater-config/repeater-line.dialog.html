@@ -27,6 +27,24 @@
                 <span>{{'repeater.config-line-sql' | translate}}</span>
                 <textarea [(ngModel)]="data.sql" rows="6" style="width:300px; font-family: monospace; resize: vertical;"
                     placeholder="SELECT m.name, d.value, d.dt FROM data d JOIN map.data m ON m.mapid = d.id"></textarea>
+                <div *ngIf="data.daq === '@project'" style="font-size: 11px; color: gray; width: 300px; margin-top: 3px;">
+                    {{'repeater.config-line-project-hint' | translate}}
+                </div>
+            </div>
+            <div style="display: block; margin-bottom: 10px;">
+                <button mat-stroked-button type="button" (click)="onTestSql()" [disabled]="testing || !data.daq || !data.sql">
+                    {{'repeater.config-line-test' | translate}}
+                </button>
+                <span *ngIf="testResult" style="font-size: 12px; margin-left: 8px;">
+                    {{'repeater.config-line-test-rows' | translate: { value: testResult.count } }}
+                </span>
+                <div *ngIf="testError" style="font-size: 12px; color: #f44336; width: 300px; margin-top: 5px; white-space: pre-wrap; word-break: break-word;">{{testError}}</div>
+                <div *ngIf="testResult?.rows?.length" class="repeater-test-result">
+                    <table>
+                        <tr><th *ngFor="let col of testColumns">{{col}}</th></tr>
+                        <tr *ngFor="let row of testResult.rows"><td *ngFor="let col of testColumns">{{testCell(row[col])}}</td></tr>
+                    </table>
+                </div>
             </div>
         </ng-container>
         <ng-container *ngIf="data.type !== 'db'">

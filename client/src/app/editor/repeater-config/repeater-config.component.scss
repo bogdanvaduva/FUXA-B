@@ -200,3 +200,23 @@
         background-color: #f1f3f4;
     }
 }
+
+.repeater-test-result {
+    max-width: 460px;
+    max-height: 200px;
+    overflow: auto;
+    margin-top: 6px;
+    font-size: 11px;
+    font-family: monospace;
+
+    table {
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid rgba(128, 128, 128, 0.4);
+        padding: 2px 5px;
+        text-align: left;
+        white-space: nowrap;
+    }
+}

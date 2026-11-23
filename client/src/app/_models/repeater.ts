@@ -216,6 +216,13 @@ export class RepeaterUtils {
             { headers: RepeaterUtils.getAuthHeaders(), withCredentials: true });
     }
 
+    /** run the SQL of a DB line not saved yet (editor test, admin only): the row count and the first rows */
+    static testSql(daq: string, sql: string): Observable<{ count: number; rows: any[] }> {
+        const http = new HttpClient(new HttpXhrBackend({ build: () => new XMLHttpRequest() }));
+        return http.post<{ count: number; rows: any[] }>(EndPointApi.getURL() + '/api/daq/sql/test', { daq, sql },
+            { headers: RepeaterUtils.getAuthHeaders(), withCredentials: true });
+    }
+
     /**
      * load the data of a Repeater data line (URL with JSON or CSV, or DB with the rows of the SQL query)
      * and return the items to repeat. The SQL of a DB line runs on the server from the saved project

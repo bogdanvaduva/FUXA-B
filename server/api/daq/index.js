@@ -11,6 +11,7 @@ const projectsApi = require('../projects');
 
 const TIME_CHUNK_SIZE = 6 * 60 * 60 * 1000;
 const MAX_TIME_CHUNKS = 744; // Maximum history range: 186 days
+const TEST_MAX_ROWS = 20;
 
 var runtime;
 var secureFnc;
@@ -141,6 +142,32 @@ module.exports = {
                 res.json(rows);
             }).catch(err => {
                 runtime.logger.error(`api get daq sql repeater: ${err.message || err}`);
+                res.status(400).json({ error: "query_error", message: (err.message || err).toString() });
+            });
+        });
+
+        /**
+         * POST a Repeater DB query to test it in the editor before saving { daq, sql } (admin only),
+         * it runs like the saved line (same read-only rules), the result is limited to the first rows
+         */
+        daqApp.post("/api/daq/sql/test", secureFnc, function (req, res) {
+            const permission = checkGroupsFnc(req);
+            if (res.statusCode === 403) {
+                runtime.logger.error("api post daq sql test: Tocken Expired");
+                return;
+            }
+            if (!authJwt.haveAdminPermission(permission)) {
+                runtime.logger.error("api post daq sql test: Unauthorized");
+                return res.status(401).json({ error: "unauthorized_error", message: "Unauthorized!" });
+            }
+            const line = { daq: req.body?.daq, sql: req.body?.sql };
+            if (typeof line.daq !== 'string' || !line.daq || typeof line.sql !== 'string' || !line.sql.trim()) {
+                return res.status(400).json({ error: "invalid_request", message: "daq and sql are required" });
+            }
+            _queryRepeaterLine(req, line).then(rows => {
+                rows = rows || [];
+                res.json({ count: rows.length, rows: rows.slice(0, TEST_MAX_ROWS) });
+            }).catch(err => {
                 res.status(400).json({ error: "query_error", message: (err.message || err).toString() });
             });
         });

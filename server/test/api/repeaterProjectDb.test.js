@@ -34,26 +34,40 @@ describe('Project tables', function () {
     it('maps the project to the storage tables, without devicesSecurity', function () {
         const tables = projectTables.toTables(project());
         assert.equal(tables.devicesSecurity, undefined);
-        assert.deepEqual(tables.views.map(r => r.name), ['v1', 'v2']);
-        assert.deepEqual(tables.devices.map(r => r.name), ['d1', 'd2', 'server']);
-        assert.deepEqual(tables.alarms.map(r => r.name), ['High']);
-        assert.deepEqual(tables.locations.map(r => r.name), ['l1']);
-        assert.deepEqual(tables.arMarkers.map(r => r.name), ['m1']);
-        assert.deepEqual(tables.general.map(r => r.name).sort(), ['ar', 'layout', 'repeaters', 'version']);
-        assert.equal(JSON.parse(tables.general.find(r => r.name === 'ar').value).markers, undefined);
+        assert.deepEqual(tables.views.map(r => r.id), ['v1', 'v2']);
+        assert.deepEqual(tables.views.map(r => r.name), ['Main', 'Plant']);
+        assert.deepEqual(tables.devices.map(r => r.id), ['d1', 'd2', 'server']);
+        assert.deepEqual(tables.alarms.map(r => r.id), ['High']);
+        assert.deepEqual(tables.locations.map(r => r.id), ['l1']);
+        assert.deepEqual(tables.arMarkers.map(r => r.id), ['m1']);
+        assert.deepEqual(tables.general.map(r => r.id).sort(), ['ar', 'layout', 'repeaters', 'version']);
+        assert.equal(tables.general.find(r => r.id === 'ar').value.markers, undefined);
+    });
+
+    it('has the item properties as columns and the tags of the devices', function () {
+        const tables = projectTables.toTables(project());
+        const d1 = tables.devices.find(r => r.id === 'd1');
+        assert.equal(d1.name, 'PLC 1');
+        assert.equal(d1.type, 'ModbusTCP');
+        assert.deepEqual(tables.tags, [{ id: 't1', name: 'temp', value: { id: 't1', name: 'temp' }, deviceId: 'd1', deviceName: 'PLC 1' }]);
     });
 });
 
 describe('daqstorage.queryTables', function () {
-    const tables = { views: [{ name: 'v1', value: '{"name":"Main"}' }], devices: [{ name: 'd1', value: '{"name":"PLC 1","tags":{"t1":{}}}' }] };
+    const tables = { views: [{ id: 'v1', name: 'Main', value: { name: 'Main' } }], devices: [{ id: 'd1', name: 'PLC 1', value: { name: 'PLC 1' }, enabled: true, tags: { t1: {} } }] };
 
     it('runs SQL with the JSON functions and parses JSON values', async function () {
-        const rows = await daqStorage.queryTables(tables, "SELECT name, json_extract(value, '$.name') AS title, value FROM views");
-        assert.deepEqual(rows, [{ name: 'v1', title: 'Main', value: { name: 'Main' } }]);
+        const rows = await daqStorage.queryTables(tables, "SELECT id, json_extract(value, '$.name') AS title, value FROM views");
+        assert.deepEqual(rows, [{ id: 'v1', title: 'Main', value: { name: 'Main' } }]);
+    });
+
+    it('has a column for each row property, booleans as 1/0 and objects as JSON', async function () {
+        const rows = await daqStorage.queryTables(tables, 'SELECT d.id, d.name, d.tags FROM devices d WHERE d.enabled = 1');
+        assert.deepEqual(rows, [{ id: 'd1', name: 'PLC 1', tags: { t1: {} } }]);
     });
 
     it('is read only and cannot attach other databases', async function () {
-        await assert.rejects(daqStorage.queryTables(tables, "INSERT INTO views VALUES ('x', 'y')"), /readonly|read-only|query_only/i);
+        await assert.rejects(daqStorage.queryTables(tables, "INSERT INTO views VALUES ('x', 'y', 'z')"), /readonly|read-only|query_only/i);
         await assert.rejects(daqStorage.queryTables(tables, "ATTACH DATABASE 'project.fuxap.db' AS p"), /too many attached|attach/i);
     });
 
@@ -84,6 +98,7 @@ describe('Repeater FUXA Project DB API', function () {
     let server;
     let line;
     let getProjectArgs;
+    let checkGroups;
 
     beforeEach(async function () {
         getProjectArgs = null;
@@ -101,9 +116,11 @@ describe('Repeater FUXA Project DB API', function () {
             scriptsMgr: { isAuthorised: () => true },
             logger: { error() {} }
         };
+        checkGroups = () => 1;
         projectsApi.init(runtime, (req, res, next) => next(), () => 1);
-        daqApi.init(runtime, (req, res, next) => { req.userId = 'operator'; next(); }, () => 1);
+        daqApi.init(runtime, (req, res, next) => { req.userId = 'operator'; next(); }, (req) => checkGroups(req));
         const app = express();
+        app.use(express.json());
         app.use(daqApi.app());
         server = http.createServer(app);
         await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -125,21 +142,54 @@ describe('Repeater FUXA Project DB API', function () {
     }
 
     it('queries the project of the requester', async function () {
-        const res = await query("SELECT name, json_extract(value, '$.name') AS title FROM views ORDER BY name");
+        const res = await query('SELECT id, name AS title FROM views ORDER BY id');
         assert.equal(res.status, 200);
-        assert.deepEqual(res.body, [{ name: 'v1', title: 'Main' }, { name: 'v2', title: 'Plant' }]);
+        assert.deepEqual(res.body, [{ id: 'v1', title: 'Main' }, { id: 'v2', title: 'Plant' }]);
         assert.deepEqual(getProjectArgs, ['operator', 1]);
     });
 
     it('never returns credentials', async function () {
-        const res = await query('SELECT value FROM devices UNION ALL SELECT value FROM scripts UNION ALL SELECT value FROM notifications');
+        const res = await query('SELECT * FROM devices');
+        const scripts = await query('SELECT * FROM scripts');
+        const notifications = await query('SELECT * FROM notifications');
+        const tags = await query('SELECT * FROM tags');
         assert.equal(res.status, 200);
-        const text = JSON.stringify(res.body);
+        const text = JSON.stringify([res.body, scripts.body, notifications.body, tags.body]);
         for (const secret of ['device-pass', 'mqtt-pass', 'secret-code', 'boss@example.com', 'hook-secret', 'token=abc']) {
             assert.ok(!text.includes(secret), `${secret} must not be returned`);
         }
         assert.ok(text.includes('ui()'), 'client script code stays');
         assert.ok(text.includes('10.0.0.1'), 'device address stays');
+    });
+
+    function post(body) {
+        return new Promise((resolve, reject) => {
+            const data = JSON.stringify(body);
+            const req = http.request({ host: '127.0.0.1', port: server.address().port, path: '/api/daq/sql/test', method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } }, res => {
+                let text = '';
+                res.on('data', c => text += c);
+                res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(text) }));
+            });
+            req.on('error', reject);
+            req.end(data);
+        });
+    }
+
+    it('tests a query not saved yet (admin) with the rows and the SQL error', async function () {
+        checkGroups = () => -1;
+        let res = await post({ daq: '@project', sql: "SELECT d.id, (SELECT group_concat(t.name) FROM tags t WHERE t.deviceId = d.id) AS tags FROM devices d WHERE d.id LIKE 'd%' ORDER BY d.id" });
+        assert.equal(res.status, 200);
+        assert.deepEqual(res.body, { count: 2, rows: [{ id: 'd1', tags: 'temp' }, { id: 'd2', tags: null }] });
+        res = await post({ daq: '@project', sql: 'SELECT d.tagList FROM devices d' });
+        assert.equal(res.status, 400);
+        assert.match(res.body.message, /no such column: d.tagList/);
+    });
+
+    it('refuses the query test to a non admin', async function () {
+        checkGroups = () => 0;
+        const res = await post({ daq: '@project', sql: 'SELECT 1' });
+        assert.equal(res.status, 401);
     });
 
     it('has no devicesSecurity table', async function () {

@@ -174,6 +174,10 @@ export class DialogRepeaterDataLine {
 
     daqNodes: RepeaterDaqNode[] = [];
     daqError = '';
+    testing = false;
+    testResult: { count: number; rows: any[] } = null;
+    testError = '';
+    testColumns: string[] = [];
 
     constructor(
         public dialogRef: MatDialogRef<DialogRepeaterDataLine>,
@@ -190,6 +194,34 @@ export class DialogRepeaterDataLine {
 
     onOkClick(): void {
         this.dialogRef.close(this.data);
+    }
+
+    onTestSql(): void {
+        this.testResult = null;
+        this.testError = '';
+        this.testColumns = [];
+        this.testing = true;
+        RepeaterUtils.testSql(this.data.daq, this.data.sql).subscribe({
+            next: result => {
+                this.testing = false;
+                this.testResult = result;
+                const columns = new Set<string>();
+                (result?.rows || []).forEach(row => Object.keys(row || {}).forEach(key => columns.add(key)));
+                this.testColumns = Array.from(columns);
+            },
+            error: err => {
+                this.testing = false;
+                this.testError = err?.error?.message || err?.message || 'Query failed';
+            }
+        });
+    }
+
+    testCell(value: any): string {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        return text.length > 80 ? text.substring(0, 80) + '…' : text;
     }
 }
 
