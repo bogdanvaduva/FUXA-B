@@ -53,6 +53,10 @@ function publicStorage(storage) {
     const postgres = Object.assign({}, (storage && storage.postgres) || {});
     const passwordSet = !!postgres.password;
     delete postgres.password;
+    if (postgres.reader) {
+        // Repeater reader login (settings only): the user name without password
+        postgres.reader = { user: postgres.reader.user };
+    }
     return { type: (storage && storage.type) || 'sqlite', postgres: Object.assign(postgres, { passwordSet: passwordSet }) };
 }
 

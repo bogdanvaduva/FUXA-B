@@ -255,5 +255,8 @@ module.exports = {
     switchTo: switchTo,
     testConnection: testConnection,
     getCurrent: getCurrent,
+    // Repeater 'FUXA Project DB (PostgreSQL)': read-only query with the reader login (PostgreSQL storage only)
+    queryAsReader: (sql) => backend && backend.queryAsReader ? backend.queryAsReader(sql)
+        : Promise.reject(new Error('the project storage is not PostgreSQL')),
     TableType: TableType,
 };

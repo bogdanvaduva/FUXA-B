@@ -59,6 +59,9 @@ module.exports = {
             maxPoolSize: 10,
             // schema: 'fuxa',      // default 'public', created if not exist
             // connectionTimeout: 10000
+            // Repeater 'FUXA Project DB (PostgreSQL)': a login with SELECT only on your own tables of this database
+            // (never on the FUXA project tables, not superuser), see docs/storage-migration.md
+            // reader: { user: 'fuxa_reader', password: '', statementTimeout: 30000 }
         }
     },
 

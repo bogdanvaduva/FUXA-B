@@ -33,7 +33,7 @@ function makeSettings() {
         },
         storage: {
             type: 'postgres',
-            postgres: { host: 'pg.internal', port: 5432, database: 'fuxa', user: 'fuxa', password: 'pg-secret' }
+            postgres: { host: 'pg.internal', port: 5432, database: 'fuxa', user: 'fuxa', password: 'pg-secret', reader: { user: 'fuxa_reader', password: 'reader-secret' } }
         }
     };
 }
@@ -56,6 +56,7 @@ describe('Security - settings disclosure', () => {
             expect(result.smtp).to.not.have.property('password');
             expect(result.daqstore).to.not.have.property('credentials');
             expect(JSON.stringify(result)).to.not.contain('pg-secret');
+            expect(JSON.stringify(result)).to.not.contain('reader-secret');
         }
 
         expect(settings).to.deep.equal(makeSettings());
@@ -101,7 +102,7 @@ describe('Security - settings disclosure', () => {
         daqstorage.init(settings, logger, {});
         const text = lines.join(' | ');
         expect(text).to.contain('daqstorage: settings');
-        for (const secret of ['jwt-secret', 'tls-private-key', 'smtp-secret', 'daq-secret', 'pg-secret', 'oidc-secret']) {
+        for (const secret of ['jwt-secret', 'tls-private-key', 'smtp-secret', 'daq-secret', 'pg-secret', 'reader-secret', 'oidc-secret']) {
             expect(text, secret).to.not.contain(secret);
         }
         expect(settings.oidc.clientSecret).to.equal('oidc-secret');

@@ -5,6 +5,9 @@
 var express = require("express");
 const authJwt = require('../jwt-helper');
 const utils = require('../../runtime/utils');
+const projectTables = require('../../runtime/project/project-tables');
+const prjstorage = require('../../runtime/project/prjstorage');
+const projectsApi = require('../projects');
 
 const TIME_CHUNK_SIZE = 6 * 60 * 60 * 1000;
 const MAX_TIME_CHUNKS = 744; // Maximum history range: 186 days
@@ -134,7 +137,7 @@ module.exports = {
             if (!line || line.type !== 'db' || !line.daq || !line.sql) {
                 return res.status(404).json({ error: "not_found", message: "Repeater DB data line not found" });
             }
-            runtime.daqStorage.querySql(line.daq, line.sql).then(rows => {
+            _queryRepeaterLine(req, line).then(rows => {
                 res.json(rows);
             }).catch(err => {
                 runtime.logger.error(`api get daq sql repeater: ${err.message || err}`);
@@ -143,4 +146,25 @@ module.exports = {
         });
         return daqApp;
     }
+}
+
+/**
+ * Run the SQL of a Repeater DB line on its storage:
+ * - 'FUXA Project DB': the project of the selected project storage as the requester gets it (views filtered by
+ *   permission), without credentials (same sanitizer as /api/project for viewers, also for admins), as tables
+ * - 'FUXA Project DB (PostgreSQL)': the PostgreSQL project database with the reader login
+ * - else the DAQ storage or the FUXA App DB
+ */
+async function _queryRepeaterLine(req, line) {
+    const daqStorage = runtime.daqStorage;
+    if (line.daq === daqStorage.PROJECT_DB_ID) {
+        const permission = checkGroupsFnc(req);
+        const project = await runtime.project.getProject(req.userId, permission);
+        const sanitized = projectsApi.sanitizeProjectForViewer(project || {}, permission);
+        return daqStorage.queryTables(projectTables.toTables(sanitized), line.sql);
+    }
+    if (line.daq === daqStorage.PROJECT_PG_ID) {
+        return prjstorage.queryAsReader(line.sql);
+    }
+    return daqStorage.querySql(line.daq, line.sql);
 }

@@ -156,6 +156,9 @@ var utils = module.exports = {
         }
         if (tosend.storage?.postgres) {
             delete tosend.storage.postgres.password;
+            if (tosend.storage.postgres.reader) {
+                delete tosend.storage.postgres.reader.password;
+            }
         }
         if (tosend.oidc) {
             delete tosend.oidc.clientSecret;

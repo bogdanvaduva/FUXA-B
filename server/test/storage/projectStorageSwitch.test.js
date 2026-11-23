@@ -27,7 +27,7 @@ describe('Project storage switch (SQLite <-> PostgreSQL)', function () {
             user: decodeURIComponent(url.username), password: decodeURIComponent(url.password), schema: schema, maxPoolSize: 4,
         }, overrides);
     }
-    const sqliteSettings = () => ({ workDir: workDir, storage: { type: 'sqlite', postgres: pgBlock() } });
+    const sqliteSettings = () => ({ workDir: workDir, storage: { type: 'sqlite', postgres: pgBlock({ reader: { user: 'fuxa_reader', password: 'reader-secret' } }) } });
     const pgSettings = (overrides) => ({ workDir: workDir, storage: { type: 'postgres', postgres: pgBlock(overrides) } });
 
     async function pgQuery(sql, params) {
@@ -255,6 +255,7 @@ describe('Project storage switch (SQLite <-> PostgreSQL)', function () {
             expect(res.json.current.type).to.equal('sqlite');
             expect(res.json.settings.postgres.passwordSet).to.equal(true);
             expect(res.json.settings.postgres).to.not.have.property('password');
+            expect(res.json.settings.postgres.reader).to.deep.equal({ user: 'fuxa_reader' });
         });
 
         it('tests a connection, the saved password is used when empty', async () => {

@@ -163,6 +163,8 @@ function checkRetention() {
  * Return the DAQ storages that can run SQL queries: SQLite one pro device, PostgreSQL only one
  */
 const APP_DB_ID = '@app';
+const PROJECT_DB_ID = '@project';           // project tables of the selected project storage (sanitized)
+const PROJECT_PG_ID = '@project-pg';        // the PostgreSQL project database, with the reader login
 
 function getSqlNodes() {
     const devices = runtime?.project?.getDevices() || {};
@@ -172,6 +174,11 @@ function getSqlNodes() {
         type: _getDbType()
     }));
     nodes.push({ id: APP_DB_ID, name: 'FUXA App DB', type: 'SQLite' });
+    const storage = settings?.storage || {};
+    nodes.push({ id: PROJECT_DB_ID, name: 'FUXA Project DB', type: 'SQLite' });
+    if (storage.type === 'postgres' && storage.postgres?.reader?.user) {
+        nodes.push({ id: PROJECT_PG_ID, name: 'FUXA Project DB (PostgreSQL)', type: 'postgresql' });
+    }
     return nodes;
 }
 
@@ -278,6 +285,53 @@ function _parseJsonValues(rows) {
     return rows;
 }
 
+/**
+ * Read-only query on the given tables { <table>: [{ name, value }] } loaded in a temporary in-memory
+ * SQLite database (columns name, value), no ATTACH: nothing else is readable
+ */
+function queryTables(tables, sql) {
+    const sqlite3 = require('sqlite3').verbose();
+    return new Promise((resolve, reject) => {
+        const db = new sqlite3.Database(':memory:', (err) => {
+            if (err) {
+                return reject(err);
+            }
+            const fail = (err) => {
+                db.close();
+                reject(err);
+            };
+            db.configure('limit', sqlite3.LIMIT_ATTACHED, 0);
+            db.serialize(() => {
+                db.run('BEGIN');
+                Object.keys(tables || {}).forEach(table => {
+                    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) {
+                        return;
+                    }
+                    db.run(`CREATE TABLE ${table} (name TEXT, value TEXT)`);
+                    const insert = db.prepare(`INSERT INTO ${table} (name, value) VALUES (?, ?)`);
+                    (tables[table] || []).forEach(row => insert.run(row.name, row.value));
+                    insert.finalize();
+                });
+                db.run('COMMIT', (err) => {
+                    if (err) {
+                        return fail(err);
+                    }
+                    // read only from here: a query that writes or attaches fails
+                    db.run('PRAGMA query_only = ON', (err) => {
+                        if (err) {
+                            return fail(err);
+                        }
+                        db.all(sql, (err, rows) => {
+                            db.close();
+                            err ? reject(err) : resolve(_parseJsonValues(rows));
+                        });
+                    });
+                });
+            });
+        });
+    });
+}
+
 function querySql(id, sql) {
     if (id === APP_DB_ID) {
         return _queryAppDb(sql);
@@ -351,4 +405,7 @@ module.exports = {
     getCurrentStorageFnc: getCurrentStorageFnc,
     getSqlNodes: getSqlNodes,
     querySql: querySql,
+    queryTables: queryTables,
+    PROJECT_DB_ID: PROJECT_DB_ID,
+    PROJECT_PG_ID: PROJECT_PG_ID,
 };

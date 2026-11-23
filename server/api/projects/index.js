@@ -391,3 +391,6 @@ function _getReferencedRecipeIds(hmi, permission) {
     }
     return recipeIds;
 }
+
+// shared with the Repeater 'FUXA Project DB' (api/daq): the same project data a viewer gets
+module.exports.sanitizeProjectForViewer = _sanitizeProjectForViewer;

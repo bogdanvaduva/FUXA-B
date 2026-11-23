@@ -16,6 +16,23 @@ const SCHEMA_FILE = path.join(__dirname, 'schema.sql');
 var settings;       // Application settings
 var logger;         // Application logger
 var pool;           // Connection pool
+var readerPool;     // Connection pool of the Repeater reader login (settings.storage.postgres.reader)
+var readerKey;      // Connection of readerPool, to recreate it when the settings change
+
+// a reader login must not read these tables (in any schema, also the prjstorage_backup_* copies)
+const PROJECT_TABLE_NAMES = Object.values(TableType).map(table => table.toLowerCase());
+// roles that read or run anything on the server
+const UNSAFE_ROLES = ['pg_read_server_files', 'pg_write_server_files', 'pg_execute_server_program', 'pg_read_all_data'];
+// unsafe if the login (or a role it is member of) is superuser, an unsafe role, or can read a project table
+const READER_CHECK_SQL = `SELECT EXISTS (
+    SELECT 1 FROM pg_roles r
+    WHERE pg_has_role(current_user, r.oid, 'MEMBER')
+      AND (r.rolsuper OR r.rolname = ANY($2::text[]) OR EXISTS (
+          SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+          WHERE c.relkind IN ('r', 'v', 'm', 'p', 'f') AND lower(c.relname) = ANY($1::text[])
+            AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+            AND has_any_column_privilege(r.oid, c.oid, 'SELECT')))
+) AS unsafe`;
 
 function _ensureValidTable(table) {
     const tables = Object.values(TableType);
@@ -242,6 +259,7 @@ function deleteSection(section) {
  * Close the database
  */
 function close() {
+    _closeReader();
     if (pool) {
         const _pool = pool;
         pool = null;
@@ -342,6 +360,54 @@ async function testConnection(_settings) {
     }
 }
 
+/**
+ * Run a read-only query (Repeater 'FUXA Project DB (PostgreSQL)') with the reader login of
+ * settings.storage.postgres.reader { user, password, statementTimeout }: its own connection (the query
+ * cannot take the privileges of the FUXA login), one statement, READ ONLY transaction, rolled back.
+ * Refused when the login can read the project tables (credentials) or is superuser
+ */
+async function queryAsReader(sql) {
+    const reader = settings && settings.storage && settings.storage.postgres && settings.storage.postgres.reader;
+    if (!reader || !reader.user) {
+        throw new Error('settings.storage.postgres.reader not defined');
+    }
+    const connection = getConnectionOptions(settings);
+    const options = Object.assign({}, connection.options, { user: reader.user, password: reader.password || '', max: 2 });
+    const key = JSON.stringify([options.host, options.port, options.database, options.user, options.password, options.options || '']);
+    if (!readerPool || readerKey !== key) {
+        _closeReader();
+        readerPool = new Pool(options);
+        readerPool.on('error', (err) => logger && logger.error(`prjstorage.postgres reader pool error: ${err}`));
+        readerKey = key;
+    }
+    const timeout = Number(reader.statementTimeout) || 30000;
+    const client = await readerPool.connect();
+    try {
+        await client.query('BEGIN READ ONLY');
+        await client.query(`SET LOCAL statement_timeout = ${Math.floor(timeout)}`);
+        const check = await client.query(READER_CHECK_SQL, [PROJECT_TABLE_NAMES, UNSAFE_ROLES]);
+        if (check.rows[0].unsafe) {
+            throw new Error(`the reader login '${reader.user}' can read the FUXA project tables or is a superuser, ` +
+                'use a login with SELECT only on your own tables (see docs/storage-migration.md)');
+        }
+        // extended protocol: a single statement (no 'COMMIT; ...')
+        const result = await client.query({ text: sql, queryMode: 'extended' });
+        return result.rows;
+    } finally {
+        await client.query('ROLLBACK').catch(() => {});
+        client.release();
+    }
+}
+
+function _closeReader() {
+    if (readerPool) {
+        const _pool = readerPool;
+        readerPool = null;
+        readerKey = null;
+        _pool.end().catch(() => {});
+    }
+}
+
 module.exports = {
     init: init,
     close: close,
@@ -356,6 +422,7 @@ module.exports = {
     importTables: importTables,
     describe: describe,
     testConnection: testConnection,
+    queryAsReader: queryAsReader,
     // for the migration tool
     getConnectionOptions: getConnectionOptions,
     SCHEMA_FILE: SCHEMA_FILE,
