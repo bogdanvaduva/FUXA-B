@@ -30,6 +30,10 @@ function makeSettings() {
                 username: 'daq-user',
                 password: 'daq-secret'
             }
+        },
+        storage: {
+            type: 'postgres',
+            postgres: { host: 'pg.internal', port: 5432, database: 'fuxa', user: 'fuxa', password: 'pg-secret' }
         }
     };
 }
@@ -51,6 +55,7 @@ describe('Security - settings disclosure', () => {
             expect(result).to.not.have.property('https');
             expect(result.smtp).to.not.have.property('password');
             expect(result.daqstore).to.not.have.property('credentials');
+            expect(JSON.stringify(result)).to.not.contain('pg-secret');
         }
 
         expect(settings).to.deep.equal(makeSettings());
@@ -70,6 +75,7 @@ describe('Security - settings disclosure', () => {
             type: 'influxDB',
             database: 'fuxa'
         });
+        expect(publicSettings.storage).to.deep.equal({ type: 'postgres' });
     });
 
     it('keeps non-secret connection details available to admins', () => {

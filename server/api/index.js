@@ -250,6 +250,10 @@ function getPublicSettings(settings) {
         delete tosend.daqstore.host;
         delete tosend.daqstore.configurationString;
     }
+    if (tosend.storage) {
+        // project storage connection: type only
+        tosend.storage = { type: tosend.storage.type };
+    }
     return tosend;
 }
 
@@ -263,6 +267,9 @@ function getSanitizedSettings(settings) {
     }
     if (tosend.daqstore?.credentials) {
         delete tosend.daqstore.credentials;
+    }
+    if (tosend.storage?.postgres) {
+        delete tosend.storage.postgres.password;
     }
     return tosend;
 }
