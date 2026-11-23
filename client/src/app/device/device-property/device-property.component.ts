@@ -192,7 +192,8 @@ export class DevicePropertyComponent implements OnInit, OnDestroy {
 		});
 		// check security
 		if (this.data.device.id && (this.data.device.type === DeviceType.OPCUA || this.data.device.type === DeviceType.MQTTclient
-			|| this.data.device.type === DeviceType.ODBC || this.data.device.type === DeviceType.SNMP)) {
+			|| this.data.device.type === DeviceType.ODBC || this.data.device.type === DeviceType.SNMP
+			|| this.data.device.type === DeviceType.FuxaRemote)) {
 			this.projectService.getDeviceSecurity(this.data.device.id).pipe(
 				delay(500)
 			).subscribe(result => {
@@ -225,7 +226,8 @@ export class DevicePropertyComponent implements OnInit, OnDestroy {
 				this.data.device.property.forceFC16 = false;
 			}
 			if (!this.data.device.property.timeout) {
-				this.data.device.property.timeout = (this.data.device.type === DeviceType.MQTTclient) ? 10000 : 2000;
+				this.data.device.property.timeout = (this.data.device.type === DeviceType.MQTTclient) ? 10000
+					: (this.data.device.type === DeviceType.FuxaRemote) ? 5000 : 2000;
 			}
 		}
 		if (this.data.device.type === DeviceType.REDIS) {
@@ -471,6 +473,11 @@ export class DevicePropertyComponent implements OnInit, OnDestroy {
 					pwd: this.security.password
 				};
 				return result;
+			}
+		} else if (this.data.device.type === DeviceType.FuxaRemote) {
+			// API key of the remote FUXA (Setup -> API keys there), sent as x-api-key
+			if (this.security.password) {
+				return <DeviceSecurityGeneral>{ pwd: this.security.password };
 			}
 		} else if (this.data.device.type === DeviceType.SNMP) {
 			// v1/v2c: pwd is the community, v3: uid user name, pwd authentication key, privKey privacy key

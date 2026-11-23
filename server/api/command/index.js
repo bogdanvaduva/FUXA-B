@@ -154,6 +154,72 @@ module.exports = {
             }
         });
 
+        /**
+         * POST read many tag values in one request (used by the 'FuxaRemote' device of a central FUXA)
+         * body: { ids: [<tag id>, ...] }, reply: [{ id, value, ts }] in the same order, value null for unknown ids
+         */
+        commandApp.post("/api/remote/values", secureFnc, function (req, res) {
+            const permission = checkGroupsFnc(req);
+            if (res.statusCode === 403) {
+                runtime.logger.error("api post remote/values: Tocken Expired");
+            } else if (!authJwt.haveAdminPermission(permission)) {
+                res.status(401).json({ error: "unauthorized_error", message: "Unauthorized!" });
+                runtime.logger.error("api post remote/values: Unauthorized");
+            } else {
+                const ids = req.body && req.body.ids;
+                if (!Array.isArray(ids)) {
+                    res.status(400).json({ error: "invalid_request", message: 'ids array missing!' });
+                    return;
+                }
+                try {
+                    res.json(ids.map(tagId => {
+                        const value = (typeof tagId === 'string') ? runtime.devices.getTagValue(tagId, true) : null;
+                        return value ? { id: tagId, value: value.value, ts: value.ts } : { id: tagId, value: null };
+                    }));
+                } catch (error) {
+                    res.status(400).json({ error: "error", message: `${error}` });
+                    runtime.logger.error("api post remote/values: " + error);
+                }
+            }
+        });
+
+        /**
+         * GET the devices and tags of this server to choose from in a central FUXA ('FuxaRemote' device)
+         * reply: [{ id, name, type, tags: [{ id, name, label, type, description }] }], no device property (address, ...)
+         */
+        commandApp.get("/api/remote/browse", secureFnc, function (req, res) {
+            const permission = checkGroupsFnc(req);
+            if (res.statusCode === 403) {
+                runtime.logger.error("api get remote/browse: Tocken Expired");
+            } else if (!authJwt.haveAdminPermission(permission)) {
+                res.status(401).json({ error: "unauthorized_error", message: "Unauthorized!" });
+                runtime.logger.error("api get remote/browse: Unauthorized");
+            } else {
+                try {
+                    const devices = Object.values(runtime.project.getDevices() || {});
+                    const server = runtime.project.getServer();
+                    if (server && !devices.find(device => device.id === server.id)) {
+                        devices.unshift(server);
+                    }
+                    res.json(devices.filter(device => device && device.tags).map(device => ({
+                        id: device.id,
+                        name: device.name,
+                        type: device.type,
+                        tags: Object.values(device.tags).map(tag => ({
+                            id: tag.id,
+                            name: tag.name,
+                            label: tag.label,
+                            type: tag.type,
+                            description: tag.description
+                        }))
+                    })));
+                } catch (error) {
+                    res.status(400).json({ error: "error", message: `${error}` });
+                    runtime.logger.error("api get remote/browse: " + error);
+                }
+            }
+        });
+
         return commandApp;
     }
 }

@@ -1,0 +1,13 @@
+:host {
+    display: block;
+}
+
+.browse-info {
+    min-height: 20px;
+    margin: 0px 10px 5px 10px;
+    font-size: 13px;
+}
+
+.browse-error {
+    color: var(--formInputErrorColor, #f44336);
+}

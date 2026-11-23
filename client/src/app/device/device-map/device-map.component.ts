@@ -142,6 +142,7 @@ export class DeviceMapComponent implements OnInit, OnDestroy, AfterViewInit {
             }, error => {
             });
             this.plugins.push(DeviceType.WebAPI);
+            this.plugins.push(DeviceType.FuxaRemote);
             this.plugins.push(DeviceType.MQTTclient);
             this.plugins.push(DeviceType.internal);
         } else {

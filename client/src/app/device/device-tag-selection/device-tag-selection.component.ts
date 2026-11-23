@@ -140,6 +140,10 @@ export class DeviceTagSelectionComponent implements OnInit, AfterViewInit, OnDes
             this.tagPropertyService.editTagPropertyWebapi(device).subscribe(result => {
                 this.loadDevicesTags();
             });
+        } else if (device.type === DeviceType.FuxaRemote) {
+            this.tagPropertyService.editTagPropertyFuxaRemote(device).subscribe(result => {
+                this.loadDevicesTags();
+            });
         } else if (device.type === DeviceType.SiemensS7) {
             this.tagPropertyService.editTagPropertyS7(device, newTag, true).subscribe(result => {
                 this.loadDevicesTags(newTag, device.name);

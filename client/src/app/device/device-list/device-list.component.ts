@@ -203,7 +203,8 @@ export class DeviceListComponent implements OnInit, AfterViewInit {
     }
 
     onAddTag() {
-        if (this.deviceSelected.type === DeviceType.OPCUA || this.deviceSelected.type === DeviceType.BACnet || this.deviceSelected.type === DeviceType.WebAPI) {
+        if (this.deviceSelected.type === DeviceType.OPCUA || this.deviceSelected.type === DeviceType.BACnet || this.deviceSelected.type === DeviceType.WebAPI
+            || this.deviceSelected.type === DeviceType.FuxaRemote) {
             this.addOpcTags();
         } else if (this.deviceSelected.type === DeviceType.MQTTclient) {
             this.editTopics();
@@ -232,6 +233,12 @@ export class DeviceListComponent implements OnInit, AfterViewInit {
             });
             return;
         }
+        if (this.deviceSelected.type === DeviceType.FuxaRemote) {
+            this.tagPropertyService.editTagPropertyFuxaRemote(this.deviceSelected, this.tagsMap).subscribe(result => {
+                this.bindToTable(this.deviceSelected.tags);
+            });
+            return;
+        }
     }
 
     onScanSnmpTag() {
@@ -251,7 +258,8 @@ export class DeviceListComponent implements OnInit, AfterViewInit {
     }
 
     getTagLabel(tag: Tag) {
-        if (this.deviceSelected.type === DeviceType.BACnet || this.deviceSelected.type === DeviceType.WebAPI) {
+        if (this.deviceSelected.type === DeviceType.BACnet || this.deviceSelected.type === DeviceType.WebAPI
+            || this.deviceSelected.type === DeviceType.FuxaRemote) {
             return tag.label || tag.name;
         } else if (this.deviceSelected.type === DeviceType.OPCUA) {
             return tag.label;

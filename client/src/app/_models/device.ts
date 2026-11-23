@@ -339,6 +339,7 @@ export class DeviceSecurity {
 
 export enum DeviceType {
     FuxaServer = 'FuxaServer',
+    FuxaRemote = 'FuxaRemote',
     SiemensS7 = 'SiemensS7',
     OPCUA = 'OPCUA',
     BACnet = 'BACnet',

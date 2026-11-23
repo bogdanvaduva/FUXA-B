@@ -13,6 +13,7 @@ var EthernetIPclient = require('./ethernetip');
 var GenericEthernetIPclient = require('./genericethernetip');
 var OmronEthernetIPclient = require('./omron-ethernetip');
 var FuxaServer = require('./fuxaserver');
+var FuxaRemote = require('./fuxaremote');
 var ODBCclient = require('./odbc');
 var ADSclient = require('./adsclient');
 // var TEMPLATEclient = require('./template');
@@ -104,6 +105,8 @@ function Device(data, runtime) {
             return null;
         }
         comm = FuxaServer.create(data, logger, events, manager);
+    } else if (data.type === DeviceEnum.FuxaRemote) {
+        comm = FuxaRemote.create(data, logger, events, manager, runtime);
     } else if (data.type === DeviceEnum.ODBC) {
         if (!ODBCclient) {
             return null;
@@ -367,6 +370,8 @@ function Device(data, runtime) {
                 });
             } else if (data.type === DeviceEnum.GenericEthernetIP) {
                 comm.browse(path, callback).then(resolve).catch(reject);
+            } else if (data.type === DeviceEnum.FuxaRemote) {
+                comm.browse(path).then(resolve).catch(reject);
             } else {
                 reject('Browse not supported!');
             }
@@ -438,7 +443,8 @@ function Device(data, runtime) {
      * Bind function to ask project stored property (security)
      */
     this.bindGetProperty = function (fnc) {
-        if (data.type === DeviceEnum.OPCUA || data.type === DeviceEnum.MQTTclient || data.type === DeviceEnum.ODBC || data.type === DeviceEnum.SNMP) {
+        if (data.type === DeviceEnum.OPCUA || data.type === DeviceEnum.MQTTclient || data.type === DeviceEnum.ODBC || data.type === DeviceEnum.SNMP
+            || data.type === DeviceEnum.FuxaRemote) {
             comm.bindGetProperty(fnc);
         }
     }
@@ -655,6 +661,7 @@ var DeviceEnum = {
     GenericEthernetIP: 'GenericEthernetIP',
     OmronEthernetIP: 'OmronEthernetIP',
     FuxaServer: 'FuxaServer',
+    FuxaRemote: 'FuxaRemote',
     ODBC: 'ODBC',
     ADSclient: 'ADSclient',
     GPIO: 'GPIO',

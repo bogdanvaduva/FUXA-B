@@ -25,6 +25,7 @@ import { TagPropertyEditRedisComponent, TagPropertyRedisData } from './tag-prope
 import { TagPropertyRedisScanComponent, TagPropertyRedisScanData } from './tag-property-edit-redis/tag-property-redis-scan/tag-property-redis-scan.component';
 import { TagPropertyEditSnmpComponent, TagPropertySnmpData } from './tag-property-edit-snmp/tag-property-edit-snmp.component';
 import { TagPropertySnmpScanComponent, TagPropertySnmpScanData } from './tag-property-edit-snmp/tag-property-snmp-scan/tag-property-snmp-scan.component';
+import { TagPropertyEditFuxaRemoteComponent, TagPropertyFuxaRemoteData } from './tag-property-edit-fuxaremote/tag-property-edit-fuxaremote.component';
 
 @Injectable({
     providedIn: 'root'
@@ -346,6 +347,42 @@ export class TagPropertyService {
                     tag.address = n.id;
                     tag.label = n.text;
                     tag.memaddress = n.parent?.id;
+                    this.checkToAdd(tag, result.device);
+                    if (tagsMap) {
+                        tagsMap[tag.id] = tag;
+                    }
+                });
+                this.projectService.setDeviceTags(device);
+                dialogRef.close();
+                return result;
+            })
+        );
+    }
+
+    /**
+     * Choose the tags of a remote FUXA server to mirror
+     * tag.address = remote tag id, tag.memaddress = remote device id
+     */
+    public editTagPropertyFuxaRemote(device: Device, tagsMap?: any): Observable<any> {
+        let dialogRef = this.dialog.open(TagPropertyEditFuxaRemoteComponent, {
+            disableClose: true,
+            position: { top: '60px' },
+            data: <TagPropertyFuxaRemoteData> {
+                device: device,
+            },
+        });
+
+        return dialogRef.componentInstance.result.pipe(
+            map((result: TagPropertyFuxaRemoteData) => {
+                result?.nodes?.forEach((n: Node) => {
+                    let tag = new Tag(Utils.getGUID(TAG_PREFIX));
+                    const deviceName = n.parent?.text;
+                    tag.name = deviceName ? `${deviceName}.${n.text}` : n.text;
+                    tag.label = tag.name;
+                    tag.type = n.type;
+                    tag.address = n.id;
+                    tag.memaddress = n.parent?.id;
+                    tag.description = n.property;
                     this.checkToAdd(tag, result.device);
                     if (tagsMap) {
                         tagsMap[tag.id] = tag;
