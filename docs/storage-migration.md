@@ -119,19 +119,33 @@ is copied back to `project.fuxap.db` (the previous file is saved as a backup).
 
 ## Repeater queries on the project database
 
-A Repeater **DB** line can query the project database selected here:
+A Repeater **DB** line can query the project with the **FUXA Project DB** entry, which follows the storage selected
+here. The tables are `general`, `views`, `devices`, `texts`, `alarms`, `recipes`, `notifications`, `scripts`,
+`reports`, `locations`, `arMarkers`, plus `tags` (the tags of all devices). Columns: `id`, `name`, `value` (the JSON)
+and one per item property. They hold the project as the viewer of the Repeater gets it: views filtered by
+permission, without credentials (device passwords and user names, tokens, server script code, notification and
+report receivers), also for admins. `devicesSecurity` is not available.
 
-- **FUXA Project DB** (any storage): the project tables (`general`, `views`, `devices`, `texts`, `alarms`,
-  `recipes`, `notifications`, `scripts`, `reports`, `locations`, `arMarkers`, plus `tags`; columns `id`, `name`, `value`
-  with the JSON and one per item property) read from the selected storage, SQLite syntax (`json_extract`, `json_each`). They hold the project as the
-  viewer of the Repeater gets it: views filtered by permission, without credentials (device passwords and user
-  names, tokens, server script code, notification and report receivers), also for admins. `devicesSecurity` is
-  not available.
-- **FUXA Project DB (PostgreSQL)**: with the PostgreSQL storage, the other tables of the same database (your
-  own data), PostgreSQL syntax. It is listed only when `storage.postgres.reader` is set: a separate login, used
-  only for these queries, in a read-only transaction (one statement, `statementTimeout` default 30 s).
+- **FUXA Project DB (SQLite)** (SQLite storage): the tables in a temporary in-memory database, SQLite syntax
+  (`json_extract`, `json_each`, `random()`), booleans as 1/0.
+- **FUXA Project DB (PostgreSQL)** (PostgreSQL storage): PostgreSQL syntax, the tables are temporary tables of the
+  query transaction (`value` and object properties `jsonb`, booleans `boolean`, numbers `double precision`, column
+  names in lower case, e.g. `tags.deviceid`, unquoted `deviceId` matches it), together with your own tables of the
+  same database. It runs with a separate **reader login**, in a transaction that is read-only for the query (one
+  statement, `statementTimeout` default 30 s). Set the reader in **Setup → Settings → Project storage → Repeater
+  reader login** (or `storage.postgres.reader` in the settings).
 
-Create the reader login with access only to your tables:
+```sql
+-- PostgreSQL: enabled devices with their tag names and a position
+SELECT d.id, d.name AS device,
+  (SELECT string_agg(t.name, ', ') FROM tags t WHERE t.deviceId = d.id) AS tags,
+  round((47.6573 + (random() - 0.5) * 0.1)::numeric, 6) AS lat,
+  round((23.5684 + (random() - 0.5) * 0.1)::numeric, 6) AS lon
+FROM devices d WHERE d.id LIKE 'd_%' AND d.enabled ORDER BY d.name
+```
+
+Create the reader login with access only to your tables (it needs no access to the FUXA schema; it creates only
+temporary tables, the `TEMP` privilege that PostgreSQL grants to everyone by default):
 
 ```sql
 CREATE ROLE fuxa_reader LOGIN PASSWORD '...';

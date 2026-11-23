@@ -283,8 +283,9 @@ Text values of App DB rows that look like JSON (`{...}` or `[...]`, e.g. `tagLis
 
 #### FUXA Project DB
 
-The **FUXA Project DB** entry queries the project of the storage selected in **Setup → Settings → Project storage**
-(SQLite or PostgreSQL), with SQLite syntax (`random()`, not `RAND()`). Its tables are the project storage tables
+The **FUXA Project DB** entry queries the project of the storage selected in **Setup → Settings → Project storage**:
+**FUXA Project DB (SQLite)** with SQLite syntax (`random()`, not `RAND()`) or **FUXA Project DB (PostgreSQL)** with
+PostgreSQL syntax and also your own tables of that database (needs a reader login, see below). Its tables are the project storage tables
 `general`, `views`, `devices`, `texts`, `alarms`, `recipes`, `notifications`, `scripts`, `reports`, `locations`,
 `arMarkers`, plus `tags` (the tags of all devices, with `deviceId` and `deviceName`). Every table has the columns:
 
@@ -311,9 +312,11 @@ FROM devices d WHERE d.enabled = 1 ORDER BY d.name
 SELECT id, json_extract(property, '$.variableId') AS tag FROM alarms
 ```
 
-With the PostgreSQL project storage, **FUXA Project DB (PostgreSQL)** queries the other tables of that database
-(your own data, PostgreSQL syntax) with a separate read-only login: set `storage.postgres.reader` in the settings,
-see [Repeater queries on the project database](docs/storage-migration.md#repeater-queries-on-the-project-database).
+With the PostgreSQL project storage, **FUXA Project DB (PostgreSQL)** runs with a separate login that can read only
+your own tables (not the FUXA schema): set it in **Setup → Settings → Project storage → Repeater reader login**.
+Column names are lower case there (`tags.deviceid`; unquoted `deviceId` matches it), booleans are `boolean`
+(`WHERE d.enabled`), `value` is `jsonb` (`d.value->>'type'`), and `round()` with decimals needs `::numeric`. See
+[Repeater queries on the project database](docs/storage-migration.md#repeater-queries-on-the-project-database).
 
 ### 2. Create the template view
 

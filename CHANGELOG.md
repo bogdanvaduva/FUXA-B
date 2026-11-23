@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.7-3215 - 2026-11-23
+
+### Changed
+- Repeater: the storage list shows the **FUXA Project DB** of the selected project storage only, **(SQLite)** or
+  **(PostgreSQL)**. **FUXA Project DB (PostgreSQL)** now queries the project (sanitized, as temporary tables of
+  the query, PostgreSQL syntax) together with your own tables, with the reader login.
+
+### Added
+- Setup → Settings → Project storage: **Repeater reader login** (user, password), checked before saving
+  (`POST /api/project-storage/reader`).
+
+### Fixed
+- The Repeater line dialog showed the translation keys of the Test button and of the hints.
+
 ## 1.3.7-3212 - 2026-11-23
 
 ### Changed
