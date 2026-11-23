@@ -148,6 +148,30 @@ module.exports = {
     //enableRefreshCookieAuth: false, // if true, use refresh token HttpOnly cookie flow
     //refreshTokenExpiresIn: '7d' // '7d'=7days, 12h=12hours, 3600=3600seconds
 
+    // OpenID Connect single sign-on (login with an external identity provider)
+    // Requires secureEnabled: true and enableRefreshCookieAuth: true, FUXA does not start if misconfigured.
+    // FUXA keeps issuing its own token: the IdP identity is mapped to a FUXA user (created on the first login).
+    // See docs/oidc-security.md
+    oidc: {
+        enabled: false,
+        displayName: 'SSO',
+        issuer: '',                     // e.g. 'https://idp.example.com/realms/fuxa'
+        clientId: '',
+        clientSecret: '',
+        redirectUri: '',                // e.g. 'https://fuxa.example.com/api/auth/oidc/callback'
+        scope: 'openid profile email',
+        usernameClaim: 'preferred_username',
+        groupsClaim: '',                // e.g. 'groups', used with groupsMapping
+        groupsMapping: {},              // e.g. { 'fuxa-engineers': 'engineer', 'fuxa-admins': 'admin' }
+        autoProvisionUsers: true,
+        defaultRole: 'operator',        // viewer, operator, engineer, supervisor, manager, administrator, admin, a bitmask, or a role with userRole
+        linkExistingUsers: false,       // true: an IdP user can sign in as the existing local user with the same username
+        syncGroupsOnLogin: false,
+        tokenEndpointAuthMethod: 'client_secret_basic',     // or 'client_secret_post'
+        clockTolerance: 60,
+        postLoginRedirect: '/'
+    },
+
     // Heartbeat interval in seconds (1-20)
     heartbeatIntervalSec: 10,
 
