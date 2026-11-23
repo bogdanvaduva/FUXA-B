@@ -122,8 +122,8 @@ is copied back to `project.fuxap.db` (the previous file is saved as a backup).
 A Repeater **DB** line can query the project database selected here:
 
 - **FUXA Project DB** (any storage): the project tables (`general`, `views`, `devices`, `texts`, `alarms`,
-  `recipes`, `notifications`, `scripts`, `reports`, `locations`, `arMarkers`, columns `name` and `value` with the
-  JSON) read from the selected storage, SQLite syntax (`json_extract`, `json_each`). They hold the project as the
+  `recipes`, `notifications`, `scripts`, `reports`, `locations`, `arMarkers`, plus `tags`; columns `id`, `name`, `value`
+  with the JSON and one per item property) read from the selected storage, SQLite syntax (`json_extract`, `json_each`). They hold the project as the
   viewer of the Repeater gets it: views filtered by permission, without credentials (device passwords and user
   names, tokens, server script code, notification and report receivers), also for admins. `devicesSecurity` is
   not available.

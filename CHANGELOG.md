@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.7-3212 - 2026-11-23
+
+### Changed
+- Repeater **FUXA Project DB**: the tables have the columns `id` (the key of the item, was `name`), `name` (the name
+  of the item), `value` and one column per item property (`devices.type`, `devices.enabled`, ...), and a new
+  `tags` table with the tags of all devices (`deviceId`, `deviceName`, `address`, ...).
+
+### Added
+- Repeater data line dialog: **Test** button that runs the SQL not saved yet (admins, `POST /api/daq/sql/test`) and
+  shows the row count and the first rows, or the SQL error (before, a wrong query only showed an empty Repeater).
+
 ## 1.3.7-3209 - 2026-11-23
 
 ### Added

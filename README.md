@@ -219,8 +219,9 @@ To read an external service without CORS problems use a [proxy](#proxies).
 | DAQ | the storage the query runs on: the DAQ SQLite databases (one per device), PostgreSQL if it is the DAQ storage, **FUXA App DB**, **FUXA Project DB** or **FUXA Project DB (PostgreSQL)** |
 | SQL | a read-only query, every row is an item and every column a field |
 
-The SQL runs on the server **from the saved project**: after editing a line, save the project before testing
-it in the view. Queries are read-only (SQLite opened read-only, PostgreSQL in a `READ ONLY` transaction) and
+The SQL runs on the server **from the saved project**: after editing a line, save the project before using
+it in the view. The **Test** button of the line dialog runs the SQL not saved yet (admins) and shows the row count
+with the first rows, or the SQL error. Queries are read-only (SQLite opened read-only, PostgreSQL in a `READ ONLY` transaction) and
 `ATTACH` of other databases is blocked.
 
 DAQ SQLite example (last values with the tag names, the tags map is attached as `map`):
@@ -283,9 +284,16 @@ Text values of App DB rows that look like JSON (`{...}` or `[...]`, e.g. `tagLis
 #### FUXA Project DB
 
 The **FUXA Project DB** entry queries the project of the storage selected in **Setup → Settings → Project storage**
-(SQLite or PostgreSQL), with SQLite syntax. Its tables are the project storage tables: `general`, `views`,
-`devices`, `texts`, `alarms`, `recipes`, `notifications`, `scripts`, `reports`, `locations`, `arMarkers`, each with
-the columns `name` and `value` (the JSON of the item, returned as object).
+(SQLite or PostgreSQL), with SQLite syntax (`random()`, not `RAND()`). Its tables are the project storage tables
+`general`, `views`, `devices`, `texts`, `alarms`, `recipes`, `notifications`, `scripts`, `reports`, `locations`,
+`arMarkers`, plus `tags` (the tags of all devices, with `deviceId` and `deviceName`). Every table has the columns:
+
+| Column | Content |
+|---|---|
+| `id` | the key of the item (device id, view id, alarm name, ...) |
+| `name` | the name of the item |
+| `value` | the whole item as JSON (returned as object) |
+| one per item property | e.g. `devices.type`, `devices.enabled` (1/0), `devices.tags`, `tags.address`, `tags.type`; objects as JSON |
 
 The content is what the viewer of the Repeater gets from the project: views filtered by permission, and never the
 credentials (device passwords and user names, tokens, server script code, notification and report receivers), also
@@ -293,10 +301,14 @@ for admins. `devicesSecurity` is not available.
 
 ```sql
 -- one item per view
-SELECT name AS id, json_extract(value, '$.name') AS title FROM views ORDER BY title
+SELECT id, name AS title FROM views ORDER BY title
+
+-- one item per enabled device with the names of its tags
+SELECT d.id, d.name AS device, (SELECT group_concat(t.name, ', ') FROM tags t WHERE t.deviceId = d.id) AS tags
+FROM devices d WHERE d.enabled = 1 ORDER BY d.name
 
 -- one item per alarm with its tag
-SELECT name, json_extract(value, '$.property.variableId') AS tag FROM alarms
+SELECT id, json_extract(property, '$.variableId') AS tag FROM alarms
 ```
 
 With the PostgreSQL project storage, **FUXA Project DB (PostgreSQL)** queries the other tables of that database
