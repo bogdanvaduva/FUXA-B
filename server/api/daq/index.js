@@ -188,7 +188,11 @@ async function _queryRepeaterLine(req, line) {
         const permission = checkGroupsFnc(req);
         const project = await runtime.project.getProject(req.userId, permission);
         const sanitized = projectsApi.sanitizeProjectForViewer(project || {}, permission);
-        const tables = projectTables.toTables(sanitized);
+        let values = {};
+        try {
+            values = runtime.devices.getDevicesValues() || {};
+        } catch (err) { }
+        const tables = projectTables.toTables(sanitized, values);
         return (line.daq === daqStorage.PROJECT_PG_ID) ? prjstorage.queryAsReader(line.sql, tables) : daqStorage.queryTables(tables, line.sql);
     }
     return daqStorage.querySql(line.daq, line.sql);

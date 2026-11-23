@@ -7,6 +7,8 @@
  *   - value: the whole item as JSON text
  *   - one column for each top level property of the items (type, enabled, property, tags, ...),
  *     objects and arrays as JSON text, booleans as 1/0
+ *  With the current values: devices.tagList { <tag name>: { id, name, label, type, address, value, timestamp } } and
+ *  tags.tagValue, tags.timestamp, tags.tag ({ id, name, value, timestamp }: the Repeater binds it to the live value)
  *  devicesSecurity is never included
  */
 
@@ -51,11 +53,37 @@ function _row(id, item, extra) {
     return row;
 }
 
-function _addDevice(tables, id, device, withTags) {
-    tables[TableType.DEVICES].push(_row(id, device));
+/**
+ * Tags of a device as object keyed by tag name with the current values:
+ * { <name>: { id, name, label, type, address, value, timestamp } }
+ */
+function deviceTagList(device, values) {
+    const list = {};
+    Object.values((device && device.tags) || {}).forEach(tag => {
+        if (!tag || typeof tag !== 'object') {
+            return;
+        }
+        const current = (values || {})[tag.id];
+        list[tag.name || tag.id] = {
+            id: tag.id, name: tag.name, label: tag.label ?? null, type: tag.type ?? null,
+            address: tag.address ?? null, value: current?.value ?? null, timestamp: current?.timestamp ?? null
+        };
+    });
+    return list;
+}
+
+function _addDevice(tables, id, device, withTags, values) {
+    const deviceValues = (values && values[device.id ?? id]) || {};
+    tables[TableType.DEVICES].push(_row(id, device, { tagList: deviceTagList(device, deviceValues) }));
     Object.values((withTags !== false && device.tags) || {}).forEach(tag => {
         if (tag && typeof tag === 'object') {
-            tables[TAGS_TABLE].push(_row(tag.id, tag, { deviceId: device.id ?? id, deviceName: device.name ?? null }));
+            const current = deviceValues[tag.id];
+            const tagValue = current?.value ?? null;
+            const timestamp = current?.timestamp ?? null;
+            tables[TAGS_TABLE].push(_row(tag.id, tag, {
+                deviceId: device.id ?? id, deviceName: device.name ?? null, tagValue: tagValue, timestamp: timestamp,
+                tag: { id: tag.id, name: tag.name ?? null, value: tagValue, timestamp: timestamp }
+            }));
         }
     });
 }
@@ -63,8 +91,9 @@ function _addDevice(tables, id, device, withTags) {
 /**
  * Convert the project to table rows { <table>: [{ id, name, value, <item properties> }] }
  * @param {*} project the project data (already filtered/sanitized for the requester)
+ * @param {*} values the current tag values { <device id>: { <tag id>: { value, timestamp } } } (optional)
  */
-function toTables(project) {
+function toTables(project, values) {
     const tables = {};
     QUERY_TABLES.forEach(table => tables[table] = []);
     if (!project || typeof project !== 'object') {
@@ -73,10 +102,10 @@ function toTables(project) {
     Object.keys(project).forEach(key => {
         const value = project[key];
         if (key === 'devices') {
-            Object.values(value || {}).forEach(device => device && _addDevice(tables, device.id, device));
+            Object.values(value || {}).forEach(device => device && _addDevice(tables, device.id, device, true, values));
         } else if (key === 'server') {
             // the server is also in devices (same id): its tags only once
-            value && _addDevice(tables, 'server', value, !(project.devices && project.devices[value.id]));
+            value && _addDevice(tables, 'server', value, !(project.devices && project.devices[value.id]), values);
         } else if (key === 'hmi') {
             Object.keys(value || {}).forEach(hk => {
                 if (hk === 'views') {
@@ -104,5 +133,6 @@ function toTables(project) {
 
 module.exports = {
     toTables: toTables,
+    deviceTagList: deviceTagList,
     QUERY_TABLES: QUERY_TABLES,
 };

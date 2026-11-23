@@ -49,7 +49,17 @@ describe('Project tables', function () {
         const d1 = tables.devices.find(r => r.id === 'd1');
         assert.equal(d1.name, 'PLC 1');
         assert.equal(d1.type, 'ModbusTCP');
-        assert.deepEqual(tables.tags, [{ id: 't1', name: 'temp', value: { id: 't1', name: 'temp' }, deviceId: 'd1', deviceName: 'PLC 1' }]);
+        assert.deepEqual(tables.tags, [{ id: 't1', name: 'temp', value: { id: 't1', name: 'temp' }, deviceId: 'd1', deviceName: 'PLC 1',
+            tagValue: null, timestamp: null, tag: { id: 't1', name: 'temp', value: null, timestamp: null } }]);
+    });
+
+    it('has the current tag values (tags.tagValue, tags.tag, devices.tagList)', function () {
+        const tables = projectTables.toTables(project(), { d1: { t1: { id: 't1', value: 21.5, timestamp: 1000 } } });
+        const t1 = tables.tags.find(r => r.id === 't1');
+        assert.equal(t1.tagValue, 21.5);
+        assert.deepEqual(t1.tag, { id: 't1', name: 'temp', value: 21.5, timestamp: 1000 });
+        assert.deepEqual(tables.devices.find(r => r.id === 'd1').tagList,
+            { temp: { id: 't1', name: 'temp', label: null, type: null, address: null, value: 21.5, timestamp: 1000 } });
     });
 });
 
@@ -114,6 +124,7 @@ describe('Repeater FUXA Project DB API', function () {
                 }
             },
             daqStorage: daqStorage,
+            devices: { getDevicesValues: () => ({ d1: { t1: { id: 't1', value: 42, timestamp: 5 } } }) },
             scriptsMgr: { isAuthorised: () => true },
             logger: { error() {} }
         };
@@ -149,6 +160,12 @@ describe('Repeater FUXA Project DB API', function () {
         assert.deepEqual(getProjectArgs, ['operator', 1]);
     });
 
+    it('returns the current tag values', async function () {
+        const res = await query("SELECT t.name, t.tagValue, t.tag, json_extract(d.tagList, '$.temp.value') AS fromList FROM tags t JOIN devices d ON d.id = t.deviceId");
+        assert.equal(res.status, 200);
+        assert.deepEqual(res.body, [{ name: 'temp', tagValue: 42, tag: { id: 't1', name: 'temp', value: 42, timestamp: 5 }, fromList: 42 }]);
+    });
+
     it('never returns credentials', async function () {
         const res = await query('SELECT * FROM devices');
         const scripts = await query('SELECT * FROM scripts');
@@ -182,9 +199,9 @@ describe('Repeater FUXA Project DB API', function () {
         let res = await post({ daq: '@project', sql: "SELECT d.id, (SELECT group_concat(t.name) FROM tags t WHERE t.deviceId = d.id) AS tags FROM devices d WHERE d.id LIKE 'd%' ORDER BY d.id" });
         assert.equal(res.status, 200);
         assert.deepEqual(res.body, { count: 2, rows: [{ id: 'd1', tags: 'temp' }, { id: 'd2', tags: null }] });
-        res = await post({ daq: '@project', sql: 'SELECT d.tagList FROM devices d' });
+        res = await post({ daq: '@project', sql: 'SELECT d.tagCount FROM devices d' });
         assert.equal(res.status, 400);
-        assert.match(res.body.message, /no such column: d.tagList/);
+        assert.match(res.body.message, /no such column: d.tagCount/);
     });
 
     it('refuses the query test to a non admin', async function () {

@@ -11,6 +11,7 @@ const InfluxDB = require("./influxdb");
 const TDengine  =require("./tdengine");
 const PostgreSQL = require("./postgresql");
 const CurrentStorage = require("./sqlite/currentstorage");
+const projectTables = require('../project/project-tables');
 // var DaqNode = require('./daqnode');
 var calculator = require('./calculator');
 var utils = require('../utils');
@@ -250,26 +251,11 @@ function _fillAppDevices(db) {
         dev.property?.address ?? null, dev.property?.port ?? null, dev.property?.slaveid ?? null,
         Object.keys(dev.tags || {}).length,
         (typeof status[dev.id] === 'string' ? status[dev.id] : status[dev.id]?.status) ?? null,
-        JSON.stringify(_deviceTagList(dev, values[dev.id] || {}))
+        JSON.stringify(projectTables.deviceTagList(dev, values[dev.id] || {}))
     ]);
     const exec = (sql, params = []) => new Promise((resolve, reject) => db.run(sql, params, err => err ? reject(err) : resolve()));
     return exec('CREATE TEMP TABLE devices (id TEXT, name TEXT, type TEXT, enabled INTEGER, polling INTEGER, address TEXT, port TEXT, slaveid TEXT, tags INTEGER, status TEXT, tagList TEXT)')
         .then(() => rows.reduce((p, row) => p.then(() => exec('INSERT INTO temp.devices VALUES (?,?,?,?,?,?,?,?,?,?,?)', row)), Promise.resolve()));
-}
-
-/**
- * Tags of a device as object keyed by tag name: { <name>: { id, name, label, type, address, value, timestamp } }
- */
-function _deviceTagList(dev, values) {
-    const list = {};
-    Object.values(dev.tags || {}).forEach(tag => {
-        const current = values[tag.id];
-        list[tag.name || tag.id] = {
-            id: tag.id, name: tag.name, label: tag.label ?? null, type: tag.type ?? null,
-            address: tag.address ?? null, value: current?.value ?? null, timestamp: current?.timestamp ?? null
-        };
-    });
-    return list;
 }
 
 /**

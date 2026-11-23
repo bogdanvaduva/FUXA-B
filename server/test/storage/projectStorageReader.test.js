@@ -87,13 +87,16 @@ describe('Project storage PostgreSQL reader login', function () {
                 d2: { id: 'd2', name: 'Off', type: 'ModbusTCP', enabled: false, tags: {} }
             },
             hmi: { views: [{ id: 'v1', name: 'Main', items: {} }] }
-        });
+        }, { d1: { t1: { value: 21.5, timestamp: 1000 }, t2: { value: true, timestamp: 1000 } } });
         const sql = `SELECT d.id, d.name AS device, d.polling,
                 (SELECT string_agg(t.name, ', ' ORDER BY t.name) FROM tags t WHERE t.deviceId = d.id) AS tags,
                 d.value->>'type' AS type, (SELECT count(*)::int FROM plant_items) AS items
             FROM devices d WHERE d.enabled ORDER BY d.name`;
         const rows = await postgres.queryAsReader(sql, tables);
         assert.deepEqual(rows, [{ id: 'd1', device: 'PLC 1', polling: 1000, tags: 'level, temp', type: 'ModbusTCP', items: 2 }]);
+        const values = await postgres.queryAsReader(`SELECT t.name, t.tagValue, t.tag->>'value' AS entry, d.tagList->'temp'->'value' AS fromList
+            FROM tags t JOIN devices d ON d.id = t.deviceId ORDER BY t.name`, tables);
+        assert.deepEqual(values, [{ name: 'level', tagvalue: true, entry: 'true', fromlist: 21.5 }, { name: 'temp', tagvalue: 21.5, entry: '21.5', fromlist: 21.5 }]);
         // still no access to the stored project tables, and nothing is left
         await assert.rejects(postgres.queryAsReader(`SELECT * FROM ${SCHEMA}.devicessecurity`, tables), /permission denied/);
         await assert.rejects(postgres.queryAsReader("INSERT INTO plant_items VALUES (3, 'x')", tables), /read-only transaction/);
