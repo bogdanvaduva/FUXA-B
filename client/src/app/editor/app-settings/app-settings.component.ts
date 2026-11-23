@@ -63,6 +63,8 @@ export class AppSettingsComponent implements OnInit {
     prjStorageCurrent: any = null;
     prjStoragePasswordSet = false;
     prjStorageBusy = false;
+    prjReader = { user: '', password: '' };
+    prjReaderPasswordSet = false;
 
     constructor(private settingsService: SettingsService,
         private diagnoseService: DiagnoseService,
@@ -136,6 +138,9 @@ export class AppSettingsComponent implements OnInit {
             const postgres = Object.assign({}, result?.settings?.postgres || {});
             this.prjStoragePasswordSet = !!postgres.passwordSet;
             delete postgres.passwordSet;
+            this.prjReader = { user: postgres.reader?.user || '', password: '' };
+            this.prjReaderPasswordSet = !!postgres.reader?.passwordSet;
+            delete postgres.reader;
             this.prjStorage = { type: result?.current?.type || result?.settings?.type || 'sqlite', postgres: Object.assign(postgres, { password: '' }) };
         }, err => {
             this.prjStorageCurrent = null;
@@ -180,6 +185,19 @@ export class AppSettingsComponent implements OnInit {
         }, err => {
             this.prjStorageBusy = false;
             this.notifyError(err?.error?.message || err?.message || 'Connection failed');
+        });
+    }
+
+    onPrjReaderSave() {
+        this.prjStorageBusy = true;
+        this.http.post<any>(EndPointApi.getURL() + '/api/project-storage/reader', this.prjReader).subscribe(result => {
+            this.prjStorageBusy = false;
+            this.prjReaderPasswordSet = !!result?.settings?.postgres?.reader?.passwordSet;
+            this.prjReader.password = '';
+            this.toastr.success(this.translateService.instant('msg.prjstorage-reader-saved'));
+        }, err => {
+            this.prjStorageBusy = false;
+            this.notifyError(err?.error?.message || err?.message || 'Reader login failed');
         });
     }
 

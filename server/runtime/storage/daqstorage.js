@@ -175,9 +175,11 @@ function getSqlNodes() {
     }));
     nodes.push({ id: APP_DB_ID, name: 'FUXA App DB', type: 'SQLite' });
     const storage = settings?.storage || {};
-    nodes.push({ id: PROJECT_DB_ID, name: 'FUXA Project DB', type: 'SQLite' });
-    if (storage.type === 'postgres' && storage.postgres?.reader?.user) {
-        nodes.push({ id: PROJECT_PG_ID, name: 'FUXA Project DB (PostgreSQL)', type: 'postgresql' });
+    // the project of the selected project storage, with its SQL syntax
+    if (storage.type === 'postgres') {
+        nodes.push({ id: PROJECT_PG_ID, name: 'FUXA Project DB', type: 'PostgreSQL' });
+    } else {
+        nodes.push({ id: PROJECT_DB_ID, name: 'FUXA Project DB', type: 'SQLite' });
     }
     return nodes;
 }

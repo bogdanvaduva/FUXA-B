@@ -71,7 +71,7 @@ describe('daqstorage.queryTables', function () {
         await assert.rejects(daqStorage.queryTables(tables, "ATTACH DATABASE 'project.fuxap.db' AS p"), /too many attached|attach/i);
     });
 
-    it('lists the FUXA Project DB, the PostgreSQL one only with a reader login', function () {
+    it('lists the FUXA Project DB of the selected project storage', function () {
         // init opens the current values database: run it in a child process that exits
         const nodeIds = (storage) => {
             const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fuxa-repeater-'));
@@ -89,8 +89,9 @@ describe('daqstorage.queryTables', function () {
         let ids = nodeIds({ type: 'sqlite' });
         assert.ok(ids.includes('@project'));
         assert.ok(!ids.includes('@project-pg'));
-        ids = nodeIds({ type: 'postgres', postgres: { reader: { user: 'fx_reader' } } });
+        ids = nodeIds({ type: 'postgres', postgres: {} });
         assert.ok(ids.includes('@project-pg'));
+        assert.ok(!ids.includes('@project'));
     });
 });
 

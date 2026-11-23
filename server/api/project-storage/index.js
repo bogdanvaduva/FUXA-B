@@ -2,6 +2,7 @@
  * 'api/project-storage': project storage (SQLite / PostgreSQL) for the editor settings, admin only
  *  GET  /api/project-storage         storage in use and settings (without password)
  *  POST /api/project-storage/test    check a PostgreSQL connection
+ *  POST /api/project-storage/reader  save the Repeater reader login (PostgreSQL)
  *  POST /api/project-storage/switch  copy the project to the other storage (its content backed up), use it,
  *                                    save storage in mysettings.json and reload the project
  */
@@ -55,7 +56,7 @@ function publicStorage(storage) {
     delete postgres.password;
     if (postgres.reader) {
         // Repeater reader login (settings only): the user name without password
-        postgres.reader = { user: postgres.reader.user };
+        postgres.reader = { user: postgres.reader.user, passwordSet: !!postgres.reader.password };
     }
     return { type: (storage && storage.type) || 'sqlite', postgres: Object.assign(postgres, { passwordSet: passwordSet }) };
 }
@@ -112,6 +113,50 @@ module.exports = {
                 return;
             }
             res.json({ current: prjstorage.getCurrent(), settings: publicStorage(runtime.settings.storage), switching: switching });
+        });
+
+        /**
+         * Save the Repeater reader login { user, password } (empty password keeps the saved one, empty user
+         * removes it): checked with a query first (refused if it can read the project tables or is superuser)
+         */
+        storageApp.post('/api/project-storage/reader', secureFnc, async function (req, res) {
+            if (!checkAdmin(req, res, 'post project-storage/reader')) {
+                return;
+            }
+            const storage = runtime.settings.storage || {};
+            if (storage.type !== 'postgres') {
+                return res.status(400).json({ error: 'invalid_request', message: 'the project storage is not PostgreSQL' });
+            }
+            const user = typeof req.body?.user === 'string' ? req.body.user.trim() : '';
+            const password = typeof req.body?.password === 'string' ? req.body.password : '';
+            const previous = storage.postgres.reader;
+            let reader;
+            if (user) {
+                reader = Object.assign({}, previous, { user: user });
+                if (password) {
+                    reader.password = password;
+                } else if (!previous || previous.user !== user) {
+                    delete reader.password;
+                }
+            }
+            storage.postgres.reader = reader;
+            try {
+                if (reader) {
+                    await prjstorage.queryAsReader('SELECT 1 AS ok');
+                }
+                if (!reader) {
+                    delete storage.postgres.reader;
+                }
+                persistStorage(storage);
+                runtime.logger.info(`api project-storage/reader: ${reader ? `'${reader.user}' saved` : 'removed'} by ${req.userId || 'unknown'}`, true);
+                res.json({ ok: true, settings: publicStorage(storage) });
+            } catch (err) {
+                storage.postgres.reader = previous;
+                if (!previous) {
+                    delete storage.postgres.reader;
+                }
+                res.status(400).json({ error: 'reader_failed', message: err.message });
+            }
         });
 
         storageApp.post('/api/project-storage/test', secureFnc, async function (req, res) {

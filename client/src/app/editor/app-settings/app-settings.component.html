@@ -338,6 +338,22 @@
                         </div>
                     </div>
                     <div class="prjstorage-note mt15">{{'dlg.app-settings-prjstorage-note' | translate}}</div>
+                    <div *ngIf="prjStorageCurrent?.type === 'postgres'" class="block mt20">
+                        <div class="my-form-field block"><span>{{'dlg.app-settings-prjstorage-reader' | translate}}</span></div>
+                        <div class="block">
+                            <div class="my-form-field inbk">
+                                <span>{{'dlg.app-settings-daqstore-username' | translate}}</span>
+                                <input [(ngModel)]="prjReader.user" placeholder="fuxa_reader" style="width: 170px" type="text">
+                            </div>
+                            <div class="my-form-field inbk ml10">
+                                <span>{{'dlg.app-settings-daqstore-password' | translate}}</span>
+                                <input autocomplete="new-password" (keydown)="keyDownStopPropagation($event)" [(ngModel)]="prjReader.password"
+                                       [placeholder]="prjReaderPasswordSet ? ('dlg.app-settings-prjstorage-password-saved' | translate) : ''" style="width: 170px" type="password">
+                            </div>
+                            <button mat-raised-button color="basic" class="ml10" (click)="onPrjReaderSave()" [disabled]="prjStorageBusy">{{'dlg.app-settings-prjstorage-reader-save' | translate}}</button>
+                        </div>
+                        <div class="prjstorage-note mt5">{{'dlg.app-settings-prjstorage-reader-note' | translate}}</div>
+                    </div>
                     <div class="block mt15 mb20">
                         <button mat-raised-button color="basic" (click)="onPrjStorageTest()" [disabled]="prjStorageBusy || prjStorage.type !== 'postgres'">{{'dlg.app-settings-prjstorage-test' | translate}}</button>
                         <button mat-raised-button color="primary" class="ml10" (click)="onPrjStorageSwitch()" [disabled]="!isPrjStorageSwitchReady()">{{'dlg.app-settings-prjstorage-switch' | translate}}</button>

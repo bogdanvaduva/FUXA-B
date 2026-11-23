@@ -31,6 +31,7 @@ const READER_CHECK_SQL = `SELECT EXISTS (
           SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
           WHERE c.relkind IN ('r', 'v', 'm', 'p', 'f') AND lower(c.relname) = ANY($1::text[])
             AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+            AND n.nspname NOT LIKE 'pg\\_temp\\_%' AND n.nspname NOT LIKE 'pg\\_toast\\_temp\\_%'
             AND has_any_column_privilege(r.oid, c.oid, 'SELECT')))
 ) AS unsafe`;
 
@@ -364,9 +365,12 @@ async function testConnection(_settings) {
  * Run a read-only query (Repeater 'FUXA Project DB (PostgreSQL)') with the reader login of
  * settings.storage.postgres.reader { user, password, statementTimeout }: its own connection (the query
  * cannot take the privileges of the FUXA login), one statement, READ ONLY transaction, rolled back.
- * Refused when the login can read the project tables (credentials) or is superuser
+ * Refused when the login can read the project tables (credentials) or is superuser.
+ * With tables { <table>: [{ <column>: <value> }] } (the sanitized project) they are created as temporary tables
+ * of the transaction, dropped at the end, before the query: column names in lower case (unquoted SQL names
+ * match them), types from the values (boolean, double precision, text, else jsonb), id/name text, value jsonb
  */
-async function queryAsReader(sql) {
+async function queryAsReader(sql, tables) {
     const reader = settings && settings.storage && settings.storage.postgres && settings.storage.postgres.reader;
     if (!reader || !reader.user) {
         throw new Error('settings.storage.postgres.reader not defined');
@@ -383,12 +387,19 @@ async function queryAsReader(sql) {
     const timeout = Number(reader.statementTimeout) || 30000;
     const client = await readerPool.connect();
     try {
-        await client.query('BEGIN READ ONLY');
+        // read-write only for the temporary tables, then read only before the query
+        await client.query(tables ? 'BEGIN' : 'BEGIN READ ONLY');
         await client.query(`SET LOCAL statement_timeout = ${Math.floor(timeout)}`);
         const check = await client.query(READER_CHECK_SQL, [PROJECT_TABLE_NAMES, UNSAFE_ROLES]);
         if (check.rows[0].unsafe) {
             throw new Error(`the reader login '${reader.user}' can read the FUXA project tables or is a superuser, ` +
                 'use a login with SELECT only on your own tables (see docs/storage-migration.md)');
+        }
+        if (tables) {
+            for (const table of Object.keys(tables)) {
+                await _createTempTable(client, table, tables[table] || []);
+            }
+            await client.query('SET TRANSACTION READ ONLY');
         }
         // extended protocol: a single statement (no 'COMMIT; ...')
         const result = await client.query({ text: sql, queryMode: 'extended' });
@@ -397,6 +408,53 @@ async function queryAsReader(sql) {
         await client.query('ROLLBACK').catch(() => {});
         client.release();
     }
+}
+
+function _pgType(values) {
+    const set = values.filter(v => v !== null && v !== undefined);
+    if (set.length && set.every(v => typeof v === 'boolean')) {
+        return 'boolean';
+    }
+    if (set.length && set.every(v => typeof v === 'number' && isFinite(v))) {
+        return 'double precision';
+    }
+    if (set.every(v => typeof v === 'string')) {
+        return 'text';
+    }
+    return 'jsonb';
+}
+
+/**
+ * Temporary table (dropped at the end of the transaction) with the rows, filled with one jsonb parameter
+ */
+async function _createTempTable(client, table, rows) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) {
+        return;
+    }
+    const columns = new Map();      // lower case name -> row key
+    ['id', 'name', 'value'].forEach(key => columns.set(key, key));
+    rows.forEach(row => Object.keys(row || {}).forEach(key => {
+        const lower = key.toLowerCase();
+        if (/^[a-z_][a-z0-9_]*$/.test(lower) && !columns.has(lower)) {
+            columns.set(lower, key);
+        }
+    }));
+    const defs = [];
+    columns.forEach((key, column) => {
+        const type = (column === 'id' || column === 'name') ? 'text' : (column === 'value') ? 'jsonb' : _pgType(rows.map(row => row[key]));
+        defs.push(`"${column}" ${type}`);
+    });
+    const name = table.toLowerCase();
+    await client.query(`CREATE TEMP TABLE "${name}" (${defs.join(', ')}) ON COMMIT DROP`);
+    if (!rows.length) {
+        return;
+    }
+    const records = rows.map(row => {
+        const record = {};
+        columns.forEach((key, column) => record[column] = (row[key] === undefined) ? null : row[key]);
+        return record;
+    });
+    await client.query(`INSERT INTO "${name}" SELECT * FROM jsonb_populate_recordset(NULL::"${name}", $1::jsonb)`, [JSON.stringify(records)]);
 }
 
 function _closeReader() {

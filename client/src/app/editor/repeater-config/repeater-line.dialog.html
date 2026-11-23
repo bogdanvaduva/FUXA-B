@@ -30,6 +30,9 @@
                 <div *ngIf="data.daq === '@project'" style="font-size: 11px; color: gray; width: 300px; margin-top: 3px;">
                     {{'repeater.config-line-project-hint' | translate}}
                 </div>
+                <div *ngIf="data.daq === '@project-pg'" style="font-size: 11px; color: gray; width: 300px; margin-top: 3px;">
+                    {{'repeater.config-line-project-pg-hint' | translate}}
+                </div>
             </div>
             <div style="display: block; margin-bottom: 10px;">
                 <button mat-stroked-button type="button" (click)="onTestSql()" [disabled]="testing || !data.daq || !data.sql">

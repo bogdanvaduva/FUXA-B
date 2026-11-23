@@ -255,7 +255,7 @@ describe('Project storage switch (SQLite <-> PostgreSQL)', function () {
             expect(res.json.current.type).to.equal('sqlite');
             expect(res.json.settings.postgres.passwordSet).to.equal(true);
             expect(res.json.settings.postgres).to.not.have.property('password');
-            expect(res.json.settings.postgres.reader).to.deep.equal({ user: 'fuxa_reader' });
+            expect(res.json.settings.postgres.reader).to.deep.equal({ user: 'fuxa_reader', passwordSet: true });
         });
 
         it('tests a connection, the saved password is used when empty', async () => {

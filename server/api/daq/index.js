@@ -184,14 +184,12 @@ module.exports = {
  */
 async function _queryRepeaterLine(req, line) {
     const daqStorage = runtime.daqStorage;
-    if (line.daq === daqStorage.PROJECT_DB_ID) {
+    if (line.daq === daqStorage.PROJECT_DB_ID || line.daq === daqStorage.PROJECT_PG_ID) {
         const permission = checkGroupsFnc(req);
         const project = await runtime.project.getProject(req.userId, permission);
         const sanitized = projectsApi.sanitizeProjectForViewer(project || {}, permission);
-        return daqStorage.queryTables(projectTables.toTables(sanitized), line.sql);
-    }
-    if (line.daq === daqStorage.PROJECT_PG_ID) {
-        return prjstorage.queryAsReader(line.sql);
+        const tables = projectTables.toTables(sanitized);
+        return (line.daq === daqStorage.PROJECT_PG_ID) ? prjstorage.queryAsReader(line.sql, tables) : daqStorage.queryTables(tables, line.sql);
     }
     return daqStorage.querySql(line.daq, line.sql);
 }

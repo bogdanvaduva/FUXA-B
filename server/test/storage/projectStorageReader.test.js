@@ -7,6 +7,7 @@
 const assert = require('node:assert/strict');
 const { Pool } = require('pg');
 const postgres = require('../../runtime/project/storage/postgres');
+const projectTables = require('../../runtime/project/project-tables');
 
 const PG_URL = process.env.FUXA_TEST_PG;
 const SCHEMA = 'fuxa_reader_test';
@@ -77,6 +78,26 @@ describe('Project storage PostgreSQL reader login', function () {
         await assert.rejects(postgres.queryAsReader(`SELECT set_config('role', '${user}', true)`), /permission denied|must be member/);
         const count = await admin.query(`SELECT count(*)::int AS count FROM ${SCHEMA}.plant_items`);
         assert.equal(count.rows[0].count, 2);
+    });
+
+    it('queries the project as temporary tables with the own tables, PostgreSQL syntax', async function () {
+        const tables = projectTables.toTables({
+            devices: {
+                d1: { id: 'd1', name: 'PLC 1', type: 'ModbusTCP', enabled: true, polling: 1000, tags: { t1: { id: 't1', name: 'temp', address: '40001' }, t2: { id: 't2', name: 'level' } } },
+                d2: { id: 'd2', name: 'Off', type: 'ModbusTCP', enabled: false, tags: {} }
+            },
+            hmi: { views: [{ id: 'v1', name: 'Main', items: {} }] }
+        });
+        const sql = `SELECT d.id, d.name AS device, d.polling,
+                (SELECT string_agg(t.name, ', ' ORDER BY t.name) FROM tags t WHERE t.deviceId = d.id) AS tags,
+                d.value->>'type' AS type, (SELECT count(*)::int FROM plant_items) AS items
+            FROM devices d WHERE d.enabled ORDER BY d.name`;
+        const rows = await postgres.queryAsReader(sql, tables);
+        assert.deepEqual(rows, [{ id: 'd1', device: 'PLC 1', polling: 1000, tags: 'level, temp', type: 'ModbusTCP', items: 2 }]);
+        // still no access to the stored project tables, and nothing is left
+        await assert.rejects(postgres.queryAsReader(`SELECT * FROM ${SCHEMA}.devicessecurity`, tables), /permission denied/);
+        await assert.rejects(postgres.queryAsReader("INSERT INTO plant_items VALUES (3, 'x')", tables), /read-only transaction/);
+        await assert.rejects(postgres.queryAsReader('SELECT * FROM views'), /permission denied|does not exist/);
     });
 
     it('refuses a reader login that can read a project table', async function () {
