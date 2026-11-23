@@ -33,6 +33,7 @@ var alarmsMgr;
 var notificatorMgr;
 var scriptsMgr;
 var jobsMgr;
+var schedulerInitPromise = Promise.resolve();
 var tagsSubscription = new Map();
 var socketPool = new Map();
 var socketMutex = new Map();
@@ -74,7 +75,7 @@ function init(_io, _api, _settings, _log, eventsMain) {
     daqstorage.init(settings, logger, runtime);
 
     // Initialize scheduler services
-    schedulerStorage.init(settings, logger, runtime).then(() => {
+    schedulerInitPromise = schedulerStorage.init(settings, logger, runtime).then(() => {
         return schedulerService.init(settings, logger, runtime);
     }).then(() => {
         logger.info('runtime init scheduler services successful!', true);
@@ -176,7 +177,7 @@ function init(_io, _api, _settings, _log, eventsMain) {
         // client ask device property
         socket.on(Events.IoEventTypes.DEVICE_PROPERTY, (message) => {
             try {
-                if (!isSocketWriteAuthorized(socket)) {
+                if (!isSocketAdminAuthorized(socket)) {
                     logger.warn(`${Events.IoEventTypes.DEVICE_PROPERTY}: unauthorized request from ${socket.userId || 'guest'}`);
                     return;
                 }
@@ -287,6 +288,14 @@ function init(_io, _api, _settings, _log, eventsMain) {
                 if (msg && Array.isArray(msg.sids) && msg.sids.length) {
                     const TIME_CHUNK_SIZE = 6 * 60 * 60 * 1000;
                     const MAX_TIME_CHUNKS = 744; // Maximum query range: 186 days
+                    const MAX_SIDS = 100;
+                    if (msg.sids.length > MAX_SIDS) {
+                        socket.emit(Events.IoEventTypes.DAQ_ERROR, {
+                            gid: msg.gid,
+                            error: `Invalid DAQ query (maximum ${MAX_SIDS} tags)`
+                        });
+                        return;
+                    }
                     if (!Number.isFinite(msg.from) || !Number.isFinite(msg.to) || msg.from >= msg.to ||
                         msg.to - msg.from > TIME_CHUNK_SIZE * MAX_TIME_CHUNKS) {
                         socket.emit(Events.IoEventTypes.DAQ_ERROR, {
@@ -324,6 +333,10 @@ function init(_io, _api, _settings, _log, eventsMain) {
                 }
             } catch (err) {
                 logger.error(`${Events.IoEventTypes.DAQ_QUERY}: ${err}`);
+                socket.emit(Events.IoEventTypes.DAQ_ERROR, {
+                    gid: msg && msg.gid,
+                    error: err && err.message ? err.message : String(err)
+                });
             }
         });
         // client ask alarms status
@@ -470,6 +483,8 @@ function start() {
     return new Promise(function (resolve, reject) {
         // load project
         project.load().then(result => {
+            return schedulerInitPromise.then(() => schedulerService.loadSchedulers());
+        }).then(() => {
             // start to comunicate with devices
             devices.start().then(function () {
                 resolve(true);
@@ -527,6 +542,9 @@ function stop() {
             scriptsMgr.stop().catch(function (err) {
                 logger.error('runtime.failed-to-stop-scriptsMgr: ' + err);
             }),
+            schedulerService.stopAllSchedulers().catch(function (err) {
+                logger.error('runtime.failed-to-stop-schedulers: ' + err);
+            }),
             jobsMgr.stop().catch(function (err) {
                 logger.error('runtime.failed-to-stop-jobsMgr: ' + err);
             })
@@ -556,6 +574,14 @@ function update(cmd, data) {
                 scriptsMgr.updateScript(data);
             } else if (cmd === project.ProjectDataCmdType.DelScript) {
                 scriptsMgr.removeScript(data);
+            } else if (cmd === project.ProjectDataCmdType.SetView || cmd === project.ProjectDataCmdType.DelView) {
+                schedulerInitPromise.then(() => schedulerService.reconcileProjectSchedulers()).then(() => {
+                    resolve(true);
+                }).catch(err => {
+                    logger.error('runtime.failed-to-reconcile-schedulers: ' + err);
+                    reject(err);
+                });
+                return;
             } else if (cmd === project.ProjectDataCmdType.SetReport || cmd === project.ProjectDataCmdType.DelReport) {
                 jobsMgr.reset();
             }
