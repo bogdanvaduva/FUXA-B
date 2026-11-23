@@ -25,6 +25,11 @@
 				<mat-error class="error" *ngIf="errorEnabled && password.errors && password.errors.required">{{'msg.login-password-required' | translate}}
 				</mat-error>
 			</div>
+			<div *ngIf="ssoDisplayName" class="sso-login">
+				<button mat-stroked-button type="button" (click)="onSsoClick()" [disabled]="submitLoading" style="width:100%;">
+					{{'dlg.login-sso' | translate: { value: ssoDisplayName } }}
+				</button>
+			</div>
 			<div *ngIf="messageError" class="message-error" role="alert" aria-live="assertive">
 				{{messageError}}
 			</div>
