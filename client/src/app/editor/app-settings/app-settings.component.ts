@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { MatDialogRef as MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef as MatDialogRef } from '@angular/material/dialog';
+import { HttpClient } from '@angular/common/http';
 
 import { SettingsService } from '../../_services/settings.service';
 import { DiagnoseService } from '../../_services/diagnose.service';
@@ -9,6 +10,15 @@ import { ToastrService } from 'ngx-toastr';
 import { AlarmsRetentionType, AppSettings, DaqStore, DaqStoreRetentionType, DaqStoreType, MailMessage, SmtpSettings, StoreCredentials, LogsSettings, AlarmsSettings } from '../../_models/settings';
 import { Utils } from '../../_helpers/utils';
 import { APP_LANGUAGES } from '../../_models/language';
+import { EndPointApi } from '../../_helpers/endpointapi';
+import { ConfirmDialogComponent } from '../../gui-helpers/confirm-dialog/confirm-dialog.component';
+import { environment } from '../../../environments/environment';
+
+/** Project storage of the server (/api/project-storage) */
+interface ProjectStorageSettings {
+    type: 'sqlite' | 'postgres';
+    postgres: { host?: string, port?: number, database?: string, user?: string, password?: string, schema?: string, ssl?: boolean };
+}
 
 @Component({
     selector: 'app-app-settings',
@@ -49,10 +59,17 @@ export class AppSettingsComponent implements OnInit {
     logsRetationType = DaqStoreRetentionType;
     influxDB18 = Utils.getEnumKey(DaqStoreType, DaqStoreType.influxDB18);
 
+    prjStorage: ProjectStorageSettings = { type: 'sqlite', postgres: {} };
+    prjStorageCurrent: any = null;
+    prjStoragePasswordSet = false;
+    prjStorageBusy = false;
+
     constructor(private settingsService: SettingsService,
         private diagnoseService: DiagnoseService,
         private translateService: TranslateService,
         private toastr: ToastrService,
+        private http: HttpClient,
+        private dialog: MatDialog,
         public dialogRef: MatDialogRef<AppSettingsComponent>) { }
 
     ngOnInit() {
@@ -107,6 +124,89 @@ export class AppSettingsComponent implements OnInit {
             this.settings.swaggerEnabled = false;
         }
         this.originalSwaggerEnabled = this.settings.swaggerEnabled;
+        this.loadPrjStorage();
+    }
+
+    private loadPrjStorage() {
+        if (!environment.serverEnabled) {
+            return;
+        }
+        this.http.get<any>(EndPointApi.getURL() + '/api/project-storage').subscribe(result => {
+            this.prjStorageCurrent = result?.current;
+            const postgres = Object.assign({}, result?.settings?.postgres || {});
+            this.prjStoragePasswordSet = !!postgres.passwordSet;
+            delete postgres.passwordSet;
+            this.prjStorage = { type: result?.current?.type || result?.settings?.type || 'sqlite', postgres: Object.assign(postgres, { password: '' }) };
+        }, err => {
+            this.prjStorageCurrent = null;
+        });
+    }
+
+    prjStorageCurrentText(): string {
+        const current = this.prjStorageCurrent;
+        if (!current) {
+            return '-';
+        }
+        if (current.type === 'postgres') {
+            return `PostgreSQL ${current.user}@${current.host}:${current.port}/${current.database}` + (current.schema ? ` (${current.schema})` : '');
+        }
+        return `SQLite ${current.file || ''}`;
+    }
+
+    private prjStorageTargetText(): string {
+        if (this.prjStorage.type === 'postgres') {
+            const pg = this.prjStorage.postgres;
+            return `PostgreSQL ${pg.user || ''}@${pg.host || 'localhost'}:${pg.port || 5432}/${pg.database || ''}`;
+        }
+        return 'SQLite';
+    }
+
+    isPrjStorageSwitchReady(): boolean {
+        if (this.prjStorageBusy || !this.prjStorageCurrent || this.prjStorage.type === this.prjStorageCurrent.type) {
+            return false;
+        }
+        if (this.prjStorage.type === 'postgres') {
+            const pg = this.prjStorage.postgres;
+            return !!(pg.host && pg.database && pg.user);
+        }
+        return true;
+    }
+
+    onPrjStorageTest() {
+        this.prjStorageBusy = true;
+        this.http.post<any>(EndPointApi.getURL() + '/api/project-storage/test', this.prjStorage).subscribe(() => {
+            this.prjStorageBusy = false;
+            this.toastr.success(this.translateService.instant('msg.prjstorage-test-success'));
+        }, err => {
+            this.prjStorageBusy = false;
+            this.notifyError(err?.error?.message || err?.message || 'Connection failed');
+        });
+    }
+
+    onPrjStorageSwitch() {
+        const target = this.prjStorageTargetText();
+        const confirm = this.dialog.open(ConfirmDialogComponent, {
+            data: { msg: this.translateService.instant('msg.prjstorage-switch-confirm', { value: target }) },
+            position: { top: '60px' }
+        });
+        confirm.afterClosed().subscribe(ok => {
+            if (!ok) {
+                return;
+            }
+            this.prjStorageBusy = true;
+            this.http.post<any>(EndPointApi.getURL() + '/api/project-storage/switch', this.prjStorage).subscribe(result => {
+                this.prjStorageBusy = false;
+                let msg = this.translateService.instant('msg.prjstorage-switch-success', { value: target, rows: result?.rows ?? 0 });
+                if (result?.backup) {
+                    msg += ' ' + this.translateService.instant('msg.prjstorage-switch-backup', { value: result.backup });
+                }
+                this.toastr.success(msg, '', { timeOut: 8000, closeButton: true });
+                this.loadPrjStorage();
+            }, err => {
+                this.prjStorageBusy = false;
+                this.toastr.error(err?.error?.message || err?.message || 'Switch failed', '', { disableTimeOut: true, closeButton: true });
+            });
+        });
     }
 
     onNoClick() {

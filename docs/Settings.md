@@ -32,7 +32,7 @@ storage: {
 },
 ```
 
-To copy an existing project to PostgreSQL see [Project storage migration](storage-migration.md).
+The storage can also be switched from the editor (**Setup → Settings → Project storage**): the project is copied to the new storage automatically, both ways. See [Project storage migration](storage-migration.md).
 
 ### Single sign-on (OpenID Connect)
 Sign in with an external identity provider (Keycloak, Entra ID, Okta, ...). Requires `secureEnabled: true` and `enableRefreshCookieAuth: true`.

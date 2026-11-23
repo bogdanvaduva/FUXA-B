@@ -284,6 +284,64 @@
                     </div>
                 </div>
             </mat-tab>
+            <mat-tab label="{{'dlg.app-settings-prjstorage' | translate}}">
+                <div class="block mt20 tab-prjstorage">
+                    <div class="my-form-field block">
+                        <span>{{'dlg.app-settings-prjstorage-current' | translate}}</span>
+                        <div class="prjstorage-current">{{ prjStorageCurrentText() }}</div>
+                    </div>
+                    <div class="my-form-field block mt15">
+                        <span>{{'dlg.app-settings-daqstore-type' | translate}}</span>
+                        <mat-select [(value)]="prjStorage.type" [disabled]="prjStorageBusy" style="width: 200px">
+                            <mat-option value="sqlite">SQLite</mat-option>
+                            <mat-option value="postgres">PostgreSQL</mat-option>
+                        </mat-select>
+                    </div>
+                    <div *ngIf="prjStorage.type === 'postgres'">
+                        <div class="block mt15">
+                            <div class="my-form-field inbk">
+                                <span>{{'dlg.app-settings-prjstorage-host' | translate}}</span>
+                                <input [(ngModel)]="prjStorage.postgres.host" placeholder="localhost" style="width: 260px" type="text">
+                            </div>
+                            <div class="my-form-field inbk ml10">
+                                <span>{{'dlg.app-settings-smtp-port' | translate}}</span>
+                                <input numberOnly [(ngModel)]="prjStorage.postgres.port" placeholder="5432" style="width: 80px" type="text">
+                            </div>
+                        </div>
+                        <div class="block mt15">
+                            <div class="my-form-field inbk">
+                                <span>{{'dlg.app-settings-daqstore-database' | translate}}</span>
+                                <input [(ngModel)]="prjStorage.postgres.database" placeholder="fuxa" style="width: 170px" type="text">
+                            </div>
+                            <div class="my-form-field inbk ml10">
+                                <span>{{'dlg.app-settings-daqstore-schema' | translate}}</span>
+                                <input [(ngModel)]="prjStorage.postgres.schema" placeholder="public" style="width: 170px" type="text">
+                            </div>
+                        </div>
+                        <div class="block mt15">
+                            <div class="my-form-field inbk">
+                                <span>{{'dlg.app-settings-daqstore-username' | translate}}</span>
+                                <input [(ngModel)]="prjStorage.postgres.user" placeholder="fuxa" style="width: 170px" type="text">
+                            </div>
+                            <div class="my-form-field inbk ml10">
+                                <span>{{'dlg.app-settings-daqstore-password' | translate}}</span>
+                                <input autocomplete="new-password" (keydown)="keyDownStopPropagation($event)" [(ngModel)]="prjStorage.postgres.password"
+                                       [placeholder]="prjStoragePasswordSet ? ('dlg.app-settings-prjstorage-password-saved' | translate) : ''" style="width: 170px" type="password">
+                            </div>
+                        </div>
+                        <div class="my-form-field block mt15">
+                            <span>SSL</span>
+                            <mat-slide-toggle color="primary" [(ngModel)]="prjStorage.postgres.ssl"></mat-slide-toggle>
+                        </div>
+                    </div>
+                    <div class="prjstorage-note mt15">{{'dlg.app-settings-prjstorage-note' | translate}}</div>
+                    <div class="block mt15 mb20">
+                        <button mat-raised-button color="basic" (click)="onPrjStorageTest()" [disabled]="prjStorageBusy || prjStorage.type !== 'postgres'">{{'dlg.app-settings-prjstorage-test' | translate}}</button>
+                        <button mat-raised-button color="primary" class="ml10" (click)="onPrjStorageSwitch()" [disabled]="!isPrjStorageSwitchReady()">{{'dlg.app-settings-prjstorage-switch' | translate}}</button>
+                        <mat-spinner *ngIf="prjStorageBusy" diameter="20" class="inbk ml10" style="vertical-align: middle"></mat-spinner>
+                    </div>
+                </div>
+            </mat-tab>
             <mat-tab label="{{'dlg.app-settings-logs' | translate}}">
                 <div class="block mt20 tab-logs">
                     <div class="my-form-field block">

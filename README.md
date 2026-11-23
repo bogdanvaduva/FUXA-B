@@ -412,8 +412,9 @@ storage: {
 },
 ```
 
-To copy the existing project first: `cd server && npm run migrate-storage -- --from sqlite --to postgres --verify`
-(see [docs/storage-migration.md](docs/storage-migration.md)). The users, alarm history and DAQ databases are not moved.
+Or switch from the editor: **Setup → Settings → Project storage → Switch and copy project**. In both cases the project is
+copied automatically to the new storage (SQLite → PostgreSQL and back), the previous content of the target is kept as a
+backup. See [docs/storage-migration.md](docs/storage-migration.md). The users, alarm history and DAQ databases are not moved.
 
 ## Single sign-on (OpenID Connect)
 

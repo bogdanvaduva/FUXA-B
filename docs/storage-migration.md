@@ -21,7 +21,38 @@ FUXA creates its tables (`schema.sql`, `CREATE TABLE IF NOT EXISTS`) on every st
 With the `schema` option the tables are created in that schema (created if missing),
 so the project can share a database with other applications.
 
-## 2. Copy the existing project (optional)
+## 2. Switch from the editor (recommended)
+
+Editor → **Setup** → **Settings** → **Project storage**:
+
+1. **In use** shows the storage of the current project.
+2. Select **PostgreSQL** (or **SQLite** to go back), fill the connection (host, port, database, schema,
+   user, password, SSL) and press **Test connection**.
+3. Press **Switch and copy project** and confirm.
+
+FUXA copies the whole project (views, devices, device security, scripts, alarms, ...) to the selected
+storage in one transaction, then uses it and reloads the project. If the copy fails nothing changes.
+If the selected storage already contains a project, its content is saved first:
+
+| Target | Backup |
+|--------|--------|
+| SQLite | `_appdata/project.fuxap.backup-<yyyyMMddHHmmss>.db` |
+| PostgreSQL | schema `prjstorage_backup_<yyyyMMddHHmmss>` in the same database |
+
+The storage settings are saved in `_appdata/mysettings.json` (they override the `storage` block of
+`settings.js`). The password is never sent back to the browser: leave it empty to keep the saved one.
+Switching copies only between SQLite and PostgreSQL; to move to another PostgreSQL server switch to
+SQLite first, then to the new server.
+
+### Switch by editing settings.js
+
+If `storage.type` is changed by hand in `settings.js` (and there is no `storage` in `mysettings.json`),
+FUXA copies the project at the next start, with the same backup. The file `_appdata/prjstorage.json`
+records which storage holds the current project. If the copy fails (e.g. PostgreSQL not reachable)
+FUXA logs an error and keeps using the previous storage; the copy is tried again at the next start.
+To go back from PostgreSQL to SQLite the `storage.postgres` block must still point to the database.
+
+## 3. Copy with the command line tool (optional)
 
 Stop FUXA, then from the `server` folder:
 
@@ -51,7 +82,7 @@ The tool:
 
 Exit code: `0` done, `1` failed (rolled back), `2` invalid options or target not empty.
 
-## 3. Switch FUXA to PostgreSQL
+## 4. Switch FUXA to PostgreSQL by hand
 
 In `server/_appdata/settings.js` (restart FUXA after the change):
 
@@ -74,17 +105,17 @@ storage: {
 
 On start the log shows `prjstorage.connected-to fuxa@localhost:5432/fuxa database`. If the
 database cannot be reached FUXA logs `prjstorage.bind failed! cannot connect to PostgreSQL
-... check settings.storage.postgres` and does not load the project.
+... check settings.storage.postgres`: if the project is still in SQLite (switch pending) FUXA
+keeps using SQLite and copies the project at the next start, otherwise the project is not loaded.
 
-With an empty database (no migration) FUXA starts with the default empty project, as
-with a new SQLite file.
+If the database is empty, the existing SQLite project is copied into it on this first start;
+without an SQLite project FUXA starts with the default empty project.
 
 ## Going back to SQLite
 
-Set `storage.type` back to `'sqlite'` (or remove the `storage` block) and restart. FUXA
-uses `project.fuxap.db` again, which the migration did not change: the changes made
-while running on PostgreSQL are not in it. To keep them, save the project from the editor
-(**Save project**, a `.fuxap` file) before switching and open it after.
+From the editor (**Project storage** → **SQLite** → **Switch and copy project**) or by setting
+`storage.type` back to `'sqlite'` and restarting: the project, with the changes made on PostgreSQL,
+is copied back to `project.fuxap.db` (the previous file is saved as a backup).
 
 ## Tables
 

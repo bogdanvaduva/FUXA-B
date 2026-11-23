@@ -104,3 +104,21 @@
         opacity: 0.85;
     }
 }
+
+.tab-prjstorage {
+    .prjstorage-current {
+        font-size: 13px;
+        padding: 4px 0;
+    }
+    .prjstorage-note {
+        font-size: 12px;
+        max-width: 520px;
+        opacity: 0.8;
+    }
+    .inbk {
+        display: inline-block;
+    }
+    .ml10 {
+        margin-left: 10px;
+    }
+}

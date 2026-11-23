@@ -9,6 +9,9 @@
   See [docs/storage-migration.md](docs/storage-migration.md).
 - `npm run migrate-storage -- --from sqlite --to postgres`: copies an existing SQLite project to PostgreSQL
   in one transaction (read-only source, refuses a non-empty target without `--force`, `--verify`).
+- Switch the project storage from the editor (**Setup → Settings → Project storage**) or by changing
+  `storage.type`: the project is copied automatically to the new storage, SQLite → PostgreSQL and back; the previous
+  content of the target is saved as a backup (`project.fuxap.backup-<time>.db` / schema `prjstorage_backup_<time>`).
 - Single sign-on with OpenID Connect (`settings.oidc`, disabled by default): "Sign in with SSO" in the login
   dialog, authorization code flow with PKCE, state and nonce, ID token signature checked with the IdP keys.
   The identity (`sub`) is mapped to a FUXA user (new `oidc_sub` column in `users.fuxap.db`, added only when
