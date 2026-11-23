@@ -43,6 +43,7 @@ nav:
       - Recipes: HowTo-Recipes.md
       - ODBC: HowTo-ODBC.md
       - SNMP: HowTo-SNMP.md
+      - Remote FUXA servers: HowTo-Remote-FUXA.md
       - Widgets: HowTo-Widgets.md
       - WebSockets: HowTo-WebSockets.md
   - Settings:

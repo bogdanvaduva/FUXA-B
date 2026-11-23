@@ -1,8 +1,19 @@
 # Changelog
 
-## Unreleased
+## 1.3.7-3206 - 2026-11-23
+
+Merged with the upstream FUXA **1.3.6** release (security fixes: device property requests and device
+configuration in the project restricted to admins, DAQ query limits, scheduler jobs reconciled with permissions,
+initial view and login fixes).
 
 ### Added
+- Remote FUXA servers (horizontal scaling): the **FuxaRemote** connection uses another FUXA server, started and
+  configured on its own with its devices, and mirrors the remote tags chosen in a browse dialog (remote devices and
+  their tags). All the tags of a connection are read with one request per polling, writes go to the remote tag,
+  the API key is kept in the device security store. After 3 failed pollings the values are cleared and the
+  connection reconnects. See [docs/HowTo-Remote-FUXA.md](docs/HowTo-Remote-FUXA.md).
+- `POST /api/remote/values` (many tag values in one request) and `GET /api/remote/browse` (devices and tags without
+  the device settings), admin or API key only, used by the FuxaRemote connection.
 - Project storage in PostgreSQL: `settings.storage.type = 'postgres'` saves the project (views, devices,
   scripts, alarms, ...) in the database of `settings.storage.postgres` instead of `_appdata/project.fuxap.db`.
   The default stays `'sqlite'`: existing installations are unchanged.

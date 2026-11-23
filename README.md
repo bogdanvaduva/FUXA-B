@@ -2,19 +2,29 @@
 # FUXA-B
 FUXA-B is a web-based Process Visualization (SCADA/HMI/Dashboard) software forked from
 [FUXA](https://github.com/frangoteam/FUXA/). With FUXA-B you can create modern process visualizations with
-individual designs for your machines and real-time data display. It follows the upstream FUXA and adds:
+individual designs for your machines and real-time data display. It follows the upstream FUXA
+(currently merged with FUXA **1.3.6**, FUXA-B version `1.3.7-<build>`) and adds:
 
+- **Remote FUXA servers** (horizontal scaling): other FUXA servers, started and configured on their own with their
+  devices, as connections of a central FUXA that mirrors the tags you choose. See [Remote FUXA servers](#remote-fuxa-servers).
 - **Repeater**: a control that repeats a template view for every item of a list (URL with JSON/CSV, SQL on the
   DAQ storage or on the FUXA App DB), with live tag values and colors per item. See [Repeater](#repeater).
 - **Dynamic map locations**: one map marker per item of a Repeater data source, with its tag value and actions.
   See [Maps and locations](#maps-and-locations).
 - **PostgreSQL** as DAQ storage (data historian). See [PostgreSQL DAQ storage](#postgresql-daq-storage).
+- **PostgreSQL project storage**: the project (views, devices, scripts, alarms, ...) in PostgreSQL instead of SQLite,
+  switched from the editor (**Setup → Settings → Project storage**) or by settings with an automatic copy and backup,
+  plus the `migrate-storage` tool. See [PostgreSQL project storage](#postgresql-project-storage).
+- **Single sign-on** with OpenID Connect (Keycloak, Entra ID, Okta, Auth0, ...), with role mapping from the IdP groups.
+  See [Single sign-on](#single-sign-on-openid-connect).
 - **Reverse proxies** to use external HTTP services from the views without CORS. See [Proxies](#proxies).
 - **Template views by URL**: a control bound to `tagName` shows the tag given in the URL
   (`?tagName=<tag id>`). See [Generic tagName view](#generic-tagname-view-template-by-url).
 - **Create alarms** for all the tags of a device at once. See [Create alarms](#create-alarms-for-a-device).
 - The editor menu button is hidden when nobody is logged in.
 - [ChirpStack bridge](#chirpstack-lorawan) for the latest LoRaWAN values.
+- Secrets (JWT secret, SMTP, DAQ and PostgreSQL passwords, OIDC client secret) are never returned by
+  `GET /api/settings` nor written to the log.
 
 ![fuxa editor](/screenshot/fuxa-editor.png)
 
@@ -24,7 +34,7 @@ individual designs for your machines and real-time data display. It follows the 
 
 ## ✨ Features
 - **Industrial protocol support**
-  Modbus RTU/TCP, Siemens S7 Protocol, OPC-UA, BACnet IP, MQTT, Ethernet/IP (Allen Bradley), ODBC, ADSclient, Gpio (Raspberry), WebCam, MELSEC, Redis, SNMP
+  Modbus RTU/TCP, Siemens S7 Protocol, OPC-UA, BACnet IP, MQTT, Ethernet/IP (Allen Bradley), ODBC, ADSclient, Gpio (Raspberry), WebCam, MELSEC, Redis, SNMP, other FUXA servers (FuxaRemote)
 - **Database and data storage**
   Built-in data historian (DAQ) with support for SQLite, InfluxDB, PostgreSQL and other time-series databases.
   External integrations via ODBC and Redis.
@@ -153,6 +163,24 @@ npm run package
 ```
 
 After following these steps, you will have a standalone Electron application for FUXA. The application can be found in the ./app directory.
+
+## Remote FUXA servers
+
+All the device polling of a FUXA server runs in one Node.js process. To connect many devices, split them over
+several FUXA servers (e.g. 100 edge servers with 100 devices each) and add each one as a **FuxaRemote**
+connection of a central FUXA, which has the views, alarms, scripts and history of the whole plant.
+
+1. Start and configure each remote FUXA with its devices (another computer, or the same one with
+   `npm start -- --port 1891 --userDir <dir>`). With its security enabled, create an API key in **Setup → API keys**.
+2. In the central FUXA: **Connections** → add → type **FuxaRemote**, set the address
+   (`http://192.168.1.20:1881`), the API key and the timeout.
+3. Click **+** in the tags of the connection, expand a remote device and select its tags: they become tags of
+   the connection (`<remote device>.<remote tag>`), read with one request per polling and writable.
+
+The API key is stored in the device security store, not in the project file. Only the tags the remote server
+runs can be mirrored (device and FUXA Server tags, not the tags of an `internal` connection). Each FUXA allows
+by default 1000 API requests in 5 minutes per client address (`apiRateLimitMax`): one connection polling every
+second uses 300. See [docs/HowTo-Remote-FUXA.md](docs/HowTo-Remote-FUXA.md).
 
 ## Repeater
 
