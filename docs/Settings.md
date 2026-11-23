@@ -11,3 +11,25 @@ tokenExpiresIn: '1h'            // token expiration delay '1h'=1hour, 60=60secon
 ```
 
 The default user ‘admin’ have the ‘123456’ as password, of course you can change it.
+
+### Project storage
+The project (views, devices, scripts, alarms, ...) is saved by default in the SQLite file `_appdata/project.fuxap.db`.
+To save it in a PostgreSQL database:
+
+```
+storage: {
+    type: 'postgres',           // 'sqlite' (default) | 'postgres'
+    postgres: {
+        host: 'localhost',
+        port: 5432,
+        database: 'fuxa',
+        user: 'fuxa',
+        password: '',
+        ssl: false,             // or the node-postgres ssl options
+        maxPoolSize: 10,
+        // schema: 'fuxa',      // default public
+    }
+},
+```
+
+To copy an existing project to PostgreSQL see [Project storage migration](storage-migration.md).

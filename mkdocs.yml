@@ -45,7 +45,10 @@ nav:
       - SNMP: HowTo-SNMP.md
       - Widgets: HowTo-Widgets.md
       - WebSockets: HowTo-WebSockets.md
-  - Settings: Settings.md
+  - Settings:
+      - Settings: Settings.md
+      - Project storage migration: storage-migration.md
+      - Project storage schema: storage-schema.md
   - Tips and Tricks: Tips-and-Tricks.md
 
 extra:

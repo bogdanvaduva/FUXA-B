@@ -400,6 +400,21 @@ Editor → **Setup** → **Settings** → **DAQ storage** → type **PostgreSQL*
 The values of the tags with DAQ enabled are saved in the table `data` (`tagId`, `tagName`, `deviceId`,
 `deviceName`, `value`, `dt`, `time`), created on start if missing. It can be read by the Repeater (DB line).
 
+## PostgreSQL project storage
+
+The project itself (views, devices, scripts, alarms, ...) is saved by default in `server/_appdata/project.fuxap.db`
+(SQLite). To save it in PostgreSQL, set in `server/_appdata/settings.js` (restart the server):
+
+```js
+storage: {
+    type: 'postgres',   // default 'sqlite'
+    postgres: { host: 'localhost', port: 5432, database: 'fuxa', user: 'fuxa', password: '...', ssl: false, maxPoolSize: 10 }
+},
+```
+
+To copy the existing project first: `cd server && npm run migrate-storage -- --from sqlite --to postgres --verify`
+(see [docs/storage-migration.md](docs/storage-migration.md)). The users, alarm history and DAQ databases are not moved.
+
 ## Proxies
 
 To use an external HTTP service from the views (Repeater URL, iframe, scripts) without CORS problems, add a
