@@ -265,6 +265,83 @@ function clearAll() {
     });
 }
 
+/**
+ * Export all the tables: { table: [{ name, value }] } with the stored JSON text, in read order
+ */
+async function exportTables() {
+    const data = {};
+    for (const table of Object.values(TableType)) {
+        data[table] = (await pool.query(`SELECT name, value::text AS value FROM ${table} ORDER BY seq`)).rows;
+    }
+    return data;
+}
+
+/**
+ * Replace all the tables (including devicesSecurity) with the exported data, in one transaction
+ * If the tables are not empty and options.backup, first copy them to the schema prjstorage_backup_<time>
+ * Resolve { backup: schema | null, rows: count }
+ * @param {*} data exportTables() of a backend
+ * @param {*} options { backup: true }
+ */
+async function importTables(data, options = {}) {
+    const client = await pool.connect();
+    let backup = null;
+    let rows = 0;
+    try {
+        await client.query('BEGIN');
+        let existing = 0;
+        for (const table of Object.values(TableType)) {
+            existing += (await client.query(`SELECT count(*)::int AS count FROM ${table}`)).rows[0].count;
+        }
+        if (existing && options.backup) {
+            backup = `prjstorage_backup_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}`;
+            await client.query(`CREATE SCHEMA ${backup}`);
+            for (const table of Object.values(TableType)) {
+                await client.query(`CREATE TABLE ${backup}.${table} AS SELECT * FROM ${table}`);
+            }
+        }
+        for (const table of Object.values(TableType)) {
+            await client.query(`DELETE FROM ${table}`);
+            for (const row of (data[table] || [])) {
+                await client.query(`INSERT INTO ${table} (name, value) VALUES ($1, $2)`, [row.name, row.value]);
+                rows++;
+            }
+        }
+        await client.query('COMMIT');
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw err;
+    } finally {
+        client.release();
+    }
+    return { backup: backup, rows: rows };
+}
+
+/**
+ * Description of the store, without password (for the logs and the storage marker)
+ */
+function describe(_settings) {
+    const connection = getConnectionOptions(_settings || settings);
+    return {
+        type: 'postgres', host: connection.options.host, port: connection.options.port,
+        database: connection.options.database, user: connection.options.user, schema: connection.schema || ''
+    };
+}
+
+/**
+ * Check a connection (settings.storage.postgres) without changing the backend: SELECT 1
+ */
+async function testConnection(_settings) {
+    const connection = getConnectionOptions(_settings);
+    const testPool = new Pool(Object.assign({}, connection.options, { max: 1 }));
+    testPool.on('error', () => {});
+    try {
+        await testPool.query('SELECT 1');
+    } finally {
+        await testPool.end().catch(() => {});
+    }
+}
+
 module.exports = {
     init: init,
     close: close,
@@ -275,6 +352,10 @@ module.exports = {
     deleteSection: deleteSection,
     setDefault: setDefault,
     TableType: TableType,
+    exportTables: exportTables,
+    importTables: importTables,
+    describe: describe,
+    testConnection: testConnection,
     // for the migration tool
     getConnectionOptions: getConnectionOptions,
     SCHEMA_FILE: SCHEMA_FILE,

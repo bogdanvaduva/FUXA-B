@@ -176,6 +176,10 @@ try {
         if (mysettings.daqstore) {
             settings.daqstore = mysettings.daqstore;
         }
+        if (mysettings.storage) {
+            // project storage switched from the editor (overrides settings.js)
+            settings.storage = mysettings.storage;
+        }
         if (mysettings.alarms) {
             settings.alarms = mysettings.alarms;
         }

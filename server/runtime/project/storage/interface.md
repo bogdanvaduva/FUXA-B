@@ -40,6 +40,19 @@ All methods return Promises, except `close()`.
 | `deleteSection(section)` | nothing | with the `Error` (invalid table or database error) | Deletes the row `section.name` of `section.table`. A missing row is not an error. |
 | `clearAll()` | `true` | without a value (after `logger.error`) | Deletes the rows of every table **except `devicesSecurity`**, in one statement batch. |
 | `TableType` | - | - | The table constants above (property, not a method). |
+| `exportTables()` | `{ <table>: Row[] }` for every table, in read order | with the error | Used to copy the project to another backend. |
+| `importTables(data, { backup })` | `{ backup, rows }` | with the error (nothing changed) | Replaces **all** the tables (including `devicesSecurity`) with `data` in one transaction, inserting the stored text as is. With `backup` and a non-empty store, first saves the content: SQLite `project.fuxap.backup-<yyyyMMddHHmmss>.db` next to the database, PostgreSQL the schema `prjstorage_backup_<yyyyMMddHHmmss>`. |
+| `describe(settings)` | - | - | Returns the store description without password (`{ type: 'sqlite', file }` / `{ type: 'postgres', host, port, database, user, schema }`). |
+| `testConnection(settings)` (optional) | nothing | with the error | Checks a connection without changing the backend (PostgreSQL). |
+
+### Switching the storage
+
+`prjstorage.switchTo(settings)` copies the project from the backend in use to the backend of
+`settings.storage` (`importTables` with backup) and uses it; on error the current backend is kept.
+`<workDir>/prjstorage.json` records the store that holds the current project: when `init` finds a
+different `settings.storage.type` (settings edited by hand) it copies the project from that store
+first, and keeps using it if the copy fails. Only SQLite <-> PostgreSQL switches copy the project
+(one connection per backend type).
 
 ### Write semantics
 

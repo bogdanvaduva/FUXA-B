@@ -240,6 +240,65 @@ function clearAll() {
     });
 }
 
+/**
+ * Export all the tables: { table: [{ name, value }] } with the stored JSON text, in read order
+ */
+async function exportTables() {
+    const data = {};
+    for (const table of Object.values(TableType)) {
+        data[table] = await _all(`SELECT name, value FROM ${table} ORDER BY rowid`);
+    }
+    return data;
+}
+
+/**
+ * Replace all the tables (including devicesSecurity) with the exported data, in one transaction
+ * If the tables are not empty and options.backup, first copy the database to project.fuxap.backup-<time>.db
+ * Resolve { backup: file | null, rows: count }
+ * @param {*} data exportTables() of a backend
+ * @param {*} options { backup: true }
+ */
+async function importTables(data, options = {}) {
+    let existing = 0;
+    for (const table of Object.values(TableType)) {
+        existing += (await _all(`SELECT count(*) AS count FROM ${table}`))[0].count;
+    }
+    let backup = null;
+    if (existing && options.backup) {
+        backup = path.join(settings.workDir, `project.fuxap.backup-${_timestamp()}.db`);
+        await _run('VACUUM INTO ?', [backup]);
+    }
+    let rows = 0;
+    try {
+        await _run('BEGIN TRANSACTION');
+        for (const table of Object.values(TableType)) {
+            await _run(`DELETE FROM ${table}`);
+            for (const row of (data[table] || [])) {
+                await _run(`INSERT INTO ${table} (name, value) VALUES(?, ?)`, [row.name, row.value]);
+                rows++;
+            }
+        }
+        await _run('COMMIT');
+    } catch (err) {
+        try {
+            await _run('ROLLBACK');
+        } catch (_) {}
+        throw err;
+    }
+    return { backup: backup, rows: rows };
+}
+
+function _timestamp() {
+    return new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+}
+
+/**
+ * Description of the store (for the logs and the storage marker)
+ */
+function describe(_settings) {
+    return { type: 'sqlite', file: path.join((_settings || settings).workDir, 'project.fuxap.db') };
+}
+
 module.exports = {
     init: init,
     close: close,
@@ -250,4 +309,7 @@ module.exports = {
     deleteSection: deleteSection,
     setDefault: setDefault,
     TableType: TableType,
+    exportTables: exportTables,
+    importTables: importTables,
+    describe: describe,
 };

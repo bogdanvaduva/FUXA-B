@@ -12,6 +12,7 @@ const rateLimit = require("express-rate-limit");
 var prjApi = require('./projects');
 var authApi = require('./auth');
 var oidcApi = require('./auth/oidc');
+var projectStorageApi = require('./project-storage');
 var usersApi = require('./users');
 var apiKeysApi = require('./apikeys');
 var alarmsApi = require('./alarms');
@@ -73,6 +74,8 @@ function init(_server, _runtime) {
             apiApp.use(prjApi.app());
             usersApi.init(runtime, authMiddleware, verifyGroups);
             apiApp.use(usersApi.app());
+            projectStorageApi.init(runtime, authMiddleware, verifyGroups);
+            apiApp.use(projectStorageApi.app());
             alarmsApi.init(runtime, authMiddleware, verifyGroups);
             apiApp.use(alarmsApi.app());
             authApi.init(runtime, authJwt.secretCode, authJwt.tokenExpiresIn, runtime.settings.enableRefreshCookieAuth, runtime.settings.refreshTokenExpiresIn);
@@ -151,6 +154,18 @@ function init(_server, _runtime) {
                         }
                         if (utils.isEmptyObject(req.body.daqstore?.credentials) && runtime.settings.daqstore?.credentials) {
                             req.body.daqstore.credentials = runtime.settings.daqstore?.credentials;
+                        }
+                        // the project storage is changed only with /api/project-storage/switch (copy of the project)
+                        delete req.body.storage;
+                        try {
+                            if (fs.existsSync(runtime.settings.userSettingsFile)) {
+                                const saved = JSON.parse(fs.readFileSync(runtime.settings.userSettingsFile, 'utf8'));
+                                if (saved.storage) {
+                                    req.body.storage = saved.storage;
+                                }
+                            }
+                        } catch (err) {
+                            runtime.logger.warn(`api post settings: cannot read the saved storage settings ${err}`);
                         }
                         if (!req.body.secretCode && runtime.settings.secretCode) {
                             req.body.secretCode = runtime.settings.secretCode;
