@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.7-3218 - 2026-11-23
+
+### Added
+- Repeater **FUXA Project DB**: the current tag values, `devices.tagList` (as in the FUXA App DB, its entries are
+  live tags in the Repeater) and `tags.tagValue`, `tags.timestamp`, `tags.tag` (`{ id, name, value, timestamp }`,
+  live tag field).
+
 ## 1.3.7-3215 - 2026-11-23
 
 ### Changed

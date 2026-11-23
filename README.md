@@ -296,6 +296,14 @@ PostgreSQL syntax and also your own tables of that database (needs a reader logi
 | `value` | the whole item as JSON (returned as object) |
 | one per item property | e.g. `devices.type`, `devices.enabled` (1/0), `devices.tags`, `tags.address`, `tags.type`; objects as JSON |
 
+Current tag values (read when the query runs):
+
+| Column | Content |
+|---|---|
+| `devices.tagList` | `{ "<tag name>": { id, name, label, type, address, value, timestamp } }`, a field `tagList.Temperature` is a live tag |
+| `tags.tagValue`, `tags.timestamp` | the current value of the tag and its time |
+| `tags.tag` | `{ id, name, value, timestamp }`: as a Repeater field it shows the live value and can be written |
+
 The content is what the viewer of the Repeater gets from the project: views filtered by permission, and never the
 credentials (device passwords and user names, tokens, server script code, notification and report receivers), also
 for admins. `devicesSecurity` is not available.
@@ -307,6 +315,9 @@ SELECT id, name AS title FROM views ORDER BY title
 -- one item per enabled device with the names of its tags
 SELECT d.id, d.name AS device, (SELECT group_concat(t.name, ', ') FROM tags t WHERE t.deviceId = d.id) AS tags
 FROM devices d WHERE d.enabled = 1 ORDER BY d.name
+
+-- one item per tag with its current value (tag is the live field)
+SELECT t.deviceName AS device, t.name, t.tagValue, t.tag FROM tags t ORDER BY t.deviceName, t.name
 
 -- one item per alarm with its tag
 SELECT id, json_extract(property, '$.variableId') AS tag FROM alarms
