@@ -1,0 +1,15 @@
+# Disposable PostgreSQL for the project storage contract tests
+#   docker compose -f test/compose.postgres.yml up -d
+#   FUXA_TEST_PG=postgres://fuxa:fuxa@127.0.0.1:55432/fuxa npm test
+#   docker compose -f test/compose.postgres.yml down
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fuxa
+      POSTGRES_PASSWORD: fuxa
+      POSTGRES_DB: fuxa
+    ports:
+      - "127.0.0.1:55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data

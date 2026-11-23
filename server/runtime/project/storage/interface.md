@@ -32,7 +32,7 @@ All methods return Promises, except `close()`.
 | Method | Resolves | Rejects | Notes |
 |--------|----------|---------|-------|
 | `init(settings, logger)` | `true` if the store already existed, `false` if it was created now | after `logger.error`, if the store cannot be opened or the tables cannot be created: SQLite without a value; PostgreSQL with an `Error` whose message names the connection (never the password) and `settings.storage.postgres`. An unknown `settings.storage.type` rejects with an `Error` from the factory. | Creates the missing tables. The caller writes the defaults (`setDefault`) when it resolves `false`. |
-| `close()` | - (returns nothing) | - | Releases the connection. Safe to call when not initialized. |
+| `close()` | - (returns nothing) | - | Releases the connection, without waiting. Does nothing before the first `init`. Call it once per `init`: the SQLite backend throws `SQLITE_MISUSE` (asynchronously) on a second `close` of the same database (PostgreSQL ignores it). |
 | `setDefault()` | nothing | with the error of `setSections` (`undefined`) | Writes `general.version = '1.00'` and the `devices.server` FUXA server device. |
 | `setSection(section)` | nothing | without a value (after `logger.error`) | Insert or replace the row `section.name` of `section.table` with `JSON.stringify(section.value)`. Invalid table: rejects without a value. |
 | `setSections(sections)` | nothing | without a value (after `logger.error`) | Like `setSection` for each item, all in one transaction: if one fails nothing is written. An empty list resolves. |
