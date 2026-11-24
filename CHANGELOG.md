@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.7-3221 - 2026-11-24
+
+### Added
+- Setup → Settings → Project storage: **Use project in storage** opens the project already saved in PostgreSQL
+  (for example by another FUXA) without copying the current one over it (`POST /api/project-storage/switch`
+  `{ mode: 'use' }`, refused when the database/schema has no project). **Test connection** tells whether there is
+  a project (views, devices). See docs/storage-migration.md "Connect a new FUXA to a project already in PostgreSQL".
+
 ## 1.3.7-3218 - 2026-11-23
 
 ### Added
