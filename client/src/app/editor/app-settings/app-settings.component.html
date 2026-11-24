@@ -356,7 +356,8 @@
                     </div>
                     <div class="block mt15 mb20">
                         <button mat-raised-button color="basic" (click)="onPrjStorageTest()" [disabled]="prjStorageBusy || prjStorage.type !== 'postgres'">{{'dlg.app-settings-prjstorage-test' | translate}}</button>
-                        <button mat-raised-button color="primary" class="ml10" (click)="onPrjStorageSwitch()" [disabled]="!isPrjStorageSwitchReady()">{{'dlg.app-settings-prjstorage-switch' | translate}}</button>
+                        <button mat-raised-button color="primary" class="ml10" (click)="onPrjStorageSwitch('copy')" [disabled]="!isPrjStorageSwitchReady()">{{'dlg.app-settings-prjstorage-switch' | translate}}</button>
+                        <button mat-raised-button color="basic" class="ml10" (click)="onPrjStorageSwitch('use')" [disabled]="!isPrjStorageSwitchReady()">{{'dlg.app-settings-prjstorage-use' | translate}}</button>
                         <mat-spinner *ngIf="prjStorageBusy" diameter="20" class="inbk ml10" style="vertical-align: middle"></mat-spinner>
                     </div>
                 </div>

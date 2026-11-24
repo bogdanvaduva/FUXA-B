@@ -1,10 +1,11 @@
 /**
  * 'api/project-storage': project storage (SQLite / PostgreSQL) for the editor settings, admin only
  *  GET  /api/project-storage         storage in use and settings (without password)
- *  POST /api/project-storage/test    check a PostgreSQL connection
+ *  POST /api/project-storage/test    check a PostgreSQL connection, { ok, project: { views, devices } | null }
  *  POST /api/project-storage/reader  save the Repeater reader login (PostgreSQL)
  *  POST /api/project-storage/switch  copy the project to the other storage (its content backed up), use it,
  *                                    save storage in mysettings.json and reload the project
+ *                                    with { mode: 'use' }: no copy, use the project already in the storage
  */
 
 'use strict';
@@ -165,8 +166,8 @@ module.exports = {
             }
             try {
                 const storage = storageFromRequest(req.body);
-                await prjstorage.testConnection(Object.assign({}, runtime.settings, { storage: storage }));
-                res.json({ ok: true });
+                const result = await prjstorage.testConnection(Object.assign({}, runtime.settings, { storage: storage }));
+                res.json(Object.assign({ ok: true }, result && result.project !== undefined ? { project: result.project } : {}));
             } catch (err) {
                 res.status(400).json({ error: 'connection_failed', message: err.message });
             }
@@ -183,12 +184,12 @@ module.exports = {
             try {
                 const storage = storageFromRequest(req.body);
                 const newSettings = Object.assign({}, runtime.settings, { storage: storage });
-                const result = await prjstorage.switchTo(newSettings);
+                const result = await prjstorage.switchTo(newSettings, { use: req.body && req.body.mode === 'use' });
                 runtime.settings.storage = storage;
                 persistStorage(storage);
                 runtime.logger.info(`api project-storage/switch: ${result.from.type} -> ${result.to.type} by ${req.userId || 'unknown'}`, true);
                 await runtime.restart(true);
-                res.json({ ok: true, from: result.from, to: result.to, rows: result.rows, backup: result.backup });
+                res.json({ ok: true, from: result.from, to: result.to, rows: result.rows, backup: result.backup, used: result.used });
             } catch (err) {
                 runtime.logger.error(`api project-storage/switch failed: ${err.message}`);
                 res.status(400).json({ error: 'switch_failed', message: err.message });

@@ -179,9 +179,15 @@ export class AppSettingsComponent implements OnInit {
 
     onPrjStorageTest() {
         this.prjStorageBusy = true;
-        this.http.post<any>(EndPointApi.getURL() + '/api/project-storage/test', this.prjStorage).subscribe(() => {
+        this.http.post<any>(EndPointApi.getURL() + '/api/project-storage/test', this.prjStorage).subscribe(result => {
             this.prjStorageBusy = false;
-            this.toastr.success(this.translateService.instant('msg.prjstorage-test-success'));
+            let msg = this.translateService.instant('msg.prjstorage-test-success');
+            if (result && result.project !== undefined) {
+                msg += '. ' + (result.project
+                    ? this.translateService.instant('msg.prjstorage-test-project', { views: result.project.views, devices: result.project.devices })
+                    : this.translateService.instant('msg.prjstorage-test-no-project'));
+            }
+            this.toastr.success(msg, '', { timeOut: 8000, closeButton: true });
         }, err => {
             this.prjStorageBusy = false;
             this.notifyError(err?.error?.message || err?.message || 'Connection failed');
@@ -201,10 +207,14 @@ export class AppSettingsComponent implements OnInit {
         });
     }
 
-    onPrjStorageSwitch() {
+    /**
+     * Switch the project storage: copy the current project to it ('copy') or use the project already in it ('use')
+     */
+    onPrjStorageSwitch(mode: 'copy' | 'use' = 'copy') {
         const target = this.prjStorageTargetText();
+        const confirmKey = mode === 'use' ? 'msg.prjstorage-use-confirm' : 'msg.prjstorage-switch-confirm';
         const confirm = this.dialog.open(ConfirmDialogComponent, {
-            data: { msg: this.translateService.instant('msg.prjstorage-switch-confirm', { value: target }) },
+            data: { msg: this.translateService.instant(confirmKey, { value: target, current: this.prjStorageCurrentText() }) },
             position: { top: '60px' }
         });
         confirm.afterClosed().subscribe(ok => {
@@ -212,9 +222,10 @@ export class AppSettingsComponent implements OnInit {
                 return;
             }
             this.prjStorageBusy = true;
-            this.http.post<any>(EndPointApi.getURL() + '/api/project-storage/switch', this.prjStorage).subscribe(result => {
+            this.http.post<any>(EndPointApi.getURL() + '/api/project-storage/switch', { ...this.prjStorage, mode: mode }).subscribe(result => {
                 this.prjStorageBusy = false;
-                let msg = this.translateService.instant('msg.prjstorage-switch-success', { value: target, rows: result?.rows ?? 0 });
+                const successKey = result?.used ? 'msg.prjstorage-use-success' : 'msg.prjstorage-switch-success';
+                let msg = this.translateService.instant(successKey, { value: target, rows: result?.rows ?? 0 });
                 if (result?.backup) {
                     msg += ' ' + this.translateService.instant('msg.prjstorage-switch-backup', { value: result.backup });
                 }

@@ -356,6 +356,16 @@ async function testConnection(_settings) {
     testPool.on('error', () => {});
     try {
         await testPool.query('SELECT 1');
+        // a FUXA project already in the database/schema (to use it instead of copying the current one)
+        const exist = await testPool.query(`SELECT to_regclass('${TableType.GENERAL}') IS NOT NULL AND to_regclass('${TableType.VIEWS}') IS NOT NULL
+            AND to_regclass('${TableType.DEVICES}') IS NOT NULL AS exist`);
+        if (!exist.rows[0].exist) {
+            return { project: null };
+        }
+        const counts = await testPool.query(`SELECT (SELECT count(*)::int FROM ${TableType.VIEWS}) AS views,
+            (SELECT count(*)::int FROM ${TableType.DEVICES}) AS devices, (SELECT count(*)::int FROM ${TableType.GENERAL}) AS general`);
+        const row = counts.rows[0];
+        return { project: (row.views || row.devices || row.general) ? { views: row.views, devices: row.devices } : null };
     } finally {
         await testPool.end().catch(() => {});
     }

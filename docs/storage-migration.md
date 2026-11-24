@@ -28,7 +28,8 @@ Editor → **Setup** → **Settings** → **Project storage**:
 1. **In use** shows the storage of the current project.
 2. Select **PostgreSQL** (or **SQLite** to go back), fill the connection (host, port, database, schema,
    user, password, SSL) and press **Test connection**.
-3. Press **Switch and copy project** and confirm.
+3. Press **Switch and copy project** and confirm (or **Use project in storage** to open the project that
+   is already there, see [below](#connect-a-new-fuxa-to-a-project-already-in-postgresql)).
 
 FUXA copies the whole project (views, devices, device security, scripts, alarms, ...) to the selected
 storage in one transaction, then uses it and reloads the project. If the copy fails nothing changes.
@@ -43,6 +44,23 @@ The storage settings are saved in `_appdata/mysettings.json` (they override the 
 `settings.js`). The password is never sent back to the browser: leave it empty to keep the saved one.
 Switching copies only between SQLite and PostgreSQL; to move to another PostgreSQL server switch to
 SQLite first, then to the new server.
+
+### Connect a new FUXA to a project already in PostgreSQL
+
+A new installation starts on SQLite with an empty project. **Switch and copy project** would copy that
+empty project over the one in PostgreSQL (the stored one is only kept as `prjstorage_backup_<time>`).
+To open the project saved in PostgreSQL (for example by another FUXA) instead:
+
+1. Fill the same connection as the other FUXA (database **and schema**) and press **Test connection**:
+   it shows *Project found: N views, M devices*, or *No project in this database/schema yet* (wrong
+   database or schema).
+2. Press **Use project in storage** and confirm. Nothing is copied, the SQLite project stays in
+   `project.fuxap.db`. With an empty database/schema the switch is refused.
+
+On a new installation that never started, setting `storage.type: 'postgres'` (with the schema) in
+`settings.js` also opens the project in PostgreSQL. Once FUXA has started on SQLite, changing
+`settings.js` copies the SQLite project to PostgreSQL at the next start (see below): use the editor
+button instead.
 
 ### Switch by editing settings.js
 

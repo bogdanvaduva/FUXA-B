@@ -132,6 +132,31 @@ describe('Project storage switch (SQLite <-> PostgreSQL)', function () {
             expect((await views()).map(v => v[0])).to.deep.equal(['old-pg', 'new-sqlite']);
         });
 
+        it('uses the project already in PostgreSQL without copying (fresh instance)', async () => {
+            await storage.init(pgSettings(), logger);
+            await storage.setSection({ table: storage.TableType.VIEWS, name: 'stored-pg', value: { id: 'stored-pg' } });
+            await closeStore();
+            delete require.cache[require.resolve('../../runtime/project/prjstorage')];
+            storage = require('../../runtime/project/prjstorage');
+            fs.rmSync(path.join(workDir, 'prjstorage.json'));
+            await sqliteProject();      // the default project of the new instance
+            const result = await storage.switchTo(pgSettings(), { use: true });
+            expect(result).to.include({ rows: 1, backup: null, used: true });
+            expect((await views()).map(v => v[0])).to.deep.equal(['stored-pg']);
+            expect(marker().type).to.equal('postgres');
+            const backups = await pgQuery("SELECT nspname FROM pg_namespace WHERE nspname LIKE 'prjstorage_backup_%'");
+            expect(backups).to.deep.equal([]);
+        });
+
+        it('refuses to use an empty PostgreSQL and keeps the current storage', async () => {
+            await sqliteProject();
+            let error;
+            await storage.switchTo(pgSettings(), { use: true }).catch(err => { error = err; });
+            expect(error.message).to.match(/there is no project in PostgreSQL/);
+            expect(storage.getCurrent().type).to.equal('sqlite');
+            expect((await views()).map(v => v[0])).to.deep.equal(['v2', 'v1']);
+        });
+
         it('keeps the current storage when the target cannot be opened', async () => {
             await sqliteProject();
             const before = await views();
@@ -259,7 +284,7 @@ describe('Project storage switch (SQLite <-> PostgreSQL)', function () {
         });
 
         it('tests a connection, the saved password is used when empty', async () => {
-            expect((await call('POST', '/api/project-storage/test', { type: 'postgres', postgres: Object.assign(pgBlock(), { password: '' }) })).json).to.deep.equal({ ok: true });
+            expect((await call('POST', '/api/project-storage/test', { type: 'postgres', postgres: Object.assign(pgBlock(), { password: '' }) })).json).to.deep.equal({ ok: true, project: null });
             const bad = await call('POST', '/api/project-storage/test', { type: 'postgres', postgres: Object.assign(pgBlock(), { password: 'wrong-password' }) });
             expect(bad.status).to.equal(400);
             expect(bad.json.error).to.equal('connection_failed');
@@ -276,6 +301,21 @@ describe('Project storage switch (SQLite <-> PostgreSQL)', function () {
             expect(saved.storage).to.deep.include({ type: 'postgres' });
             expect(saved.storage.postgres.password).to.equal(pgBlock().password);
             expect(storage.getCurrent().type).to.equal('postgres');
+        });
+
+        it('tells the project found in PostgreSQL and uses it with mode use', async () => {
+            // a project saved by another FUXA instance
+            const schemaSql = fs.readFileSync(require('../../runtime/project/storage/postgres').SCHEMA_FILE, 'utf8');
+            await pgQuery(`CREATE SCHEMA ${schema}; SET search_path TO ${schema}; ${schemaSql}`);
+            await pgQuery(`INSERT INTO ${schema}.views (name, value) VALUES ('a', '{}'), ('b', '{}')`);
+            await pgQuery(`INSERT INTO ${schema}.devices (name, value) VALUES ('d', '{}')`);
+            const test = await call('POST', '/api/project-storage/test', { type: 'postgres', postgres: Object.assign(pgBlock(), { password: '' }) });
+            expect(test.json).to.deep.equal({ ok: true, project: { views: 2, devices: 1 } });
+            const res = await call('POST', '/api/project-storage/switch', { type: 'postgres', mode: 'use', postgres: Object.assign(pgBlock(), { password: '' }) });
+            expect(res.status, res.body).to.equal(200);
+            expect(res.json).to.include({ ok: true, rows: 3, used: true, backup: null });
+            expect(restarted).to.equal(1);
+            expect((await views()).map(v => v[0])).to.deep.equal(['a', 'b']);
         });
 
         it('reports a failed switch and keeps the storage', async () => {

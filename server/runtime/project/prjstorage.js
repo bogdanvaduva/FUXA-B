@@ -193,10 +193,13 @@ async function _copyLegacySqlite(_settings) {
  * Switch the live project storage: copy the current project to the storage of _settings
  * (its content backed up first), then use it. On error the current storage is kept.
  * The caller persists the settings and reloads the project.
- * Resolve { from, to, rows, backup }
+ * With options.use: no copy, use the project already in the storage of _settings (refused if it has none),
+ * the current project stays where it is
+ * Resolve { from, to, rows, backup, used }
  * @param {*} _settings application settings with the new storage block
+ * @param {*} options { use: true }
  */
-async function switchTo(_settings) {
+async function switchTo(_settings, options = {}) {
     const target = storage.getStorage(_settings);
     if (target === backend) {
         throw new Error('the project already uses this storage type, switch between sqlite and postgres');
@@ -210,30 +213,41 @@ async function switchTo(_settings) {
     }
     let result;
     try {
-        result = await _copy(backend, target);
+        if (options.use) {
+            const rows = _countRows(await target.exportTables());
+            if (!rows) {
+                throw new Error(`there is no project in ${_describeText(to)}, use 'Switch and copy project'`);
+            }
+            result = { rows: rows, backup: null };
+        } else {
+            result = await _copy(backend, target);
+        }
     } catch (err) {
         try { target.close(); } catch (_) {}
-        throw new Error(`copy of the project to ${_describeText(to)} failed: ${err.message}`);
+        throw options.use ? err : new Error(`copy of the project to ${_describeText(to)} failed: ${err.message}`);
     }
     const previous = backend;
     backend = target;
     currentSettings = _settings;
     previous.close();
     _writeMarker(_settings, backend);
-    logger.info(`prjstorage: project storage switched from ${_describeText(from)} to ${_describeText(to)}: ${result.rows} rows` +
+    logger.info(`prjstorage: project storage switched from ${_describeText(from)} to ${_describeText(to)}: ` +
+        (options.use ? `project in the storage used (${result.rows} rows), the previous project stays in ${_describeText(from)}` : `${result.rows} rows`) +
         (result.backup ? `, previous content saved in ${result.backup}` : ''), true);
-    return { from: from, to: to, rows: result.rows, backup: result.backup };
+    return { from: from, to: to, rows: result.rows, backup: result.backup, used: !!options.use };
 }
 
 /**
  * Check the connection of a storage block without changing anything
+ * Resolve { project: { views, devices } | null } (PostgreSQL: the project already in the database/schema)
  * @param {*} _settings application settings with the storage block to test
  */
 async function testConnection(_settings) {
     const target = storage.getStorage(_settings);
     if (target.testConnection) {
-        await target.testConnection(_settings);
+        return (await target.testConnection(_settings)) || {};
     }
+    return {};
 }
 
 /**
