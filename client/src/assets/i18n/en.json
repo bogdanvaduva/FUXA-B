@@ -1500,6 +1500,7 @@
     "bag.property-background": "Background",
     "bag.property-format-digits": "Format digits",
     "bag.property-zones": "Zones",
+    "bag.property-color-by-zone": "Needle and value in zone color",
     "bag.property-color": "Color",
     "bag.property-fill": "Fill",
     "alarms.list-title": "Alarms settings",

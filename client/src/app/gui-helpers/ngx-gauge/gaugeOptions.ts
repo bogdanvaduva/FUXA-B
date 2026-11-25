@@ -30,6 +30,8 @@ export class GaugeOptions {
     highDpiSupport = true;
     backgroundColor = 'rgba(255, 255, 255, 0)';
     shadowColor?: string = '#d5d5d5';
+    /** needle and value text take the color of the zone that contains the value */
+    colorByZone? = false;
 
     fractionDigits = 0;
     ticksEnabled = true;

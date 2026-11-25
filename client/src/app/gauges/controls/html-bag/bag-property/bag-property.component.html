@@ -285,6 +285,10 @@
                             </div>
                         </div>
                     </div>
+                    <div class="my-form-field" style="display: block;">
+                        <span>{{'bag.property-color-by-zone' | translate}}</span>
+                        <mat-slide-toggle color="primary" [(ngModel)]="optcfg.colorByZone" (change)="onChangeOptions('colorByZone', $event.checked)"></mat-slide-toggle>
+                    </div>
                 </div>
             </div>
         </div>

@@ -36,6 +36,7 @@ export class NgxGaugeComponent implements OnInit, AfterViewInit, OnDestroy, OnCh
     type = GaugeType.Gauge;
     defOptions = new GaugeOptions();
     initialized = false;
+    private lastValue: number;
 
     constructor() { }
 
@@ -115,7 +116,45 @@ export class NgxGaugeComponent implements OnInit, AfterViewInit, OnDestroy, OnCh
         let value = Utils.toFloatOrNumber(val);
         value = Math.max(value, Number(this.options.minValue));
         value = Math.min(value, Number(this.options.maxValue));
+        this.lastValue = value;
         this.gauge.set(value);
+        this.applyZoneColor(false);
+    }
+
+    /**
+     * With 'colorByZone' enabled, the needle and the value text take the color
+     * of the static zone that contains the current value (pointer color otherwise).
+     * The saved options are not changed, only the pointers' own copy of them.
+     * @param redraw redraw the canvas now (no animation pending)
+     */
+    private applyZoneColor(redraw: boolean) {
+        if (!this.gauge || this.lastValue === undefined || !this.options) {
+            return;
+        }
+        const baseColor = this.options.pointer?.color;
+        let color = baseColor;
+        if (this.options.colorByZone && this.options.staticZones?.length) {
+            const zone = this.options.staticZones.find(z =>
+                z?.strokeStyle && this.lastValue >= Number(z.min) && this.lastValue <= Number(z.max));
+            if (zone) {
+                color = zone.strokeStyle;
+            }
+        }
+        if (this.gaugetext?.nativeElement && color) {
+            this.gaugetext.nativeElement.style.color = color;
+        }
+        const pointers: any[] = this.gauge.gp || [];
+        let changed = false;
+        pointers.forEach(gp => {
+            if (gp.options && color && gp.options.color !== color) {
+                gp.options.color = color;
+                changed = true;
+            }
+        });
+        if (changed && redraw) {
+            this.gauge.ctx.clearRect(0, 0, this.gauge.ctx.canvas.width, this.gauge.ctx.canvas.height);
+            this.gauge.render();
+        }
     }
 
     setOptions(options: GaugeOptions) {
@@ -135,6 +174,8 @@ export class NgxGaugeComponent implements OnInit, AfterViewInit, OnDestroy, OnCh
         }
         this.gaugetext.nativeElement.style.top = options.textFilePosition + '%';
         this.render();
+        // gauge.setOptions() restores the pointer color from the options
+        this.applyZoneColor(true);
     }
 
     getOptions() {
