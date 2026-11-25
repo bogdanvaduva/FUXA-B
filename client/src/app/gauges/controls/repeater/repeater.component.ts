@@ -1,6 +1,6 @@
 import { Component, ViewContainerRef, ComponentFactoryResolver } from '@angular/core';
 import { GaugeBaseComponent } from '../../gauge-base/gauge-base.component';
-import { Event, GaugeSettings, GaugeStatus, View, GaugeEventType, GaugeEventActionType, Variable } from '../../../_models/hmi';
+import { Event, GaugeSettings, GaugeStatus, View, GaugeEventType, GaugeEventActionType, Variable, RepeaterLayout } from '../../../_models/hmi';
 import { Utils } from '../../../_helpers/utils';
 import { GaugeDialogType } from '../../gauge-property/gauge-property.component';
 import { HmiService } from '../../../_services/hmi.service';
@@ -37,6 +37,8 @@ export class RepeaterComponent extends GaugeBaseComponent {
     static prefixD = 'D-OXC_';
     /** class of the search input in the Repeater toolbar */
     static searchClass = 'repeater-search';
+    /** class of the flex box with the items, below the toolbar */
+    static itemsClass = 'repeater-items';
     /** ids of the tags shown live by the items while rendering (e.g. @tags.Temperature with a tagList entry) */
     static renderLiveTags: Set<string> = null;
     static hmi: HmiService = null;
@@ -90,6 +92,14 @@ export class RepeaterComponent extends GaugeBaseComponent {
             input.style.boxSizing = 'border-box';
             toolbar.appendChild(input);
             svgDivContainer.appendChild(toolbar);
+            if (isview) {
+                toolbar.style.left = '0';
+            }
+            // the items, in a flex box (direction, wrap, gap, ... of the Repeater layout)
+            const itemsBox = document.createElement('div');
+            itemsBox.className = this.itemsClass;
+            this.applyLayout(itemsBox, gaugeSettings.property.layout);
+            svgDivContainer.appendChild(itemsBox);
             this.bindSearch(svgDivContainer);
 
             let v: View = this.getView(hmiService, view);
@@ -127,7 +137,8 @@ export class RepeaterComponent extends GaugeBaseComponent {
                 }
                 // remove the items of a previous render (and stop their blink timers), the toolbar stays
                 this.clearGaugeBindings(svgDivContainer);
-                Array.from(svgDivContainer.children as HTMLCollectionOf<Element>).filter((child: Element) => child.nodeName.toLowerCase() === 'svg').forEach((child: Element) => child.remove());
+                const box = this.getItemsBox(svgDivContainer);
+                Array.from(box.children as HTMLCollectionOf<Element>).filter((child: Element) => child.nodeName.toLowerCase() === 'svg').forEach((child: Element) => child.remove());
                 let jsonObj = result;
                 if (svgDivContainer['repeaterContext']) {
                     svgDivContainer['repeaterContext'].items = jsonObj;
@@ -154,7 +165,8 @@ export class RepeaterComponent extends GaugeBaseComponent {
                             }
                             svgNodes[0].setAttribute('data-repeater-item', entry[0]);
                             gaugeBindings.push(...this.getGaugeBindings(v, entry[0], entry[1]));
-                            svgDivContainer.appendChild(svgNodes[0]);
+                            (<SVGElement>svgNodes[0]).style.flex = '0 0 auto';
+                            box.appendChild(svgNodes[0]);
                         } catch (err) {
                             console.error(`Repeater: cannot render item ${entry[0]}`, err);
                         }
@@ -351,7 +363,7 @@ export class RepeaterComponent extends GaugeBaseComponent {
     static filterItems(container: HTMLElement) {
         const input = <HTMLInputElement>container.querySelector('.' + RepeaterComponent.searchClass);
         const search = (input?.value || '').trim().toLowerCase();
-        Array.from(container.children).forEach((item: HTMLElement) => {
+        Array.from(RepeaterComponent.getItemsBox(container).children).forEach((item: HTMLElement) => {
             if (item.nodeName.toLowerCase() !== 'svg') {
                 return;
             }
@@ -359,6 +371,27 @@ export class RepeaterComponent extends GaugeBaseComponent {
             const text = (values.join(' ') + ' ' + (item.textContent || '')).toLowerCase();
             item.style.display = (!search || text.includes(search)) ? 'flex' : 'none';
         });
+    }
+
+    /** the flex box of the items (the container itself for a content rendered before the items box) */
+    static getItemsBox(container: HTMLElement): HTMLElement {
+        return <HTMLElement>container.querySelector(':scope > .' + RepeaterComponent.itemsClass) || container;
+    }
+
+    /** flex layout of the items, default one column (as the items were shown before the layout settings) */
+    static applyLayout(box: HTMLElement, layout: RepeaterLayout) {
+        const gap = Number(layout?.gap);
+        box.style.display = 'flex';
+        box.style.flexDirection = layout?.direction === 'row' ? 'row' : 'column';
+        box.style.flexWrap = layout?.wrap ? 'wrap' : 'nowrap';
+        box.style.gap = gap > 0 ? gap + 'px' : '0';
+        box.style.justifyContent = layout?.justify || 'flex-start';
+        box.style.alignItems = layout?.align || 'flex-start';
+        box.style.alignContent = 'flex-start';
+        // a row without wrap scrolls horizontally in the container
+        box.style.width = (layout?.direction === 'row' && !layout?.wrap) ? 'max-content' : '100%';
+        box.style.minWidth = '100%';
+        box.style.boxSizing = 'border-box';
     }
 
     /** map the item fields to placeholders: { country: 'Italy' } -> { '@country': 'Italy' }, a plain value -> { '@value': value } */

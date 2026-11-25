@@ -13,3 +13,7 @@
 .section-item-block input, span {
     width:calc(100% - 10px);
 }
+
+.section-item-toggle span {
+    display: block;
+}

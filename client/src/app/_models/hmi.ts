@@ -551,6 +551,21 @@ export interface RepeaterProperty {
     repeaterDataPropertyToShow: string;
     /** id of the repeated (template) view */
     view: string;
+    /** flex layout of the items (default: one column, as before) */
+    layout?: RepeaterLayout;
+}
+
+export interface RepeaterLayout {
+    /** 'column' (default) or 'row' */
+    direction?: string;
+    /** next line/column when there is no room left */
+    wrap?: boolean;
+    /** space between the items in px */
+    gap?: number;
+    /** flex justify-content: 'flex-start' (default), 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly' */
+    justify?: string;
+    /** flex align-items: 'flex-start' (default), 'center', 'flex-end', 'stretch' */
+    align?: string;
 }
 
 export enum TableType {

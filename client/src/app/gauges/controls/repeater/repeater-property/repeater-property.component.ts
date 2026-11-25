@@ -4,7 +4,7 @@ import { ReplaySubject, Subject } from 'rxjs';
 import { UntypedFormControl } from '@angular/forms';
 import { takeUntil } from 'rxjs/operators';
 
-import { RepeaterProperty } from '../../../../_models/hmi';
+import { RepeaterLayout, RepeaterProperty } from '../../../../_models/hmi';
 import { RepeaterData } from '../../../../_models/repeater';
 import { RepeaterConfigComponent, IDataRepeaterDataResult } from '../../../../editor/repeater-config/repeater-config.component';
 
@@ -25,6 +25,10 @@ export class RepeaterPropertyComponent implements OnInit {
     public repeaterDataFilterCtrl: UntypedFormControl = new UntypedFormControl();
     public filteredRepeaterData: ReplaySubject<RepeaterData[]> = new ReplaySubject<RepeaterData[]>(1);
     property: RepeaterProperty;
+    layout: RepeaterLayout = {};
+    directions = [{ value: 'column', text: 'repeater.layout-column' }, { value: 'row', text: 'repeater.layout-row' }];
+    justifies = ['flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly'];
+    aligns = ['flex-start', 'center', 'flex-end', 'stretch'];
 
     private _onDestroy = new Subject<void>();
 
@@ -44,12 +48,19 @@ export class RepeaterPropertyComponent implements OnInit {
             this.data.settings.property = { repeaterData: null, repeaterDataPropertyToShow: null, view: null };
         }
         this.property = this.data.settings.property;
+        this.layout = Object.assign({ direction: 'column', wrap: false, gap: 0, justify: 'flex-start', align: 'flex-start' }, this.property.layout || {});
         this.loadRepeaterData();
         let repeater = null;
         if (this.data.repeaters) {
             repeater = this.data.repeaters.find(_r => _r.id === this.data.settings.property.repeaterData);
         }
         this.repeaterDataCtrl.setValue(repeater);
+    }
+
+    onLayoutChanged() {
+        this.layout.gap = Math.max(0, Number(this.layout.gap) || 0);
+        this.property.layout = { ...this.layout };
+        this.onPropertyChanged();
     }
 
     onRepeaterDataChanged() {

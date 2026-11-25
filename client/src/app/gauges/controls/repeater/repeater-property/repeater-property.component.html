@@ -34,5 +34,36 @@
                 </mat-select>
             </div>
         </div>
+        <div class="element-property-header mt10">
+            <span>{{'repeater.property-layout' | translate}}</span>
+        </div>
+        <div>
+            <div class="my-form-field section-item section-item-block">
+                <span>{{'repeater.layout-direction' | translate}}</span>
+                <mat-select [(value)]="layout.direction" (selectionChange)="onLayoutChanged()">
+                    <mat-option *ngFor="let direction of directions" [value]="direction.value">{{ direction.text | translate }}</mat-option>
+                </mat-select>
+            </div>
+            <div class="my-form-field section-item section-item-block section-item-toggle mt5">
+                <span>{{'repeater.layout-wrap' | translate}}</span>
+                <mat-slide-toggle color="primary" [(ngModel)]="layout.wrap" (change)="onLayoutChanged()"></mat-slide-toggle>
+            </div>
+            <div class="my-form-field section-item section-item-block mt5">
+                <span>{{'repeater.layout-gap' | translate}}</span>
+                <input [(ngModel)]="layout.gap" (change)="onLayoutChanged()" (keyup.enter)="onLayoutChanged()" type="number" min="0">
+            </div>
+            <div class="my-form-field section-item section-item-block mt5">
+                <span>{{'repeater.layout-justify' | translate}}</span>
+                <mat-select [(value)]="layout.justify" (selectionChange)="onLayoutChanged()">
+                    <mat-option *ngFor="let justify of justifies" [value]="justify">{{ justify }}</mat-option>
+                </mat-select>
+            </div>
+            <div class="my-form-field section-item section-item-block mt5">
+                <span>{{'repeater.layout-align' | translate}}</span>
+                <mat-select [(value)]="layout.align" (selectionChange)="onLayoutChanged()">
+                    <mat-option *ngFor="let align of aligns" [value]="align">{{ align }}</mat-option>
+                </mat-select>
+            </div>
+        </div>
     </div>
 </div>
