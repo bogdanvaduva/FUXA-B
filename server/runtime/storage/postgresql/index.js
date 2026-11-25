@@ -40,6 +40,10 @@ function PostgreSQL(_settings, _log, _currentStorate) {
                 port: parsedUrl.port || 5432,
             });
             client.on('error', (err) => logger.error(`postgresql-pool error: ${err}`));
+            if (schema) {
+                // as the project storage: the schema is created if missing
+                await client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
+            }
             await client.query(`CREATE TABLE IF NOT EXISTS ${tableName} (id serial PRIMARY KEY, tagId text, tagName text, deviceId text, deviceName text, value text, dt numeric, time timestamp);`);
             await client.query(`CREATE INDEX IF NOT EXISTS data_tagid_dt_idx ON ${tableName} (tagId, dt);`);
             status = PostgreSQLStatusEnum.OPEN;

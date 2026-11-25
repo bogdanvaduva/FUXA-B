@@ -152,7 +152,12 @@ var utils = module.exports = {
             delete tosend.smtp.password;
         }
         if (tosend.daqstore?.credentials) {
-            delete tosend.daqstore.credentials;
+            // as the project storage: the user name, the password/token only as 'saved' flags
+            const credentials = tosend.daqstore.credentials;
+            tosend.daqstore.credentials = { passwordSet: !!credentials.password, tokenSet: !!credentials.token };
+            if (credentials.username) {
+                tosend.daqstore.credentials.username = credentials.username;
+            }
         }
         if (tosend.storage?.postgres) {
             delete tosend.storage.postgres.password;

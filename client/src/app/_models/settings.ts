@@ -133,6 +133,9 @@ export class StoreCredentials {
     token?: string;
     username?: string;
     password?: string;
+    /** from the server: a password/token is saved (never sent to the client), an empty one keeps it */
+    passwordSet?: boolean;
+    tokenSet?: boolean;
 
     static isEquals(a: StoreCredentials, b: StoreCredentials) {
         return (a.token === b.token && a.username === b.username && a.password === b.password);

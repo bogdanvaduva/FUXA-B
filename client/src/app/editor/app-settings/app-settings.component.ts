@@ -62,6 +62,8 @@ export class AppSettingsComponent implements OnInit {
     prjStorage: ProjectStorageSettings = { type: 'sqlite', postgres: {} };
     prjStorageCurrent: any = null;
     prjStoragePasswordSet = false;
+    daqPasswordSet = false;
+    daqTokenSet = false;
     prjStorageBusy = false;
     prjReader = { user: '', password: '' };
     prjReaderPasswordSet = false;
@@ -108,6 +110,11 @@ export class AppSettingsComponent implements OnInit {
         if (!this.settings.daqstore.credentials) {
             this.settings.daqstore.credentials = new StoreCredentials();
         }
+        // as the project storage: the saved password/token is not sent, an empty field keeps it
+        this.daqPasswordSet = !!this.settings.daqstore.credentials.passwordSet;
+        this.daqTokenSet = !!this.settings.daqstore.credentials.tokenSet;
+        delete this.settings.daqstore.credentials.passwordSet;
+        delete this.settings.daqstore.credentials.tokenSet;
         if (!this.settings.alarms) {
             this.settings.alarms = new AlarmsSettings();
         }

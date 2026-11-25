@@ -54,7 +54,7 @@ describe('Security - settings disclosure', () => {
             expect(result).to.not.have.property('secretCode');
             expect(result).to.not.have.property('https');
             expect(result.smtp).to.not.have.property('password');
-            expect(result.daqstore).to.not.have.property('credentials');
+            expect(JSON.stringify(result.daqstore.credentials || {})).to.not.contain('daq-secret');
             expect(JSON.stringify(result)).to.not.contain('pg-secret');
             expect(JSON.stringify(result)).to.not.contain('reader-secret');
         }
@@ -65,6 +65,7 @@ describe('Security - settings disclosure', () => {
     it('removes infrastructure connection details from public settings', () => {
         const publicSettings = apiIndex._getPublicSettings(makeSettings());
 
+        expect(publicSettings.daqstore).to.not.have.property('credentials');
         expect(publicSettings.smtp).to.not.have.property('host');
         expect(publicSettings.smtp).to.not.have.property('port');
         expect(publicSettings.smtp).to.not.have.property('username');
@@ -87,11 +88,26 @@ describe('Security - settings disclosure', () => {
             port: 587,
             username: 'smtp-user'
         });
+        // DAQ login as the project storage: user name and 'password saved', never the password
+        expect(adminSettings.daqstore.credentials).to.deep.equal({ username: 'daq-user', passwordSet: true, tokenSet: false });
         expect(adminSettings.daqstore).to.include({
             url: 'http://influx.internal:8086',
             host: 'questdb.internal',
             configurationString: 'http::addr=questdb.internal:9000;username=daq-user;password=daq-secret;'
         });
+    });
+
+    it('keeps the saved DAQ password when the editor sends it empty', () => {
+        const merge = apiIndex._mergeDaqCredentials;
+        const saved = { username: 'daq-user', password: 'daq-secret' };
+        // the editor receives { username, passwordSet } and sends it back with an empty password
+        expect(merge({ username: 'daq-user', password: '', passwordSet: true, tokenSet: false }, saved)).to.deep.equal(saved);
+        expect(merge({ username: 'other' }, saved)).to.deep.equal({ username: 'other', password: 'daq-secret' });
+        expect(merge({ password: 'new-secret' }, saved)).to.deep.equal({ username: 'daq-user', password: 'new-secret' });
+        expect(merge({}, saved)).to.deep.equal(saved);
+        expect(merge(undefined, saved)).to.deep.equal(saved);
+        expect(merge({ username: '' }, saved)).to.deep.equal({ password: 'daq-secret' });
+        expect(merge({ token: 'tok' }, null)).to.deep.equal({ token: 'tok' });
     });
 
     it('does not write secrets to the log when the DAQ storage starts', () => {

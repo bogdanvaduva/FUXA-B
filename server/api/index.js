@@ -152,8 +152,8 @@ function init(_server, _runtime) {
                         if (req.body.smtp && !req.body.smtp.password && runtime.settings.smtp && runtime.settings.smtp.password) {
                             req.body.smtp.password = runtime.settings.smtp.password;
                         }
-                        if (utils.isEmptyObject(req.body.daqstore?.credentials) && runtime.settings.daqstore?.credentials) {
-                            req.body.daqstore.credentials = runtime.settings.daqstore?.credentials;
+                        if (req.body.daqstore) {
+                            req.body.daqstore.credentials = mergeDaqCredentials(req.body.daqstore.credentials, runtime.settings.daqstore?.credentials);
                         }
                         // the project storage is changed only with /api/project-storage/switch (copy of the project)
                         delete req.body.storage;
@@ -264,6 +264,7 @@ function getPublicSettings(settings) {
         delete tosend.smtp.username;
     }
     if (tosend.daqstore) {
+        delete tosend.daqstore.credentials;
         delete tosend.daqstore.url;
         delete tosend.daqstore.host;
         delete tosend.daqstore.configurationString;
@@ -277,6 +278,34 @@ function getPublicSettings(settings) {
         tosend.oidc = { enabled: tosend.oidc.enabled === true };
     }
     return tosend;
+}
+
+/**
+ * DAQ credentials to save, as the project storage PostgreSQL login: the client never receives the
+ * password/token, an empty (or missing) one keeps the saved one; a missing user name keeps the saved one,
+ * an empty one removes it
+ * @param {*} requested credentials from the editor { username, password, token, passwordSet, tokenSet }
+ * @param {*} saved credentials in use
+ */
+function mergeDaqCredentials(requested, saved) {
+    const result = {};
+    const from = requested || {};
+    const current = saved || {};
+    if (typeof from.username === 'string') {
+        if (from.username) {
+            result.username = from.username;
+        }
+    } else if (current.username) {
+        result.username = current.username;
+    }
+    ['password', 'token'].forEach(field => {
+        if (typeof from[field] === 'string' && from[field]) {
+            result[field] = from[field];
+        } else if (current[field]) {
+            result[field] = current[field];
+        }
+    });
+    return result;
 }
 
 function getSanitizedSettings(settings) {
@@ -410,5 +439,6 @@ module.exports = {
     get server() { return server; },
     get authJwt() { return authJwt; },
     _getPublicSettings: getPublicSettings,
-    _getSanitizedSettings: getSanitizedSettings
+    _getSanitizedSettings: getSanitizedSettings,
+    _mergeDaqCredentials: mergeDaqCredentials
 };
