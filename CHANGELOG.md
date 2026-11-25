@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.3.7-3222 - 2026-11-25
+
+### Added
+- Repeater → **Layout**: the items are in a flex box: direction (column / row), wrap, gap (px), justify and
+  align. The default (column, no wrap, no gap) shows the items as before.
+- Several FUXA on the same PostgreSQL project (database and schema): a change on one FUXA is applied on the
+  others (PostgreSQL `LISTEN`/`NOTIFY`): they reload the project (restart the runtime for devices, alarms,
+  notifications, scripts, reports) and their views reload it, the editor asks to reload. See
+  docs/storage-migration.md "Several FUXA on the same project".
+
+### Fixed
+- Settings → DAQ storage: the credentials are handled as the project storage PostgreSQL login: the editor
+  shows the user name and *(saved)* for the password/token (never sent to the browser), an empty
+  password/token keeps the saved one. Before, saving the settings with only the user name filled in lost
+  the saved password.
+- DAQ PostgreSQL: the schema is created if it does not exist (as the project storage).
+- Repeater: the controls drawn by a component (gauge, chart, graph, slider, switch, table, scheduler, recipe,
+  panel) were not displayed in the items (the repeated view SVG holds only their empty container). They are
+  created for every item and bound to their tags, also `@` item tags (e.g. a gauge with tag `@tags.Level`).
+
 ## 1.3.7-3221 - 2026-11-24
 
 ### Added
