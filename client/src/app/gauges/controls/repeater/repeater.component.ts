@@ -174,6 +174,8 @@ export class RepeaterComponent extends GaugeBaseComponent {
                     searchInput.focus();
                 }
                 this.filterItems(svgDivContainer);
+                // controls drawn by a component (gauge, chart, slider, ...): the copied SVG has only their empty container
+                gaugeBindings.push(...this.initComponentGauges(svgDivContainer, v, jsonObj, gaugeManager, resolver, viewContainerRef, isview, parent));
                 gaugeBindings.forEach(binding => binding.tags.forEach(tagId => this.renderLiveTags.add(tagId)));
                 svgDivContainer['repeaterGaugeBindings'] = gaugeBindings;
                 const liveTags = Array.from(this.renderLiveTags);
@@ -452,28 +454,80 @@ export class RepeaterComponent extends GaugeBaseComponent {
     static getGaugeBindings(view: View, itemKey: string, item: any): RepeaterGaugeBinding[] {
         const bindings: RepeaterGaugeBinding[] = [];
         Object.values(view.items || {}).forEach((settings: GaugeSettings) => {
-            if (!settings?.property || settings.type?.startsWith(RepeaterComponent.TypeTag)) {
+            if (!settings?.property || settings.type?.startsWith(RepeaterComponent.TypeTag) || GaugesManager.isComponentGauge(settings.type)) {
+                // the component controls are bound when created (initComponentGauges)
                 return;
             }
-            const tags: string[] = [];
-            const toTag = (variableId: string): string => {
-                if (typeof variableId !== 'string' || !variableId.startsWith('@')) {
-                    return variableId;
-                }
-                const tagId = RepeaterUtils.getFieldTagId(item, variableId.substring(1));
-                if (tagId) {
-                    tags.push(tagId);
-                }
-                return tagId || variableId;
-            };
-            const property = JSON.parse(JSON.stringify(settings.property));
-            property.variableId = toTag(property.variableId);
-            (property.actions || []).forEach(action => action.variableId = toTag(action.variableId));
-            if (tags.length) {
-                const id = settings.id + '_' + itemKey;
-                bindings.push({ id, settings: <GaugeSettings>{ ...settings, id, property }, status: new GaugeStatus(), tags });
+            const resolved = this.resolveSettings(settings, itemKey, item);
+            if (resolved.tags.length) {
+                bindings.push({ id: resolved.settings.id, settings: resolved.settings, status: new GaugeStatus(), tags: resolved.tags });
             }
         });
+        return bindings;
+    }
+
+    /**
+     * copy of the settings of a template control for an item: id '<template id>_<item key>',
+     * the '@' tag paths (also in the actions) replaced by the tag ids of the item
+     */
+    static resolveSettings(settings: GaugeSettings, itemKey: string, item: any): { settings: GaugeSettings, tags: string[] } {
+        const tags: string[] = [];
+        const toTag = (variableId: string): string => {
+            if (typeof variableId !== 'string' || !variableId.startsWith('@')) {
+                return variableId;
+            }
+            const tagId = RepeaterUtils.getFieldTagId(item, variableId.substring(1));
+            if (tagId) {
+                tags.push(tagId);
+            }
+            return tagId || variableId;
+        };
+        const property = settings.property ? JSON.parse(JSON.stringify(settings.property)) : settings.property;
+        if (property) {
+            property.variableId = toTag(property.variableId);
+            (property.actions || []).forEach(action => action.variableId = toTag(action.variableId));
+        }
+        const id = settings.id + '_' + itemKey;
+        return { settings: <GaugeSettings>{ ...settings, id, property }, tags };
+    }
+
+    /**
+     * Create the components of the template controls drawn by a component (gauge, chart, graph, slider, switch,
+     * table, ...) in every item, bound to their tags (fixed or '@' item tags), updated like the other item controls
+     */
+    static initComponentGauges(container: HTMLElement, view: View, items: any, gaugeManager: GaugesManager, resolver: ComponentFactoryResolver,
+        viewContainerRef: ViewContainerRef, isview: boolean, parent?: any): RepeaterGaugeBinding[] {
+        const templates = Object.values(view.items || {}).filter((settings: GaugeSettings) => GaugesManager.isComponentGauge(settings?.type));
+        const bindings: RepeaterGaugeBinding[] = [];
+        if (!templates.length || !gaugeManager || !viewContainerRef) {
+            return bindings;
+        }
+        const created = [];
+        Object.entries(items || {}).forEach(([itemKey, item]) => {
+            templates.forEach((template: GaugeSettings) => {
+                const resolved = this.resolveSettings(template, itemKey, item);
+                if (!container.querySelector(`[id="${CSS.escape(resolved.settings.id)}"]`)) {
+                    return;
+                }
+                const first = viewContainerRef.length;
+                try {
+                    const result = gaugeManager.initRepeaterGauge(resolved.settings, resolver, viewContainerRef, isview, parent);
+                    const tags = Array.from(new Set([...resolved.tags, ...result.tags]));
+                    if (tags.length) {
+                        bindings.push({ id: resolved.settings.id, settings: resolved.settings, status: new GaugeStatus(), tags });
+                    }
+                    created.push(resolved.settings.id);
+                } catch (err) {
+                    console.error(`Repeater: cannot create ${resolved.settings.id}`, err);
+                }
+                // the component views, destroyed with the items
+                for (let i = first; i < viewContainerRef.length; i++) {
+                    container['repeaterComponentViews'] = container['repeaterComponentViews'] || [];
+                    container['repeaterComponentViews'].push(viewContainerRef.get(i));
+                }
+            });
+        });
+        container['repeaterComponentGauges'] = { ids: created, gaugeManager };
         return bindings;
     }
 
@@ -481,6 +535,16 @@ export class RepeaterComponent extends GaugeBaseComponent {
     static clearGaugeBindings(container: HTMLElement) {
         (<RepeaterGaugeBinding[]>container['repeaterGaugeBindings'] || []).forEach(binding => RepeaterComponent.clearStatus(binding));
         container['repeaterGaugeBindings'] = [];
+        // the components created for the items (gauge, chart, ...)
+        const components = container['repeaterComponentGauges'];
+        components?.ids.forEach((id: string) => components.gaugeManager.releaseRepeaterGauge(id));
+        container['repeaterComponentGauges'] = null;
+        (container['repeaterComponentViews'] || []).forEach(viewRef => {
+            try {
+                viewRef.destroy();
+            } catch (err) {}
+        });
+        container['repeaterComponentViews'] = [];
     }
 
     static clearStatus(binding: RepeaterGaugeBinding) {

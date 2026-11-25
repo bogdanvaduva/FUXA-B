@@ -853,6 +853,44 @@ export class GaugesManager {
      * @param isview in view or editor, in editor have to disable mouse activity
      * @param parent parent that call the function, should be from a FuxaViewComponent
      */
+/**
+     * Controls drawn by an Angular component in their container: the view SVG holds only the empty container,
+     * a copy of the SVG (e.g. a Repeater item) has to create the component again
+     */
+    static isComponentGauge(type: string): boolean {
+        return !!type && [HtmlChartComponent.TypeTag, HtmlGraphComponent.TypeTag, HtmlBagComponent.TypeTag, SliderComponent.TypeTag,
+            HtmlSwitchComponent.TypeTag, HtmlTableComponent.TypeTag, HtmlSchedulerComponent.TypeTag, HtmlRecipeComponent.TypeTag,
+            PanelComponent.TypeTag].some(tag => type.startsWith(tag));
+    }
+
+    /**
+     * Create the component of a control copied in a Repeater item (ga.id '<template id>_<item key>', its element
+     * already in the DOM) and bind it to its tags as in a view (values with processValue, user input as events)
+     * Return the component and the tag ids it shows
+     */
+    initRepeaterGauge(ga: GaugeSettings, res: any, ref: any, isview: boolean, parent?: FuxaViewComponent): { gauge: any, tags: string[] } {
+        const gauge = this.initElementAdded(ga, res, ref, isview, parent);
+        const tags = (this.getBindSignals(ga) || []).filter(id => typeof id === 'string' && id && !id.startsWith('@'));
+        if (gauge) {
+            tags.forEach(tag => {
+                this.memorySigGauges[tag] = this.memorySigGauges[tag] || {};
+                this.memorySigGauges[tag][ga.id] = gauge;
+            });
+            if (isview) {
+                this.bindGaugeEventToSignal(ga);
+            }
+        }
+        return { gauge, tags };
+    }
+
+    /** forget a control created by initRepeaterGauge (the Repeater items are rendered again or removed) */
+    releaseRepeaterGauge(id: string) {
+        delete this.mapGauges[id];
+        delete this.mapChart[id];
+        delete this.mapTable[id];
+        Object.values(this.memorySigGauges).forEach(gauges => delete gauges[id]);
+    }
+
     initElementAdded(ga: GaugeSettings, res: any, ref: any, isview: boolean, parent?: FuxaViewComponent, textTranslation?: string, sourceDeviceTags?: Tag[]) {
         if (!ga || !ga.type) {
             console.error('!TOFIX', ga);
