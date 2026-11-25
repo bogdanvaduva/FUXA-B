@@ -33,7 +33,8 @@ const IoEventTypes = {
     RECIPE_UPLOAD_COMPLETE: 'recipe:upload-complete',
     RECIPE_UPLOAD_ERROR: 'recipe:upload-error',
     RECIPE_CANCELED: 'recipe:cancel-confirmed',
-    SCRIPT_COMMAND: 'script-command'
+    SCRIPT_COMMAND: 'script-command',
+    PROJECT_CHANGED: 'project-changed'
 }
 
 // module.exports = IoEventTypes;

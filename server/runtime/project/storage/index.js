@@ -29,8 +29,16 @@ function getStorage(settings) {
     }
 }
 
+/**
+ * All the backends, by type
+ */
+function getBackends() {
+    return { sqlite: SqliteStorage, postgres: PostgresStorage };
+}
+
 module.exports = {
     getStorage: getStorage,
+    getBackends: getBackends,
     getStorageType: getStorageType,
     StorageTypeEnum: StorageTypeEnum,
 };

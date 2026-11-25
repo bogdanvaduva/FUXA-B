@@ -342,6 +342,10 @@ export class HmiService {
         this.socket.on(IoEventTypes.ALIVE, (message) => {
             this.onServerConnection$.next(true);
         });
+        // project changed by another FUXA instance on the same PostgreSQL project storage
+        this.socket.on(IoEventTypes.PROJECT_CHANGED, (message) => {
+            this.onProjectChanged();
+        });
         // recipes
         this.socket.on(IoEventTypes.RECIPE_DOWNLOAD_PROGRESS, (message) => {
             this.onRecipeDownloadProgress.emit(message);
@@ -761,6 +765,20 @@ export class HmiService {
         }
     }
 
+    /**
+     * The server reloaded the project changed on another computer: the views reload it,
+     * the editor asks first (an open view may have changes not saved yet)
+     */
+    private onProjectChanged() {
+        if (/\/editor\/?$/.test(location.pathname)) {
+            const msg = this.translateService.instant('msg.project-changed-external-editor');
+            this.toastr.info(msg, '', { disableTimeOut: true, closeButton: true, tapToDismiss: true })
+                .onTap.subscribe(() => this.projectService.reload());
+        } else {
+            this.projectService.reload();
+        }
+    }
+
     private async safeReloadIfServerAlive() {
         try {
             // Small test request to verify if server is reachable
@@ -853,7 +871,8 @@ export enum IoEventTypes {
     RECIPE_UPLOAD_COMPLETE = 'recipe:upload-complete',
     RECIPE_UPLOAD_ERROR = 'recipe:upload-error',
     RECIPE_CANCEL = 'recipe:cancel-execution',
-    RECIPE_CANCELED = 'recipe:cancel-confirmed'
+    RECIPE_CANCELED = 'recipe:cancel-confirmed',
+    PROJECT_CHANGED = 'project-changed'
 }
 
 export const ScriptCommandEnum = {

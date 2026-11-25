@@ -8,7 +8,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { Pool } = require('pg');
+const crypto = require('crypto');
+const { Pool, Client } = require('pg');
 const { TableType, ClearableTables } = require('../tables');
 
 const SCHEMA_FILE = path.join(__dirname, 'schema.sql');
@@ -18,6 +19,15 @@ var logger;         // Application logger
 var pool;           // Connection pool
 var readerPool;     // Connection pool of the Repeater reader login (settings.storage.postgres.reader)
 var readerKey;      // Connection of readerPool, to recreate it when the settings change
+var schemaName = '';        // schema of the project tables ('' = search_path default)
+var changeCallback = null;  // listen(): called when another FUXA writes the project
+var listener = null;        // dedicated connection with LISTEN
+var listenerTimer = null;   // reconnect timer of the listener
+
+// several FUXA on the same database/schema: each write sends a NOTIFY, the other instances reload the project
+const NOTIFY_CHANNEL = 'fuxa_project';
+const INSTANCE_ID = crypto.randomUUID();
+const LISTENER_RETRY_MS = 5000;
 
 // a reader login must not read these tables (in any schema, also the prjstorage_backup_* copies)
 const PROJECT_TABLE_NAMES = Object.values(TableType).map(table => table.toLowerCase());
@@ -116,6 +126,7 @@ async function _bind() {
     if (pool) {
         close();
     }
+    schemaName = connection.schema;
     pool = new Pool(options);
     pool.on('error', (err) => logger.error(`prjstorage.postgres pool error: ${err}`));
     try {
@@ -133,6 +144,9 @@ async function _bind() {
         const exist = await pool.query(`SELECT to_regclass('${TableType.GENERAL}') IS NOT NULL AS exist`);
         await pool.query(fs.readFileSync(SCHEMA_FILE, 'utf8'));
         logger.info(`prjstorage.connected-to ${_describe(options)}${connection.schema ? ' schema ' + connection.schema : ''} database`, true);
+        if (changeCallback) {
+            _startListener();
+        }
         return exist.rows[0].exist;
     } catch (err) {
         const message = `prjstorage.bind failed! ${err.message}`;
@@ -179,6 +193,7 @@ function setSections(sections) {
                 var value = JSON.stringify(sections[i].value);
                 await client.query(_upsertSql(table), [sections[i].name, value]);
             }
+            await _notify(client, sections.map(section => section.table));
             await client.query('COMMIT');
             resolve();
         } catch (err) {
@@ -203,6 +218,7 @@ function setSection(section) {
             var table = _ensureValidTable(section.table);
             var value = JSON.stringify(section.value);
             pool.query(_upsertSql(table), [section.name, value]).then(function () {
+                _notify(pool, [table]);
                 resolve();
             }).catch(function (err) {
                 logger.error(`prjstorage.set failed! ${err}`);
@@ -248,6 +264,7 @@ function deleteSection(section) {
         try {
             var table = _ensureValidTable(section.table);
             pool.query(`DELETE FROM ${table} WHERE name = $1`, [section.name]).then(function () {
+                _notify(pool, [table]);
                 resolve();
             }).catch(reject);
         } catch (err) {
@@ -260,6 +277,7 @@ function deleteSection(section) {
  * Close the database
  */
 function close() {
+    _stopListener();
     _closeReader();
     if (pool) {
         const _pool = pool;
@@ -276,6 +294,7 @@ function clearAll() {
         // multi-statement simple query: one implicit transaction
         var sql = ClearableTables.map(table => `DELETE FROM ${table};`).join('');
         Promise.resolve().then(() => pool.query(sql)).then(() => {
+            _notify(pool, ClearableTables);
             resolve(true);
         }).catch(err => {
             logger.error(`prjstorage.clear failed! ${err}`);
@@ -326,6 +345,7 @@ async function importTables(data, options = {}) {
                 rows++;
             }
         }
+        await _notify(client, Object.values(TableType));
         await client.query('COMMIT');
     } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
@@ -476,6 +496,94 @@ function _closeReader() {
     }
 }
 
+/**
+ * NOTIFY the other FUXA instances that the project tables changed (sent at COMMIT when in a transaction)
+ * A failed NOTIFY does not fail the write: the other instances see the change at their next reload
+ * @param {*} executor pool or client in transaction
+ * @param {*} tables changed tables
+ */
+function _notify(executor, tables) {
+    const payload = JSON.stringify({ origin: INSTANCE_ID, schema: schemaName, tables: Array.from(new Set(tables)) });
+    return Promise.resolve().then(() => executor.query('SELECT pg_notify($1, $2)', [NOTIFY_CHANNEL, payload])).catch(err => {
+        logger && logger.warn(`prjstorage.postgres notify failed: ${err.message || err}`);
+    });
+}
+
+/**
+ * Call callback({ tables, reconnected }) when another FUXA instance changes the project in the same
+ * database and schema (PostgreSQL LISTEN), null to stop
+ * reconnected: the listener connection was lost, changes in the meantime are unknown (tables: all)
+ * @param {*} callback
+ */
+function listen(callback) {
+    changeCallback = callback || null;
+    if (!changeCallback) {
+        _stopListener();
+    } else if (pool && !listener) {
+        _startListener();
+    }
+}
+
+function _startListener(reconnected) {
+    if (listener || !changeCallback || !pool) {
+        return;
+    }
+    let options;
+    try {
+        options = getConnectionOptions(settings).options;
+    } catch (err) {
+        return;
+    }
+    const client = new Client(options);
+    listener = client;
+    const retry = (err) => {
+        if (listener !== client) {
+            return;
+        }
+        listener = null;
+        client.end().catch(() => {});
+        logger && logger.warn(`prjstorage.postgres change listener lost, retry in ${LISTENER_RETRY_MS / 1000}s: ${err && err.message ? err.message : err}`);
+        clearTimeout(listenerTimer);
+        listenerTimer = setTimeout(() => _startListener(true), LISTENER_RETRY_MS);
+    };
+    client.on('error', retry);
+    client.on('end', () => retry('connection closed'));
+    client.on('notification', (message) => {
+        if (message.channel !== NOTIFY_CHANNEL || !changeCallback) {
+            return;
+        }
+        let change;
+        try {
+            change = JSON.parse(message.payload);
+        } catch (err) {
+            return;
+        }
+        if (!change || change.origin === INSTANCE_ID || (change.schema || '') !== schemaName) {
+            return;
+        }
+        changeCallback({ tables: Array.isArray(change.tables) ? change.tables : Object.values(TableType), reconnected: false });
+    });
+    client.connect().then(() => client.query(`LISTEN ${NOTIFY_CHANNEL}`)).then(() => {
+        if (listener !== client) {
+            return;
+        }
+        logger && logger.info('prjstorage.postgres listening for project changes of other FUXA instances', true);
+        if (reconnected && changeCallback) {
+            changeCallback({ tables: Object.values(TableType), reconnected: true });
+        }
+    }).catch(retry);
+}
+
+function _stopListener() {
+    clearTimeout(listenerTimer);
+    listenerTimer = null;
+    if (listener) {
+        const client = listener;
+        listener = null;
+        client.end().catch(() => {});
+    }
+}
+
 module.exports = {
     init: init,
     close: close,
@@ -491,6 +599,8 @@ module.exports = {
     describe: describe,
     testConnection: testConnection,
     queryAsReader: queryAsReader,
+    listen: listen,
+    INSTANCE_ID: INSTANCE_ID,
     // for the migration tool
     getConnectionOptions: getConnectionOptions,
     SCHEMA_FILE: SCHEMA_FILE,

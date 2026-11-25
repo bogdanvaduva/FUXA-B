@@ -62,6 +62,22 @@ On a new installation that never started, setting `storage.type: 'postgres'` (wi
 `settings.js` copies the SQLite project to PostgreSQL at the next start (see below): use the editor
 button instead.
 
+### Several FUXA on the same project
+
+All the FUXA connected to the same database **and schema** share the project. Every write sends a
+PostgreSQL `NOTIFY fuxa_project`; the other FUXA listen (`LISTEN`, own connection, reconnects every 5 s)
+and, about one second after the last change:
+
+- views, texts, layout, charts, locations...: reload the project;
+- devices, device credentials, alarms, notifications, scripts or reports: restart the runtime (as after a
+  project save on that FUXA);
+- tell their browsers: the views reload the project, the editor shows a message to click for reloading
+  (a view open in the editor may have changes not saved yet).
+
+A FUXA on another schema is another project and is not notified. When the listener connection was lost
+the project is reloaded after it reconnects (changes in the meantime are unknown). Only the project is
+shared: the application settings (DAQ, SMTP, users, alarms history...) stay in each FUXA `_appdata`.
+
 ### Switch by editing settings.js
 
 If `storage.type` is changed by hand in `settings.js` (and there is no `storage` in `mysettings.json`),

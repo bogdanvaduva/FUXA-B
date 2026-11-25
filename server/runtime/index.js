@@ -19,6 +19,7 @@ var localization = require('./localization');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const daqstorage = require('./storage/daqstorage');
+const prjstorage = require('./project/prjstorage');
 const schedulerStorage = require('./scheduler/scheduler-storage');
 const schedulerService = require('./scheduler/scheduler-service');
 const recipeStorage = require('./recipes/recipe-storage');
@@ -37,6 +38,12 @@ var schedulerInitPromise = Promise.resolve();
 var tagsSubscription = new Map();
 var socketPool = new Map();
 var socketMutex = new Map();
+var runtimeStarted = false;
+
+// project changes of other FUXA instances (shared PostgreSQL project storage)
+const EXTERNAL_CHANGE_DELAY = 1000;
+const RUNTIME_TABLES = ['devices', 'devicesSecurity', 'alarms', 'notifications', 'scripts', 'reports'];
+var externalChange = { timer: null, tables: new Set(), reconnected: false, running: false };
 
 function isSocketWriteAuthorized(socket) {
     if (!settings || !settings.secureEnabled || settings.secureOnlyEditor) {
@@ -123,6 +130,9 @@ function init(_io, _api, _settings, _log, eventsMain) {
     scriptsMgr = scripts.create(runtime);
     jobsMgr = jobs.create(runtime);
     devices.init(runtime);
+
+    // project in PostgreSQL shared by several FUXA: reload when another instance changes it
+    prjstorage.onExternalChange(onProjectStorageChange);
 
     events.on('project-device:change', updateDevice);
     events.on('device-value:changed', updateDeviceValues);
@@ -480,6 +490,7 @@ function init(_io, _api, _settings, _log, eventsMain) {
 }
 
 function start() {
+    runtimeStarted = true;
     return new Promise(function (resolve, reject) {
         // load project
         project.load().then(result => {
@@ -628,6 +639,59 @@ function restart(clear) {
     });
 }
 
+
+/**
+ * Project changed by another FUXA instance on the same storage (PostgreSQL NOTIFY)
+ * The changes are collected for EXTERNAL_CHANGE_DELAY ms (a project save writes several tables), then:
+ * tables used by devices, alarms, notifications, scripts or reports: restart the runtime,
+ * else (views, texts, layout...): reload the project only. Then the clients reload the project.
+ * @param {*} change { tables, reconnected }
+ */
+function onProjectStorageChange(change) {
+    (change && change.tables || []).forEach(table => externalChange.tables.add(table));
+    if (change && change.reconnected) {
+        externalChange.reconnected = true;
+    }
+    clearTimeout(externalChange.timer);
+    externalChange.timer = setTimeout(_applyExternalChange, EXTERNAL_CHANGE_DELAY);
+}
+
+async function _applyExternalChange() {
+    externalChange.timer = null;
+    if (!runtimeStarted) {
+        // the start loads the current project
+        externalChange.tables.clear();
+        return;
+    }
+    if (externalChange.running) {
+        externalChange.timer = setTimeout(_applyExternalChange, EXTERNAL_CHANGE_DELAY);
+        return;
+    }
+    const tables = Array.from(externalChange.tables);
+    const reconnected = externalChange.reconnected;
+    externalChange.tables.clear();
+    externalChange.reconnected = false;
+    if (!tables.length) {
+        return;
+    }
+    externalChange.running = true;
+    try {
+        const full = tables.some(table => RUNTIME_TABLES.includes(table));
+        logger.info(`runtime: project changed by another FUXA instance (${reconnected ? 'listener reconnected' : tables.join(', ')}), ` +
+            (full ? 'restart' : 'reload project'), true);
+        if (full) {
+            await restart(false);
+        } else {
+            await project.load();
+            await schedulerInitPromise.then(() => schedulerService.reconcileProjectSchedulers());
+        }
+        io && io.emit(Events.IoEventTypes.PROJECT_CHANGED, { tables: tables });
+    } catch (err) {
+        logger.error(`runtime: reload of the project changed by another FUXA instance failed! ${err && err.message ? err.message : err}`);
+    } finally {
+        externalChange.running = false;
+    }
+}
 
 function updateDevice(event) {
     console.log('emit updateDevice: ' + event);

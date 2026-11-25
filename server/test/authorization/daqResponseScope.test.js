@@ -34,6 +34,7 @@ function createRuntime(getNodeValues) {
         path,
         jsonwebtoken: { verify: token => ({ id: token, groups: 1 }) },
         './localization': { init() {} },
+        './project/prjstorage': { onExternalChange() {} },
         './storage/daqstorage': {
             init() {},
             getNodeValues(...args) {

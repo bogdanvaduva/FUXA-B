@@ -47,6 +47,7 @@ function registerRuntime(io, getNodeValues) {
     const dependencies = {
         bluebird: require('bluebird'), './events': Events, './utils': utils,
         path, jsonwebtoken: jwt, './localization': { init },
+        './project/prjstorage': { onExternalChange() {} },
         './storage/daqstorage': { init, getNodeValues }
     };
     for (const name of ['devices', 'project', 'users', 'apikeys', 'plugins',

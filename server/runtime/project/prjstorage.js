@@ -20,6 +20,7 @@ const MARKER_FILE = 'prjstorage.json';
 var backend = storage.getStorage();     // sqlite until init selects the configured backend
 var currentSettings;
 var logger;
+var changeSubscriber = null;    // onExternalChange(): project written by another FUXA on the same storage
 
 function _markerFile(settings) {
     return path.join(settings.workDir, MARKER_FILE);
@@ -36,6 +37,7 @@ function _readMarker(settings) {
 }
 
 function _writeMarker(settings, _backend) {
+    _listen();
     try {
         const marker = Object.assign(_backend.describe(settings), { updated: new Date().toISOString() });
         fs.writeFileSync(_markerFile(settings), JSON.stringify(marker, null, 2));
@@ -52,6 +54,29 @@ function _sameStore(a, b) {
         return a.host === b.host && Number(a.port) === Number(b.port) && a.database === b.database && (a.schema || '') === (b.schema || '');
     }
     return true;
+}
+
+/**
+ * Forward the change notifications of the backend in use (PostgreSQL LISTEN), stop the others
+ */
+function _listen() {
+    Object.values(storage.getBackends ? storage.getBackends() : {}).forEach(other => {
+        if (other !== backend && other.listen) {
+            other.listen(null);
+        }
+    });
+    if (backend.listen) {
+        backend.listen(changeSubscriber ? (change) => changeSubscriber(change) : null);
+    }
+}
+
+/**
+ * Callback({ tables, reconnected }) when another FUXA instance changes the project in the same storage
+ * (PostgreSQL only, SQLite is one instance per file)
+ */
+function onExternalChange(callback) {
+    changeSubscriber = callback || null;
+    _listen();
 }
 
 function _countRows(data) {
@@ -161,6 +186,7 @@ async function _initWithCopy(_settings, target, marker, targetDescription) {
         try { target.close(); } catch (_) {}
         backend = previous;
         currentSettings = previousSettings;
+        _listen();
         logger.error(`prjstorage: copy of the project to ${_describeText(targetDescription)} failed, FUXA keeps using ${_describeText(marker)}: ${err && err.message ? err.message : err}`);
         return true;
     }
@@ -269,6 +295,7 @@ module.exports = {
     switchTo: switchTo,
     testConnection: testConnection,
     getCurrent: getCurrent,
+    onExternalChange: onExternalChange,
     // Repeater 'FUXA Project DB (PostgreSQL)': read-only query with the reader login (PostgreSQL storage only)
     queryAsReader: (sql, tables) => backend && backend.queryAsReader ? backend.queryAsReader(sql, tables)
         : Promise.reject(new Error('the project storage is not PostgreSQL')),
