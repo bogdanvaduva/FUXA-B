@@ -12,6 +12,7 @@ import { SectionMessageDialogComponent } from '../../editor/section-message-dial
 import { ProjectService } from '../../_services/project.service';
 import { ArMarkerPropertyComponent } from '../ar-marker-property/ar-marker-property.component';
 import { createQrSvg, createQrSvgDataUrl } from '../ar-marker-property/qr-code-generator';
+import { EndPointApi } from '../../_helpers/endpointapi';
 
 @Component({
     selector: 'app-ar-marker-list',
@@ -181,7 +182,7 @@ export class ArMarkerListComponent implements OnInit, AfterViewInit, OnDestroy {
                 hideLabelKey: 'ar.markers-notice-hide',
                 actionLabelKey: 'ar.markers-notice-open',
                 routePath: '/ar',
-                absoluteUrl: `${window.location.origin}/ar`,
+                absoluteUrl: EndPointApi.getAppUrl('/ar'),
                 settingKey: 'hideArMarkersNotice'
             }
         });

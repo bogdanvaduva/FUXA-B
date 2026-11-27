@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthService } from '../../../_services/auth.service';
 import { SettingsService } from '../../../_services/settings.service';
+import { EndPointApi } from '../../../_helpers/endpointapi';
 
 @Component({
     selector: 'app-node-red-flows',
@@ -55,12 +56,14 @@ export class NodeRedFlowsComponent implements OnInit, OnDestroy {
         if (this._link) {
             // Convert relative URLs to absolute URLs
             let absoluteUrl = this._link;
-            if (this._link.startsWith('/')) {
-                // Relative URL starting with / - add current origin
-                absoluteUrl = window.location.origin + this._link;
-            } else if (!this._link.startsWith('http://') && !this._link.startsWith('https://')) {
-                // Relative URL without leading / - add current origin and /
-                absoluteUrl = window.location.origin + '/' + this._link;
+            const basePath = EndPointApi.getBasePath();
+            if (this._link.startsWith('/') && !this._link.startsWith('//')) {
+                // application path (/nodered/, /dashboard/...) - add current origin and base path
+                const inBasePath = basePath && (this._link === basePath || this._link.startsWith(basePath + '/'));
+                absoluteUrl = inBasePath ? window.location.origin + this._link : EndPointApi.getAppUrl(this._link);
+            } else if (!this._link.startsWith('http://') && !this._link.startsWith('https://') && !this._link.startsWith('//')) {
+                // Relative URL without leading / - add current origin and base path
+                absoluteUrl = EndPointApi.getAppUrl(this._link);
             }
             try {
                 const url = new URL(absoluteUrl, window.location.origin);

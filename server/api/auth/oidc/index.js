@@ -16,7 +16,7 @@ const oidcClient = require('./client');
 const mapper = require('./mapper');
 
 // In order to work under a reverse proxy, I import the BASE PATH
-const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/+$/, '');
+const basePath = require('../../../basepath');
 
 const STATE_COOKIE = 'fuxa_oidc_state';
 const STATE_TTL_MS = 10 * 60 * 1000;
@@ -54,7 +54,7 @@ function cookieOptions() {
         sameSite: 'lax',
         // from the configured public URL, not from the request
         secure: new URL(cfg.redirectUri).protocol === 'https:',
-        path: BASE_PATH + '/api/auth/oidc',
+        path: basePath.get() + '/api/auth/oidc',
     };
 }
 
@@ -106,7 +106,7 @@ function sendErrorPage(res, status) {
         '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
         '<title>Sign-in failed</title></head><body style="font-family:sans-serif;margin:40px">' +
         '<h3>Single sign-on failed</h3><p>The sign-in could not be completed. Try again or contact the administrator.</p>' +
-        `<p><a href="${BASE_PATH}/">Return to FUXA</a></p></body></html>`);
+        `<p><a href="${basePath.get()}/">Return to FUXA</a></p></body></html>`);
 }
 
 /**
@@ -215,7 +215,7 @@ module.exports = {
                 audit(true, { sub: claims.sub, username: user.username, user: result.action, groups: user.groups });
                 runtime.events.emit('access:login', { username: user.username, fullname: user.fullname });
                 res.set('Cache-Control', 'no-store');
-                res.redirect(302, BASE_PATH + cfg.postLoginRedirect);
+                res.redirect(302, basePath.get() + cfg.postLoginRedirect);
             } catch (err) {
                 audit(false, { reason: err.reason || 'mapping_failed', sub: claims && claims.sub, error: err.message });
                 sendErrorPage(res, 403);

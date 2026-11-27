@@ -20,6 +20,24 @@ export class EndPointApi {
         }
     }
 
+    /**
+     * Absolute URL of an application path, under the base path: '/ar' -> 'https://host/fuxa/ar'
+     */
+    public static getAppUrl(appPath: string): string {
+        return location.origin + this.getBasePath() + (appPath.startsWith('/') ? appPath : '/' + appPath);
+    }
+
+    /**
+     * Current location path without the base path: '/fuxa/editor' -> '/editor'
+     */
+    public static getAppPath(pathname: string = location.pathname): string {
+        const base = this.getBasePath();
+        if (base && (pathname === base || pathname.startsWith(base + '/'))) {
+            return pathname.slice(base.length) || '/';
+        }
+        return pathname;
+    }
+
     public static getURL() {
         if (!this.url) {
             if (environment.apiEndpoint) {

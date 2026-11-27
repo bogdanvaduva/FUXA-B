@@ -540,9 +540,9 @@ export class AppModule {
         iconReg: MatIconRegistry,
         sanitizer: DomSanitizer
     ) {
-        iconReg.addSvgIcon('group', sanitizer.bypassSecurityTrustResourceUrl('/assets/images/group.svg'));
-        iconReg.addSvgIcon('to_bottom', sanitizer.bypassSecurityTrustResourceUrl('/assets/images/to-bottom.svg'));
-        iconReg.addSvgIcon('to_top', sanitizer.bypassSecurityTrustResourceUrl('/assets/images/to-top.svg'));
-        iconReg.addSvgIcon('nodered-flows', sanitizer.bypassSecurityTrustResourceUrl('/assets/images/nodered-icon.svg'));
+        iconReg.addSvgIcon('group', sanitizer.bypassSecurityTrustResourceUrl('assets/images/group.svg'));
+        iconReg.addSvgIcon('to_bottom', sanitizer.bypassSecurityTrustResourceUrl('assets/images/to-bottom.svg'));
+        iconReg.addSvgIcon('to_top', sanitizer.bypassSecurityTrustResourceUrl('assets/images/to-top.svg'));
+        iconReg.addSvgIcon('nodered-flows', sanitizer.bypassSecurityTrustResourceUrl('assets/images/nodered-icon.svg'));
     }
 }

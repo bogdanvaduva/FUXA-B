@@ -18,7 +18,7 @@ const FUXA = require('./fuxa.js');
 const runtime = require('./runtime');
 const authJwt = require('./api/jwt-helper');
 
-const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/+$/, '');
+const basePath = require('./basepath');
 
 const express = require('express');
 const app = express();
@@ -31,7 +31,8 @@ var startTime = new Date();
 var knownOpts = {
     "help": Boolean,
     "port": Number,
-    "userDir": [path]
+    "userDir": [path],
+    "basePath": String
 };
 var shortHands = {
     "?": ["--help"],
@@ -47,11 +48,12 @@ var parsedArgs = nopt(knownOpts, shortHands, process.argv, 2);
 
 if (parsedArgs.help) {
     console.log("FUXA v" + FUXA.version());
-    console.log("Usage: fuxa [-?] [--port PORT] [--userDir DIR]");
+    console.log("Usage: fuxa [-?] [--port PORT] [--userDir DIR] [--basePath PATH]");
     console.log("");
     console.log("Options:");
     console.log("  -p, --port     PORT  port to listen on");
     console.log("  -u, --userDir  DIR   use specified user directory");
+    console.log("      --basePath PATH  serve the application from a sub-folder, e.g. /fuxa");
     console.log("  -?, --help           show this help");
     process.exit();
 }
@@ -230,6 +232,18 @@ if (!fs.existsSync(settings.logDir)) {
 }
 
 logger.init(settings);
+
+// Sub-folder (reverse proxy) where the application is served: CLI > env BASE_PATH > settings.basePath
+try {
+    settings.basePath = basePath.set(parsedArgs.basePath || process.env.BASE_PATH || settings.basePath || '');
+} catch (err) {
+    logger.error(err.message);
+    process.exit(1);
+}
+const BASE_PATH = settings.basePath;
+if (BASE_PATH) {
+    logger.info('Serving the application from the base path ' + BASE_PATH + '/');
+}
 
 // OpenID Connect: fail closed, do not start with an enabled but invalid configuration
 const oidcErrors = require('./api/auth/oidc/config').validate(settings);
@@ -456,39 +470,38 @@ function snapshotAuth(req, res, next) {
 // Generic reverse proxies (settings.proxies), mounted before any body parser
 proxies.mount(app, settings.proxies, BASE_PATH, logger);
 
-// All the calls that are directly parsed as static http are mapped here
-const SHELL_ROUTES = [
-    '/',
-    '/home',
-    '/home/:viewName',
-    '/lab',
-    '/editor',
-    '/device',
-    '/plugins',
-    '/rodevice',
-    '/users',
-    '/view',
-    '/ar'
-];
-
 app.use(allowCrossDomain);
 
-if (indexHtmlCache) {
-    const serveShell = (req, res) => res.type('html').send(indexHtmlCache);
-    for (const shellPath of SHELL_ROUTES) {
-        app.get(BASE_PATH + shellPath, serveShell);
+// The Angular application (index.html) with the <base href> of the BASE_PATH
+const indexHtmlPath = path.join(settings.httpStatic, 'index.html');
+const serveShell = (req, res) => {
+    res.header('Cache-Control', 'no-cache');
+    if (indexHtmlCache) {
+        return res.type('html').send(indexHtmlCache);
     }
+    res.sendFile(indexHtmlPath);
+};
+
+if (BASE_PATH) {
+    // outside of the sub-folder: go into it, '/fuxa' -> '/fuxa/'
+    const toBasePath = (req, res) => {
+        const query = req.originalUrl.indexOf('?');
+        res.redirect(301, BASE_PATH + '/' + (query >= 0 ? req.originalUrl.slice(query) : ''));
+    };
+    app.get('/', toBasePath);
+    app.get(BASE_PATH, (req, res, next) => (req.path === BASE_PATH ? toBasePath(req, res) : next()));
 }
+app.get(BASE_PATH + '/', serveShell);
+app.get(BASE_PATH + '/index.html', serveShell);
+
 if (rewrittenAssets.size) {
     app.use((req, res, next) => {
         const rewritten = rewrittenAssets.get(req.path);
         rewritten ? res.type(rewritten.type).send(rewritten.content) : next();
     });
 }
+app.use(BASE_PATH + '/', express.static(settings.httpStatic, { index: false }));
 
-for (const shellPath of SHELL_ROUTES) {
-    app.use(BASE_PATH + shellPath, express.static(settings.httpStatic));
-}
 // while paths that have to serve non-angular paths are here
 app.use(BASE_PATH + '/' + settings.httpUploadFileStatic, express.static(settings.uploadFileDir));
 app.use(BASE_PATH + '/_images', express.static(settings.imagesFileDir));
@@ -533,7 +546,7 @@ function mountSwaggerIfEnabled() {
     }
 
     const swaggerDocument = YAML.load(path.join(__dirname, 'docs', 'openapi.yaml'));
-    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+    app.use(BASE_PATH + '/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 }
 
 // Swagger API Docs (mounted on main app so it isn't intercepted by optional integrations)
@@ -611,6 +624,14 @@ function startFuxa() {
             if (settings.disableServer !== false) {
                 app.use(BASE_PATH + '/', FUXA.httpApi);
             }
+
+            // Angular routes (/editor, /home/view, ...) reloaded or opened directly
+            app.get('*', (req, res, next) => {
+                if (basePath.shouldBypassSpaCatchAll(req.path) || !req.accepts('html')) {
+                    return next();
+                }
+                serveShell(req, res);
+            });
 
             server.listen(settings.uiPort, settings.uiHost, function () {
                 settings.serverPort = server.address().port;

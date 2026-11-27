@@ -5,26 +5,15 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 
-const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/+$/, '');
+const basePath = require('../../basepath');
 
-function getPathWithoutBasePath(requestPath, basePath = BASE_PATH) {
-    if (!basePath) return requestPath;
-    if (requestPath === basePath) return '/';
-    if (requestPath.startsWith(basePath + '/')) {
-        return requestPath.slice(basePath.length);
-    }
-    return requestPath;
+function getPathWithoutBasePath(requestPath, base = basePath.get()) {
+    return basePath.strip(requestPath, base);
 }
 
-function shouldBypassSpaCatchAll(requestPath, basePath = BASE_PATH) {
-    const routePath = getPathWithoutBasePath(requestPath, basePath);
-    return routePath === '/api' ||
-        routePath.startsWith('/api/') ||
-        routePath.includes('.') ||
-        routePath.startsWith('/nodered') ||
-        routePath.startsWith('/dashboard');
+function shouldBypassSpaCatchAll(requestPath, base = basePath.get()) {
+    return basePath.shouldBypassSpaCatchAll(requestPath, base);
 }
-
 
 const BLOCKED_DEVICE_PROPERTY_KEYS = new Set([
     '__proto__',
@@ -231,10 +220,12 @@ const getCookieValue = (req, name) => {
     return null;
 };
 
-const NODE_RED_AUTH_COOKIE_OPTIONS = {
-    path: '/nodered',
-    sameSite: 'lax',
-};
+function nodeRedAuthCookieOptions() {
+    return {
+        path: basePath.get() + '/nodered',
+        sameSite: 'lax',
+    };
+}
 
 function isAuthorizedNodeRedWebSocket(request, { settings, authJwt }) {
     if (!settings.secureEnabled || settings.nodeRedAuthMode === 'legacy-open') {
@@ -299,7 +290,7 @@ function createNodeRedAuthMiddleware({ settings, runtime, logger, authJwt }) {
     return (req, res, next) => {
         // Public dashboard UI and its HTTP APIs (served from httpNodeRoot/ui.path).
         // baseUrl comes from Express mount point and is not affected by query/path tricks.
-        if (req.baseUrl === '/dashboard') return next();
+        if (req.baseUrl === basePath.get() + '/dashboard') return next();
 
         if (!settings.secureEnabled || settings.nodeRedAuthMode === 'legacy-open') {
             return next();
@@ -339,7 +330,7 @@ function createNodeRedAuthMiddleware({ settings, runtime, logger, authJwt }) {
                 }
                 if (queryToken) {
                     res.cookie('nodered_auth', token, {
-                        ...NODE_RED_AUTH_COOKIE_OPTIONS,
+                        ...nodeRedAuthCookieOptions(),
                         httpOnly: true,
                         secure: !!settings.https,
                     });
@@ -353,7 +344,7 @@ function createNodeRedAuthMiddleware({ settings, runtime, logger, authJwt }) {
             })
             .catch(() => {
                 if (cookieToken) {
-                    res.clearCookie('nodered_auth', NODE_RED_AUTH_COOKIE_OPTIONS);
+                    res.clearCookie('nodered_auth', nodeRedAuthCookieOptions());
                 }
                 return res.status(401).json({ error: "unauthorized_error", message: "Invalid token!" });
             });
@@ -380,9 +371,9 @@ async function mountNodeRedIfInstalled({ app, server, settings, runtime, logger,
 
     // Minimal Node-RED settings; extend only what is really needed
     const redSettings = {
-        httpAdminRoot: '/nodered/',
+        httpAdminRoot: basePath.get() + '/nodered/',
         // Serve Node-RED HTTP nodes under /dashboard to avoid intercepting FUXA routes
-        httpNodeRoot: '/dashboard',
+        httpNodeRoot: basePath.get() + '/dashboard',
         userDir,
         nodesDir: [path.join(__dirname, 'node-red-contrib-fuxa')],
         flowFile: 'flows.json',
@@ -472,8 +463,8 @@ async function mountNodeRedIfInstalled({ app, server, settings, runtime, logger,
 
     // Mount Node-RED admin/editor under /nodered; HTTP nodes (including dashboard)
     // are served from httpNodeRoot ('/dashboard') so they appear at /dashboard/... etc.
-    app.use('/nodered', allowDashboard, RED.httpAdmin);
-    app.use('/dashboard', allowDashboard, RED.httpNode);
+    app.use(basePath.get() + '/nodered', allowDashboard, RED.httpAdmin);
+    app.use(basePath.get() + '/dashboard', allowDashboard, RED.httpNode);
 
     await RED.start();
 
@@ -523,20 +514,7 @@ async function mountNodeRedIfInstalled({ app, server, settings, runtime, logger,
         }
     });
 
-    // set api to listen (moved here to avoid rate limiting Node-RED routes)
-    if (settings.disableServer !== false) {
-        // Catch-all route for SPA - serve Angular index.html for client routes
-        // Exclude API routes and static assets
-        app.get('*', (req, res, next) => {
-            // Skip API routes and static assets, including routes below BASE_PATH.
-            if (shouldBypassSpaCatchAll(req.path)) {
-                return next();
-            }
-            res.sendFile(path.join(settings.httpStatic, 'index.html'));
-        });
-    }
-
-    logger.info('[Node-RED] Started at /nodered');
+    logger.info(`[Node-RED] Started at ${basePath.get()}/nodered`);
 }
 
 module.exports = {

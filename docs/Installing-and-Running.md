@@ -278,6 +278,34 @@ WantedBy=default.target
 
 **Under a reverse proxy**
 
-When working under a reverse proxy, you can specify a custom BASE_PATH with trailing slashes
+FUXA can be served from a sub-folder of a domain, e.g. `https://foo.bar/fuxa/`. Set the base path with one of (in order of priority):
 
-> e.g. to serve at `foo.bar/fuxa` you can set the env variable BASE_PATH=/fuxa
+- the command line option `--basePath /fuxa`
+- the environment variable `BASE_PATH=/fuxa`
+- `basePath: '/fuxa'` in `_appdata/settings.js`
+
+The leading slash is optional and a trailing slash is ignored. Everything is then served below the base path: the application, `/api`, `/socket.io`, `/resources`, `/_images`, `/_widgets`, `/snapshots`, `/api-docs`, Node-RED (`/nodered`, `/dashboard`) and the proxies of `settings.proxies`. A request to `/` is redirected to `/fuxa/`. No rebuild of the client is needed: the `<base href>` of `index.html` is set by the server at startup.
+
+The reverse proxy must forward the path **unchanged** (do not strip `/fuxa`) and pass the WebSocket upgrade, e.g. with nginx:
+
+```nginx
+location /fuxa/ {
+    proxy_pass http://127.0.0.1:1881;          # no trailing slash: keep the /fuxa prefix
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+or with Apache (`mod_proxy`, `mod_proxy_http`, `mod_proxy_wstunnel`):
+
+```apache
+ProxyPass        /fuxa/socket.io/ ws://127.0.0.1:1881/fuxa/socket.io/
+ProxyPass        /fuxa/ http://127.0.0.1:1881/fuxa/
+ProxyPassReverse /fuxa/ http://127.0.0.1:1881/fuxa/
+```
+
+With Docker: `docker run -d -p 1881:1881 -e BASE_PATH=/fuxa frangoteam/fuxa:latest`

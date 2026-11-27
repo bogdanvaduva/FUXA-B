@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 const authJwt = require('../jwt-helper');
 
 // In order to work under a reverse proxy, I import the BASE PATH
-const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/+$/, '');
+const basePath = require('../../basepath');
 
 var runtime;
 var secretCode;
@@ -65,7 +65,7 @@ function setRefreshCookie(res, token) {
         httpOnly: true,
         sameSite: 'lax',
         secure: !!runtime?.settings?.https,
-        path: BASE_PATH + '/api/refresh'
+        path: basePath.get() + '/api/refresh'
     };
     if (maxAge) {
         options.maxAge = maxAge;
@@ -75,17 +75,17 @@ function setRefreshCookie(res, token) {
 
 function clearRefreshCookie(res) {
     res.clearCookie(refreshCookieName, {
-        path: BASE_PATH + '/api/refresh'
+        path: basePath.get() + '/api/refresh'
     });
 }
 
 function clearNodeRedAuthCookie(res) {
     res.clearCookie(nodeRedAuthCookieName, {
-        path: BASE_PATH + '/nodered',
+        path: basePath.get() + '/nodered',
         sameSite: 'lax'
     });
     res.clearCookie(nodeRedAuthCookieName, {
-        path: BASE_PATH || '/',
+        path: basePath.get() || '/',
         sameSite: 'lax'
     });
 }

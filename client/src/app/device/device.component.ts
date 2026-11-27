@@ -15,6 +15,7 @@ import {DEVICE_READONLY} from '../_models/hmi';
 import {Utils} from '../_helpers/utils';
 import { SettingsService } from '../_services/settings.service';
 import { SectionMessageDialogComponent } from '../editor/section-message-dialog/section-message-dialog.component';
+import { EndPointApi } from '../_helpers/endpointapi';
 
 @Component({
     selector: 'app-device',
@@ -285,7 +286,7 @@ export class DeviceComponent implements OnInit, OnDestroy {
                 hideLabelKey: 'device.plugins-notice-hide',
                 actionLabelKey: 'device.plugins-notice-open',
                 routePath: '/plugins',
-                absoluteUrl: `${window.location.origin}/plugins`,
+                absoluteUrl: EndPointApi.getAppUrl('/plugins'),
                 settingKey: 'hideDevicePluginsNotice'
             }
         });

@@ -94,6 +94,11 @@ module.exports = {
     // example, the following would only allow connections from the local machine.
     //uiHost: "127.0.0.1",
 
+    // Sub-folder of the domain where the application is served, e.g. '/fuxa' for https://example.com/fuxa/
+    // (behind a reverse proxy that forwards the path unchanged). Default: '' (domain root).
+    // Can be overridden by the environment variable BASE_PATH or the command line option --basePath
+    //basePath: '/fuxa',
+
     // Reverse proxies to external HTTP services, to use them from the views without CORS.
     // A request to http://localhost:1881<path>/rest?query is forwarded to <target>/rest?query.
     // FUXA credentials (cookie, authorization, x-access-token) are not forwarded.
